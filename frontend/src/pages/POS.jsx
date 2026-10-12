@@ -17,6 +17,7 @@ import { Button } from '../components/Button.jsx';
 import { PrintPreviewModal } from '../components/PrintPreviewModal.jsx';
 import { ImageSearchModal } from '../components/ImageSearchModal.jsx';
 import { CustomerSelect } from '../components/CustomerSelect.jsx';
+import { PreviousWeekPriceModal } from '../components/PreviousWeekPriceModal.jsx';
 
 const PAYMENT_METHODS = [
   { key: 'cash', label: 'Cash' },
@@ -98,6 +99,18 @@ export function POS() {
   const [showImageSearch, setShowImageSearch] = useState(false);
   const searchInputRef = useRef(null);
 
+  // Previous week selling price modal state & request tracking
+  const [prevPriceModal, setPrevPriceModal] = useState({
+    isOpen: false,
+    loading: false,
+    data: null,
+    error: null,
+    productId: null,
+  });
+  const prevPriceAbortRef = useRef(null);
+  const prevPriceRequestIdRef = useRef(0);
+  const prevPriceCacheRef = useRef(new Map());
+
   const selectedBranchId = useBranchStore((state) => state.selectedBranchId);
   const itemsQuery = useQuery({ queryKey: ['items', ''], queryFn: () => itemsApi.list('') });
   const customersQuery = useQuery({ queryKey: ['customers'], queryFn: customersApi.list });
@@ -106,6 +119,9 @@ export function POS() {
   const heldQuery = useQuery({ queryKey: ['invoices', 'held'], queryFn: () => invoicesApi.list('held') });
   const stockQuery = useQuery({ queryKey: ['stock-hub', 'branch', selectedBranchId], queryFn: () => stockHubApi.list({ owner_type: 'branch' }), enabled: canViewStock });
   const freeQtyQuery = useQuery({ queryKey: ['settings-free-qty'], queryFn: settingsApi.getFreeQty });
+  const posPopupSettingsQuery = useQuery({ queryKey: ['settings-pos-popup'], queryFn: () => settingsApi.getPosPopup().catch(() => ({ pos_prev_week_popup_enabled: true, prev_week_popup_on_repeat_add: false })) });
+  const isPopupFeatureEnabled = posPopupSettingsQuery.data?.pos_prev_week_popup_enabled ?? true;
+  const popupOnRepeatAdd = posPopupSettingsQuery.data?.prev_week_popup_on_repeat_add ?? false;
 
   const items = useMemo(() => (Array.isArray(itemsQuery.data) ? itemsQuery.data : (itemsQuery.data?.items || [])), [itemsQuery.data]);
   const customers = customersQuery.data || [];
@@ -277,7 +293,73 @@ export function POS() {
     setSelectedGridIndex(-1);
   }, [activeCategory, search]);
 
+  const fetchPrevWeekPrice = (item) => {
+    if (!isPopupFeatureEnabled) return;
+
+    const reqId = ++prevPriceRequestIdRef.current;
+    if (prevPriceAbortRef.current) {
+      prevPriceAbortRef.current.abort();
+    }
+    const abortController = new AbortController();
+    prevPriceAbortRef.current = abortController;
+
+    const unitId = item.base_unit_id;
+    const cacheKey = `${item.id}-${unitId}-${priceType}`;
+    const cached = prevPriceCacheRef.current.get(cacheKey);
+    const now = Date.now();
+
+    if (cached && (now - cached.timestamp < 10 * 60 * 1000)) {
+      setPrevPriceModal({
+        isOpen: true,
+        loading: false,
+        data: cached.data,
+        error: null,
+        productId: item.id,
+      });
+      return;
+    }
+
+    setPrevPriceModal({
+      isOpen: true,
+      loading: true,
+      data: null,
+      error: null,
+      productId: item.id,
+    });
+
+    itemsApi.previousWeekPrice(item.id, { unit_id: unitId, tier: priceType }, abortController.signal)
+      .then((data) => {
+        if (prevPriceRequestIdRef.current !== reqId) return;
+        prevPriceCacheRef.current.set(cacheKey, { data, timestamp: Date.now() });
+        setPrevPriceModal((prev) => {
+          if (prev.productId !== item.id) return prev;
+          return {
+            ...prev,
+            loading: false,
+            data,
+            error: null,
+          };
+        });
+      })
+      .catch((err) => {
+        if (err?.name === 'CanceledError' || err?.name === 'AbortError' || abortController.signal.aborted) {
+          return;
+        }
+        if (prevPriceRequestIdRef.current !== reqId) return;
+        setPrevPriceModal((prev) => {
+          if (prev.productId !== item.id) return prev;
+          return {
+            ...prev,
+            loading: false,
+            data: null,
+            error: err?.response?.data?.error || 'Could not retrieve previous week selling price',
+          };
+        });
+      });
+  };
+
   const addItem = (item) => {
+    const isAlreadyInCart = cart.some((l) => l.item.id === item.id && l.unit_id === item.base_unit_id);
     setCart((prev) => {
       const existing = prev.find((l) => l.item.id === item.id && l.unit_id === item.base_unit_id);
       if (existing) {
@@ -287,6 +369,10 @@ export function POS() {
     });
     setSearch('');
     setSelectedIndex(-1);
+
+    if (!isAlreadyInCart || popupOnRepeatAdd) {
+      fetchPrevWeekPrice(item);
+    }
   };
 
   const handleSearchKeyDown = (e) => {
@@ -1012,6 +1098,14 @@ export function POS() {
           onAdd={(item) => { addItem(item); setShowImageSearch(false); }}
         />
       )}
+
+      <PreviousWeekPriceModal
+        isOpen={prevPriceModal.isOpen}
+        loading={prevPriceModal.loading}
+        data={prevPriceModal.data}
+        error={prevPriceModal.error}
+        onClose={() => setPrevPriceModal((prev) => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 }
