@@ -4,7 +4,6 @@ import { X, Printer } from 'lucide-react';
 import { invoicesApi } from '../api/invoices';
 import { ThermalTemplate } from '../print/ThermalTemplate';
 import { A4Template } from '../print/A4Template';
-import SurandaiInvoice from './SurandaiInvoice';
 import { Button } from './Button.jsx';
 import '../print/print.css';
 
@@ -15,7 +14,7 @@ import '../print/print.css';
  * shell and print only this modal's content.
  */
 export function PrintPreviewModal({ invoiceId, onClose }) {
-  const [format, setFormat] = useState('surandai');
+  const [format, setFormat] = useState('a4');
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
 
@@ -53,12 +52,6 @@ export function PrintPreviewModal({ invoiceId, onClose }) {
         >
           Thermal (80mm)
         </button>
-        <button
-          onClick={() => setFormat('surandai')}
-          className={`rounded px-3 py-1 text-sm ${format === 'surandai' ? 'bg-navbar text-white' : 'bg-gray-100 text-gray-700'}`}
-        >
-          Paper Bill (Mandi Slip)
-        </button>
         <div className="ml-auto flex items-center gap-2">
           {data?.invoice?.customer_phone && (
             <a href={whatsappHref()} target="_blank" rel="noreferrer" className="rounded bg-green-600 px-3 py-1 text-sm text-white">
@@ -74,13 +67,7 @@ export function PrintPreviewModal({ invoiceId, onClose }) {
       {!error && !data && <div className="mx-auto w-fit rounded-lg bg-white p-6 text-gray-500 shadow-sm">Loading…</div>}
       {data && (
         <div className="mx-auto w-fit rounded-lg bg-white p-6 shadow-sm">
-          {format === 'surandai' ? (
-            <SurandaiInvoice bill={data.invoice} settings={data.branch || {}} lang="ta" />
-          ) : format === 'thermal' ? (
-            <ThermalTemplate data={data} />
-          ) : (
-            <A4Template data={data} />
-          )}
+          {format === 'thermal' ? <ThermalTemplate data={data} /> : <A4Template data={data} />}
         </div>
       )}
     </div>,
