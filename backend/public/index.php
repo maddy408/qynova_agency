@@ -141,6 +141,8 @@ $router->delete('/api/items/{id}', fn ($id) => $itemController->destroy($id));
 $router->post('/api/items/{id}/image', fn ($id) => $itemController->uploadImage($id));
 $router->delete('/api/items/{id}/image', fn ($id) => $itemController->removeImage($id));
 $router->post('/api/items/image-search', fn () => $itemController->imageSearch());
+$router->get('/api/items/{id}/previous-week-price', fn ($id) => $itemController->previousWeekPrice($id));
+$router->get('/api/pos/products/{id}/previous-week-price', fn ($id) => $itemController->previousWeekPrice($id));
 
 // ---------------------------------------------------------------
 // Parties — branch-scoped (section 4.2)
@@ -421,6 +423,8 @@ $router->get('/api/settings/free-qty', fn () => $settings->freeQtySettings());
 $router->put('/api/settings/free-qty', fn () => $settings->updateFreeQtySettings());
 $router->get('/api/settings/sequences', fn () => $settings->sequences());
 $router->put('/api/settings/sequences/{id}', fn ($id) => $settings->updateSequence($id));
+$router->get('/api/settings/pos-popup', fn () => $settings->posPopupSettings());
+$router->put('/api/settings/pos-popup', fn () => $settings->updatePosPopupSettings());
 
 try {
     $router->dispatch($method, $uri);

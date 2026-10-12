@@ -99,6 +99,47 @@ class ItemController
         Response::json($item);
     }
 
+    /**
+     * Previous week selling price for POS cart line (pure read-only).
+     * Validates id (422), checks authorization (401/403), returns exact product's selling price history.
+     */
+    public function previousWeekPrice(string $id): void
+    {
+        $claims = JwtAuthMiddleware::authenticate();
+        $permissions = (array) ($claims['permissions'] ?? []);
+        if (($claims['role'] ?? '') === 'customer' || (!in_array('pos.access', $permissions, true) && !in_array('*', $permissions, true))) {
+            Response::error('Forbidden', 403);
+        }
+
+        if (!is_numeric($id) || (int) $id <= 0) {
+            Response::error('Invalid product id', 422);
+        }
+
+        $unitId = isset($_GET['unit_id']) && is_numeric($_GET['unit_id']) ? (int) $_GET['unit_id'] : null;
+        $tier = (string) ($_GET['tier'] ?? $_GET['price_type'] ?? 'normal');
+        $branchId = $this->resolveBranchId($claims) ?? (int) ($claims['branch_id'] ?? 1);
+
+        $asOf = null;
+        if (!empty($_GET['as_of'])) {
+            try {
+                $asOf = new \DateTimeImmutable($_GET['as_of'], new \DateTimeZone('Asia/Kolkata'));
+            } catch (\Exception) {
+                // Ignore invalid date format and fallback to now
+            }
+        }
+
+        $ruleOverride = !empty($_GET['rule']) ? (string) $_GET['rule'] : null;
+
+        $service = new \App\Services\PreviousWeekPriceService($this->pdo);
+        $res = $service->getProductPreviousWeekPrice((int) $id, $unitId, $tier, $branchId, $asOf, $ruleOverride);
+
+        if (!empty($res['error'])) {
+            Response::error($res['message'], (int) ($res['code'] ?? 404));
+        }
+
+        Response::json($res);
+    }
+
     public function store(): void
     {
         $claims = JwtAuthMiddleware::authenticate();

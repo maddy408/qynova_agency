@@ -215,4 +215,43 @@ class SettingsController
         $stmt->execute(['id' => $id]);
         Response::json($stmt->fetch());
     }
+
+    public function posPopupSettings(): void
+    {
+        $claims = JwtAuthMiddleware::authenticate();
+        $branchId = $this->resolveBranchId($claims);
+        $service = new \App\Services\PreviousWeekPriceService($this->pdo);
+        Response::json($service->getSettings($branchId));
+    }
+
+    public function updatePosPopupSettings(): void
+    {
+        $claims = JwtAuthMiddleware::authenticate();
+        PermissionMiddleware::require($claims, 'settings.manage');
+        $branchId = $this->resolveBranchId($claims);
+
+        $body = json_decode(file_get_contents('php://input'), true) ?? [];
+        $enabled = isset($body['pos_prev_week_popup_enabled']) ? (int) (bool) $body['pos_prev_week_popup_enabled'] : 1;
+        $rule = in_array(strtoupper($body['prev_week_price_rule'] ?? ''), ['AUTO', 'LATEST', 'AVERAGE', 'MOST_USED'], true)
+            ? strtoupper($body['prev_week_price_rule'])
+            : 'AUTO';
+        $repeat = isset($body['prev_week_popup_on_repeat_add']) ? (int) (bool) $body['prev_week_popup_on_repeat_add'] : 0;
+
+        $stmt = $this->pdo->prepare(
+            'INSERT INTO pos_feature_settings (branch_id, pos_prev_week_popup_enabled, prev_week_price_rule, prev_week_popup_on_repeat_add)
+             VALUES (:branch_id, :enabled, :rule, :repeat)
+             ON DUPLICATE KEY UPDATE 
+                pos_prev_week_popup_enabled = VALUES(pos_prev_week_popup_enabled),
+                prev_week_price_rule = VALUES(prev_week_price_rule),
+                prev_week_popup_on_repeat_add = VALUES(prev_week_popup_on_repeat_add)'
+        );
+        $stmt->execute([
+            'branch_id' => $branchId,
+            'enabled' => $enabled,
+            'rule' => $rule,
+            'repeat' => $repeat,
+        ]);
+
+        $this->posPopupSettings();
+    }
 }
