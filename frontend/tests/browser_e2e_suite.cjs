@@ -467,6 +467,47 @@ async function runSuite() {
     assertB('Browser 9: Payment shortcut verified', true);
   }
 
+  // -------------------------------------------------------------
+  // Test 10: Phase 3 Settings UI - Tab & Panel Verification
+  // -------------------------------------------------------------
+  console.log('\n--- Test 10: Phase 3 Admin Settings UI ---');
+  await page.goto('http://localhost:5173/settings');
+  await page.waitForSelector('text=Settings');
+
+  // Click "POS Selling Price Popup" tab
+  const settingsTab = await page.waitForSelector('button:has-text("POS Selling Price Popup")');
+  assertB('Browser 10: Found "POS Selling Price Popup" tab in Settings', settingsTab !== null);
+  await settingsTab.click();
+
+  // Verify form elements rendered
+  await page.waitForSelector('text=Previous Week Selling Price Popup');
+  const enableCheckbox = await page.waitForSelector('[data-testid="popup-enabled-checkbox"]');
+  const ruleSelect = await page.waitForSelector('[data-testid="rule-select"]');
+  assertB('Browser 10: Settings controls rendered (checkbox & select)', enableCheckbox !== null && ruleSelect !== null);
+
+  // Take screenshot of settings tab
+  const ssSettings = path.join(SCREENSHOT_DIR, '08_admin_settings_pos_popup.png');
+  await page.screenshot({ path: ssSettings });
+  console.log('  Saved:', ssSettings);
+
+  // -------------------------------------------------------------
+  // Test 11: Phase 3 Settings Save & Persistence
+  // -------------------------------------------------------------
+  console.log('\n--- Test 11: Phase 3 Settings Update & Persistence ---');
+  // Select LATEST rule
+  await page.selectOption('[data-testid="rule-select"]', 'LATEST');
+  // Click Save Configuration
+  await page.click('button:has-text("Save Configuration")');
+  // Wait for success feedback
+  const successMsg = await page.waitForSelector('text=Saved successfully.', { timeout: 5000 });
+  assertB('Browser 11: "Saved successfully." confirmation displayed', successMsg !== null);
+
+  // Reset to AUTO and save again
+  await page.selectOption('[data-testid="rule-select"]', 'AUTO');
+  await page.click('button:has-text("Save Configuration")');
+  await page.waitForSelector('text=Saved successfully.', { timeout: 5000 });
+  assertB('Browser 11: Cleanly restored to AUTO rule', true);
+
   await browser.close();
 
   console.log('\n============================================================');

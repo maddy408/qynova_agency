@@ -271,6 +271,122 @@ function FreeQtySettingsPanel({ canManage }) {
   );
 }
 
+function PosPopupSettingsPanel({ canManage }) {
+  const queryClient = useQueryClient();
+  const posPopupQuery = useQuery({
+    queryKey: ['settings-pos-popup'],
+    queryFn: settingsApi.getPosPopup,
+  });
+  const [form, setForm] = useState(null);
+  const [message, setMessage] = useState('');
+
+  useEffect(() => {
+    if (posPopupQuery.data && !form) {
+      setForm({
+        pos_prev_week_popup_enabled: posPopupQuery.data.pos_prev_week_popup_enabled ? 1 : 0,
+        prev_week_price_rule: posPopupQuery.data.prev_week_price_rule || 'AUTO',
+        prev_week_popup_on_repeat_add: posPopupQuery.data.prev_week_popup_on_repeat_add ? 1 : 0,
+      });
+    }
+  }, [posPopupQuery.data]);
+
+  const saveMutation = useMutation({
+    mutationFn: settingsApi.updatePosPopup,
+    onSuccess: (data) => {
+      setForm({
+        pos_prev_week_popup_enabled: data.pos_prev_week_popup_enabled ? 1 : 0,
+        prev_week_price_rule: data.prev_week_price_rule || 'AUTO',
+        prev_week_popup_on_repeat_add: data.prev_week_popup_on_repeat_add ? 1 : 0,
+      });
+      queryClient.invalidateQueries({ queryKey: ['settings-pos-popup'] });
+      setMessage('Saved successfully.');
+      setTimeout(() => setMessage(''), 2500);
+    },
+  });
+
+  if (!form) return <p className="text-ink-muted">Loading…</p>;
+
+  return (
+    <div className="card p-4">
+      <div className="mb-2 font-semibold text-ink">Previous Week Selling Price Popup</div>
+      <p className="mb-4 text-xs text-ink-muted">
+        Configure the behavior of the automatic previous week's selling price comparison modal displayed during POS billing.
+      </p>
+
+      <div className="flex flex-col gap-4 border-t border-border-soft pt-4">
+        {/* Main Enable Toggle */}
+        <label className="flex items-center justify-between rounded-lg border border-border-soft p-3.5 hover:bg-page cursor-pointer">
+          <div>
+            <div className="font-semibold text-sm text-ink">Enable Price Comparison Popup</div>
+            <div className="text-xs text-ink-muted">
+              Display previous week selling price comparison modal when adding products in POS (Default: Enabled)
+            </div>
+          </div>
+          <input
+            type="checkbox"
+            data-testid="popup-enabled-checkbox"
+            checked={form.pos_prev_week_popup_enabled === 1}
+            onChange={(e) => setForm({ ...form, pos_prev_week_popup_enabled: e.target.checked ? 1 : 0 })}
+            disabled={!canManage}
+            className="h-5 w-5 accent-gold"
+          />
+        </label>
+
+        {/* Multi-Price Rule Selector */}
+        <div className="rounded-lg border border-border-soft p-3.5 bg-page/50">
+          <div className="mb-1 font-semibold text-sm text-ink">Multiple Prices Resolution Rule</div>
+          <div className="mb-3 text-xs text-ink-muted">
+            Determine how the reference rate is chosen when an item was sold at different rates during the previous week.
+          </div>
+          <select
+            data-testid="rule-select"
+            value={form.prev_week_price_rule}
+            onChange={(e) => setForm({ ...form, prev_week_price_rule: e.target.value })}
+            disabled={!canManage || form.pos_prev_week_popup_enabled === 0}
+            className="input max-w-md bg-white disabled:bg-page"
+          >
+            <option value="AUTO">AUTO — Show Price Range (₹ Min – ₹ Max) with Breakdown (Recommended)</option>
+            <option value="LATEST">LATEST — Most Recent Selling Price in Previous Week</option>
+            <option value="AVERAGE">AVERAGE — Weighted Average Selling Price</option>
+            <option value="MOST_USED">MOST_USED — Rate with Highest Sold Quantity</option>
+          </select>
+        </div>
+
+        {/* Repeat Add Toggle */}
+        <label className="flex items-center justify-between rounded-lg border border-border-soft p-3.5 hover:bg-page cursor-pointer">
+          <div>
+            <div className="font-semibold text-sm text-ink">Show Popup on Repeat Add</div>
+            <div className="text-xs text-ink-muted">
+              Show popup again when clicking a product that is already in the current bill (Default: Disabled)
+            </div>
+          </div>
+          <input
+            type="checkbox"
+            data-testid="repeat-add-checkbox"
+            checked={form.prev_week_popup_on_repeat_add === 1}
+            onChange={(e) => setForm({ ...form, prev_week_popup_on_repeat_add: e.target.checked ? 1 : 0 })}
+            disabled={!canManage || form.pos_prev_week_popup_enabled === 0}
+            className="h-5 w-5 accent-gold"
+          />
+        </label>
+      </div>
+
+      {canManage && (
+        <div className="mt-4 flex items-center gap-3">
+          <button
+            onClick={() => saveMutation.mutate(form)}
+            disabled={saveMutation.isPending}
+            className="rounded bg-success px-4 py-1.5 text-sm font-semibold text-white disabled:opacity-50"
+          >
+            {saveMutation.isPending ? 'Saving…' : 'Save Configuration'}
+          </button>
+          {message && <span className="text-sm font-semibold text-success">{message}</span>}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function Settings() {
   const canManage = usePermission('settings.manage');
   const canBranches = usePermission('branches.manage');
@@ -278,6 +394,7 @@ export function Settings() {
   const tabs = [
     { key: 'profile', label: 'Company Profile', content: <CompanyProfilePanel canManage={canManage} /> },
     { key: 'free-qty', label: 'Free Quantity Configuration', content: <FreeQtySettingsPanel canManage={canManage} /> },
+    { key: 'pos-popup', label: 'POS Selling Price Popup', content: <PosPopupSettingsPanel canManage={canManage} /> },
     { key: 'print', label: 'Thermal Printer Setup', content: <PrintSettingsPanel canManage={canManage} /> },
     { key: 'sequences', label: 'Invoice Sequences', content: <SequencesPanel canManage={canManage} /> },
   ];
