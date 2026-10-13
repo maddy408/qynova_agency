@@ -214,6 +214,46 @@ class PreviousWeekPriceService
             ];
         }
 
+        // Query 1-year selling price history on invoice_items + invoices ONLY
+        $oneYearAgo = ($asOf ?? new DateTimeImmutable('now', $this->tz))->sub(new \DateInterval('P1Y'))->format('Y-m-d H:i:s');
+        $yearStmt = $this->pdo->prepare(
+            'SELECT 
+                ii.rate,
+                SUM(ii.qty) AS total_qty,
+                COUNT(DISTINCT inv.id) AS bill_count,
+                MIN(inv.created_at) AS first_sale_time,
+                MAX(inv.created_at) AS latest_sale_time
+             FROM invoice_items ii
+             INNER JOIN invoices inv ON inv.id = ii.invoice_id
+             WHERE inv.branch_id = :branch_id
+               AND inv.status = "completed"
+               AND inv.price_type = :tier
+               AND ii.item_id = :item_id
+               AND ii.unit_id = :unit_id
+               AND inv.created_at >= :one_year_ago
+             GROUP BY ii.rate
+             ORDER BY latest_sale_time DESC, ii.rate ASC'
+        );
+        $yearStmt->execute([
+            'branch_id' => $branchId,
+            'tier' => $tier,
+            'item_id' => $productId,
+            'unit_id' => $effectiveUnitId,
+            'one_year_ago' => $oneYearAgo,
+        ]);
+        $yearRows = $yearStmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $yearlyPrices = [];
+        foreach ($yearRows as $yr) {
+            $yearlyPrices[] = [
+                'price' => number_format((float) $yr['rate'], 2, '.', ''),
+                'quantity' => number_format((float) $yr['total_qty'], 3, '.', ''),
+                'bills' => (int) $yr['bill_count'],
+                'first_sold_date' => substr($yr['first_sale_time'], 0, 10),
+                'last_sold_date' => substr($yr['latest_sale_time'], 0, 10),
+            ];
+        }
+
         $hasData = count($prices) > 0;
         $singlePrice = null;
         $diff = null;
@@ -292,6 +332,7 @@ class PreviousWeekPriceService
                 'latest_price' => $latestPrice,
                 'sales_count' => $totalBills,
             ],
+            'yearly_prices' => $yearlyPrices,
             'difference' => $diff,
             'rule_used' => $rule,
             'popup_enabled' => (bool) ($settings['pos_prev_week_popup_enabled'] ?? true),

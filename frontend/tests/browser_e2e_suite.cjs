@@ -103,6 +103,10 @@ async function runSuite() {
           latest_price: '80.00',
           sales_count: 1,
         },
+        yearly_prices: [
+          { price: '85.00', quantity: '10.000', bills: 2, last_sold_date: '2026-10-10' },
+          { price: '80.00', quantity: '5.000', bills: 1, last_sold_date: '2026-05-20' },
+        ],
         difference: {
           amount: '5.00',
           percent: '6.25',
@@ -141,6 +145,11 @@ async function runSuite() {
           latest_price: '45.00',
           sales_count: 2,
         },
+        yearly_prices: [
+          { price: '50.00', quantity: '25.000', bills: 5, last_sold_date: '2026-09-10' },
+          { price: '45.00', quantity: '20.000', bills: 1, last_sold_date: '2026-08-15' },
+          { price: '40.00', quantity: '10.000', bills: 1, last_sold_date: '2026-03-10' },
+        ],
         difference: {
           amount: null,
           percent: null,
@@ -334,7 +343,7 @@ async function runSuite() {
   const text2 = await dialog2.innerText();
   assertB('Browser 2: Shows Product Name "Mango Juice"', text2.includes('Mango Juice'));
   assertB('Browser 2: Shows range ₹40.00 – ₹45.00', text2.includes('40.00') && text2.includes('45.00'));
-  assertB('Browser 2: Shows "Previous Week Price Breakdown:"', text2.includes('Previous Week Price Breakdown:'));
+  assertB('Browser 2: Shows "1 Year Selling Prices:"', text2.includes('1 Year Selling Prices:'));
 
   const ss2 = path.join(SCREENSHOT_DIR, '02_multiple_prices_mango_juice.png');
   await page.screenshot({ path: ss2 });

@@ -236,23 +236,35 @@ export function PreviousWeekPriceModal({ isOpen, onClose, data, loading, error }
                 </div>
               )}
 
-              {/* Multiple prices list (when distinct prices exist) */}
-              {prevWeek?.has_data && prevWeek.prices?.length > 1 && (
-                <div className="rounded-lg border border-gray-100 bg-gray-50/60 p-2.5">
-                  <div className="text-[11px] font-semibold text-gray-600 mb-1.5 flex items-center gap-1">
+              {/* 1 Year Selling Prices History */}
+              <div className="rounded-lg border border-gray-100 bg-gray-50/70 p-2.5">
+                <div className="text-[11px] font-semibold text-gray-700 mb-1.5 flex items-center justify-between">
+                  <div className="flex items-center gap-1">
                     <Layers size={13} className="text-gray-400" />
-                    Previous Week Price Breakdown:
+                    <span>1 Year Selling Prices:</span>
                   </div>
-                  <div className="space-y-1 max-h-24 overflow-y-auto text-xs">
-                    {prevWeek.prices.map((p, idx) => (
-                      <div key={idx} className="flex justify-between text-gray-600 bg-white p-1 px-2 rounded border border-gray-100 text-[11px]">
-                        <span className="font-medium text-gray-800">Rate: ₹{p.price}</span>
-                        <span>{p.quantity} {data.unit} ({p.bills} bills)</span>
+                  <span className="text-[10px] text-gray-400 font-normal">Past 12 Months</span>
+                </div>
+                {data.yearly_prices && data.yearly_prices.length > 0 ? (
+                  <div className="space-y-1 max-h-28 overflow-y-auto text-xs">
+                    {data.yearly_prices.map((yp, idx) => (
+                      <div key={idx} className="flex items-center justify-between bg-white p-1.5 px-2 rounded border border-gray-100 text-[11px]">
+                        <span className="font-bold text-gray-900">₹{yp.price}</span>
+                        <span className="text-gray-500 text-[10px]">
+                          Last sold: {yp.last_sold_date ? yp.last_sold_date.split('-').reverse().join('/') : 'N/A'}
+                        </span>
+                        <span className="text-gray-600 font-medium text-[11px]">
+                          {yp.quantity} {data.unit} ({yp.bills} {yp.bills > 1 ? 'bills' : 'bill'})
+                        </span>
                       </div>
                     ))}
                   </div>
-                </div>
-              )}
+                ) : (
+                  <div className="text-[11px] text-gray-400 text-center py-1">
+                    No sales in the past 1 year for this product.
+                  </div>
+                )}
+              </div>
 
               {/* Missing data or Ambiguity message */}
               {data.message && (
