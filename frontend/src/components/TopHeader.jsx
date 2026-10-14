@@ -2,7 +2,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Menu, ShoppingCart, Sparkles, Clock } from 'lucide-react';
 import { usePermission } from '../hooks/usePermission';
 
-export function TopHeader({ onOpenMobile }) {
+export function TopHeader({ onToggleSidebar, sidebarOpen }) {
   const location = useLocation();
   const canPos = usePermission('pos.access');
 
@@ -28,16 +28,17 @@ export function TopHeader({ onOpenMobile }) {
   });
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 w-full items-center justify-between border-b border-[#D5E3F7]/80 bg-white/80 backdrop-blur-md px-4 sm:px-6 shadow-2xs select-none">
-      {/* Left: Mobile Toggle & Page Title */}
+    <header className="sticky top-0 z-30 flex h-14 w-full items-center justify-between border-b border-[#D5E3F7]/80 bg-white/80 backdrop-blur-md px-3 sm:px-5 shadow-2xs select-none">
+      {/* Left: 3-lines hamburger menu toggle & Page Title */}
       <div className="flex items-center gap-3">
         <button
           type="button"
-          onClick={onOpenMobile}
-          aria-label="Open navigation menu"
-          className="lg:hidden p-1.5 rounded-xl text-[#0B1B45] hover:bg-[#EDF5FF] transition"
+          onClick={onToggleSidebar}
+          aria-label={sidebarOpen ? "Close navigation menu" : "Open navigation menu"}
+          title={sidebarOpen ? "Close Navigation Sidebar" : "Open Navigation Sidebar"}
+          className="flex items-center justify-center h-9 w-9 rounded-xl text-[#0B1B45] hover:bg-[#EDF5FF] active:scale-95 transition cursor-pointer border border-[#CBD5E1] bg-white shadow-2xs"
         >
-          <Menu size={20} />
+          <Menu size={18} />
         </button>
 
         <div className="flex items-center gap-2">
