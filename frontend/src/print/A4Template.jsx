@@ -1,3 +1,5 @@
+import { printColors } from '../theme/colors.js';
+
 export function A4Template({ data }) {
   const { invoice, branch, tax_slabs: taxSlabs, amount_in_words: amountInWords, customer_outstanding: outstanding } = data;
   const isOutstation = invoice.invoice_format === 'outstation';
@@ -9,7 +11,7 @@ export function A4Template({ data }) {
 
   return (
     <div className="a4-invoice">
-      <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '2px solid #1d4ed8', paddingBottom: 8 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: `2px solid ${printColors['print-blue']}`, paddingBottom: 8 }}>
         <div>
           <div style={{ fontWeight: 'bold', fontSize: 18 }}>{branch.print_name}</div>
           <div>{branch.address_line1}, {branch.city}, {branch.state} {branch.pincode}</div>
@@ -19,11 +21,11 @@ export function A4Template({ data }) {
         <div style={{ textAlign: 'right' }}>
           <div style={{ fontWeight: 'bold', fontSize: 16 }}>{isGst ? 'TAX INVOICE' : 'INVOICE (NON-GST)'}</div>
           {invoice.price_type && invoice.price_type !== 'normal' && (
-            <div style={{ fontSize: 11, fontWeight: 'bold', color: '#b45309' }}>
+            <div style={{ fontSize: 11, fontWeight: 'bold', color: printColors['print-amber'] }}>
               {invoice.price_type === 'wholesale' ? 'WHOLESALE PRICING' : 'RETAIL PRICING'}
             </div>
           )}
-          <div style={{ fontWeight: 'bold', color: '#1d4ed8' }}>BILL NO: {invoice.invoice_no || 'HELD'}</div>
+          <div style={{ fontWeight: 'bold', color: printColors['print-blue'] }}>BILL NO: {invoice.invoice_no || 'HELD'}</div>
           <div>DATE: {invoice.invoice_date} {invoice.vehicle_no ? `| VEHICLE NO: ${invoice.vehicle_no}` : ''}</div>
           {isOutstation && (
             <div style={{ marginTop: 4, fontSize: 10 }}>
@@ -33,7 +35,7 @@ export function A4Template({ data }) {
         </div>
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', margin: '10px 0', border: '1px solid #999', padding: 8 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', margin: '10px 0', border: `1px solid ${printColors['print-border']}`, padding: 8 }}>
         <div>
           <div style={{ fontWeight: 'bold' }}>TO (CUSTOMER DETAILS):</div>
           <div>{invoice.customer_name || 'Walk-in Customer'}</div>
@@ -73,7 +75,7 @@ export function A4Template({ data }) {
       </table>
 
       {isGst && (
-        <div style={{ margin: '10px 0', border: '1px solid #999', padding: 8 }}>
+        <div style={{ margin: '10px 0', border: `1px solid ${printColors['print-border']}`, padding: 8 }}>
           <div style={{ fontWeight: 'bold', marginBottom: 4 }}>TAX BREAKDOWN (GST SLABS):</div>
           <table>
             <thead>
@@ -115,14 +117,14 @@ export function A4Template({ data }) {
             <Row label="GST TAX" value={(Number(invoice.cgst_amount) + Number(invoice.sgst_amount) + Number(invoice.igst_amount)).toFixed(2)} />
           )}
           <Row label="ROUND OFF" value={invoice.round_off} />
-          <Row label="NET TOTAL" value={invoice.grand_total} bold color="#1d4ed8" />
+          <Row label="NET TOTAL" value={invoice.grand_total} bold color={printColors['print-blue']} />
         </div>
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 30 }}>
         <div style={{ textAlign: 'center' }}>
           <div>For: {branch.print_name}</div>
-          <div style={{ marginTop: 40, borderTop: '1px solid #000', paddingTop: 4 }}>Authorized Signatory</div>
+          <div style={{ marginTop: 40, borderTop: `1px solid ${printColors['print-black']}`, paddingTop: 4 }}>Authorized Signatory</div>
         </div>
       </div>
     </div>

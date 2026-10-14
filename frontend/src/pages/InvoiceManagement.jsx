@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Eye, Printer, Ban, Search, Pencil, Trash2 } from 'lucide-react';
+import { Eye, Printer, Ban, Search, Pencil, Trash2, Receipt, X, FileText, CheckCircle2 } from 'lucide-react';
 import { invoicesApi } from '../api/invoices';
 import { itemsApi } from '../api/catalog';
 import { customersApi } from '../api/parties';
@@ -22,15 +22,6 @@ const GST_STATUS_LABEL = {
   not_generated: 'Not Generated', generated: 'Generated', failed: 'Failed', cancelled: 'Cancelled',
 };
 
-/**
- * E-Invoice (IRN) / E-Way Bill panel (section 10) — every action here calls
- * the real backend endpoints in App\Services\GstEInvoiceService. When no
- * GSP (GST Suvidha Provider) account is configured (GST_API_ENABLED=false
- * in backend/.env, the shipped default), Generate always comes back with
- * a real "not configured" error naming the exact env vars to set — never a
- * fake IRN/EWB number. This panel just displays whatever the backend
- * actually returns.
- */
 function GstFilingPanel({ invoice, canManage }) {
   const queryClient = useQueryClient();
   const [transportOpen, setTransportOpen] = useState(false);
@@ -67,12 +58,13 @@ function GstFilingPanel({ invoice, canManage }) {
   });
 
   return (
-    <div className="mb-3 rounded-lg border border-border-soft p-3">
-      <div className="mb-2 text-xs font-semibold uppercase text-ink-muted">GST Filing</div>
+    <div className="mb-4 rounded-2xl border border-[#D5E3F7] bg-[#F8FAFD] p-4 text-xs">
+      <div className="mb-3 text-[11px] font-bold uppercase tracking-wider text-slate-600">GST Filing</div>
 
-      <div className="mb-2 flex items-center justify-between">
-        <div className="text-sm text-ink">
-          E-Invoice (IRN) <Badge variant={GST_STATUS_VARIANT[invoice.einvoice_status]}>{GST_STATUS_LABEL[invoice.einvoice_status]}</Badge>
+      <div className="mb-3 flex items-center justify-between rounded-xl border border-[#D5E3F7] bg-white p-3">
+        <div className="flex items-center gap-2">
+          <span className="font-bold text-[#0B1B45]">E-Invoice (IRN)</span>
+          <Badge variant={GST_STATUS_VARIANT[invoice.einvoice_status]}>{GST_STATUS_LABEL[invoice.einvoice_status]}</Badge>
         </div>
         {canManage && (
           invoice.einvoice_status === 'generated' ? (
@@ -80,30 +72,31 @@ function GstFilingPanel({ invoice, canManage }) {
               {busy === 'einvoice_cancel' ? 'Cancelling…' : 'Cancel E-Invoice'}
             </Button>
           ) : (
-            <Button size="sm" disabled={busy === 'einvoice'} onClick={() => runAction('einvoice', () => invoicesApi.generateEInvoice(invoice.id))}>
+            <Button size="sm" disabled={busy === 'einvoice'} onClick={() => runAction('einvoice', () => invoicesApi.generateEInvoice(invoice.id))} className="bg-gradient-to-r from-[#0B1B45] to-[#2449C6] text-white shadow-xs">
               {busy === 'einvoice' ? 'Generating…' : 'Generate E-Invoice'}
             </Button>
           )
         )}
       </div>
-      {invoice.irn && <div className="mb-1 text-xs text-ink-muted">IRN: {invoice.irn} · Ack# {invoice.ack_no} · {invoice.ack_date}</div>}
+      {invoice.irn && <div className="mb-2 text-xs font-mono text-slate-500">IRN: {invoice.irn} · Ack# {invoice.ack_no} · {invoice.ack_date}</div>}
       {invoice.einvoice_status === 'failed' && invoice.einvoice_error && (
-        <div className="mb-2 rounded bg-red-50 px-2 py-1 text-xs text-danger">{invoice.einvoice_error}</div>
+        <div className="mb-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-600">{invoice.einvoice_error}</div>
       )}
 
-      <div className="mb-2 mt-3 flex items-center justify-between">
-        <div className="text-sm text-ink">
-          E-Way Bill <Badge variant={GST_STATUS_VARIANT[invoice.eway_bill_status]}>{GST_STATUS_LABEL[invoice.eway_bill_status]}</Badge>
+      <div className="flex items-center justify-between rounded-xl border border-[#D5E3F7] bg-white p-3">
+        <div className="flex items-center gap-2">
+          <span className="font-bold text-[#0B1B45]">E-Way Bill</span>
+          <Badge variant={GST_STATUS_VARIANT[invoice.eway_bill_status]}>{GST_STATUS_LABEL[invoice.eway_bill_status]}</Badge>
         </div>
         {canManage && (
-          <div className="flex gap-1.5">
-            <Button size="sm" variant="secondary" onClick={() => setTransportOpen((v) => !v)}>Transport Details</Button>
+          <div className="flex gap-2">
+            <Button size="sm" variant="secondary" onClick={() => setTransportOpen((v) => !v)} className="border-[#D5E3F7]">Transport Details</Button>
             {invoice.eway_bill_status === 'generated' ? (
               <Button size="sm" variant="danger" disabled={busy === 'eway_cancel'} onClick={() => runAction('eway_cancel', () => invoicesApi.cancelEWayBill(invoice.id, 'Cancelled from Invoice Management'))}>
                 {busy === 'eway_cancel' ? 'Cancelling…' : 'Cancel'}
               </Button>
             ) : (
-              <Button size="sm" disabled={busy === 'eway'} onClick={() => runAction('eway', () => invoicesApi.generateEWayBill(invoice.id))}>
+              <Button size="sm" disabled={busy === 'eway'} onClick={() => runAction('eway', () => invoicesApi.generateEWayBill(invoice.id))} className="bg-gradient-to-r from-[#0B1B45] to-[#2449C6] text-white shadow-xs">
                 {busy === 'eway' ? 'Generating…' : 'Generate E-Way Bill'}
               </Button>
             )}
@@ -111,27 +104,33 @@ function GstFilingPanel({ invoice, canManage }) {
         )}
       </div>
       {invoice.eway_bill_no && (
-        <div className="mb-1 text-xs text-ink-muted">
+        <div className="mt-2 text-xs font-mono text-slate-500">
           EWB# {invoice.eway_bill_no} · Valid until {invoice.eway_bill_valid_until || '-'}
         </div>
       )}
       {invoice.eway_bill_status === 'failed' && invoice.eway_bill_error && (
-        <div className="mb-2 rounded bg-red-50 px-2 py-1 text-xs text-danger">{invoice.eway_bill_error}</div>
+        <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-600">{invoice.eway_bill_error}</div>
       )}
 
       {transportOpen && (
-        <div className="mt-2 grid grid-cols-2 gap-2 rounded bg-page p-2">
-          <input className="input" placeholder="Transporter name" value={transporterName} onChange={(e) => setTransporterName(e.target.value)} />
-          <input className="input" placeholder="Transporter GSTIN" value={transporterGstin} onChange={(e) => setTransporterGstin(e.target.value)} />
-          <input className="input" type="number" placeholder="Distance (km)" value={distance} onChange={(e) => setDistance(e.target.value)} />
-          <input className="input" placeholder="Vehicle No" value={vehicleNo} onChange={(e) => setVehicleNo(e.target.value)} />
+        <div className="mt-3 grid grid-cols-2 gap-2.5 rounded-2xl border border-[#D5E3F7] bg-white p-3.5">
+          <input className="w-full rounded-xl border border-[#D5E3F7] bg-[#F8FAFD] px-3 py-2 text-xs font-medium text-slate-800 transition focus:border-[#2449C6] focus:bg-white focus:outline-none" placeholder="Transporter name" value={transporterName} onChange={(e) => setTransporterName(e.target.value)} />
+          <input className="w-full rounded-xl border border-[#D5E3F7] bg-[#F8FAFD] px-3 py-2 text-xs font-medium text-slate-800 transition focus:border-[#2449C6] focus:bg-white focus:outline-none" placeholder="Transporter GSTIN" value={transporterGstin} onChange={(e) => setTransporterGstin(e.target.value)} />
+          <input className="w-full rounded-xl border border-[#D5E3F7] bg-[#F8FAFD] px-3 py-2 text-xs font-medium text-slate-800 transition focus:border-[#2449C6] focus:bg-white focus:outline-none" type="number" placeholder="Distance (km)" value={distance} onChange={(e) => setDistance(e.target.value)} />
+          <input className="w-full rounded-xl border border-[#D5E3F7] bg-[#F8FAFD] px-3 py-2 text-xs font-medium text-slate-800 transition focus:border-[#2449C6] focus:bg-white focus:outline-none" placeholder="Vehicle No" value={vehicleNo} onChange={(e) => setVehicleNo(e.target.value)} />
           <div className="col-span-2 flex justify-end">
-            <Button size="sm" disabled={busy === 'transport'} onClick={saveTransport}>{busy === 'transport' ? 'Saving…' : 'Save Transport Details'}</Button>
+            <Button size="sm" disabled={busy === 'transport'} onClick={saveTransport} className="bg-gradient-to-r from-[#0B1B45] to-[#2449C6] text-white shadow-xs">
+              {busy === 'transport' ? 'Saving…' : 'Save Transport Details'}
+            </Button>
           </div>
         </div>
       )}
 
-      {actionError && <div className="mt-2 rounded bg-red-50 px-2 py-1 text-xs text-danger">{actionError}</div>}
+      {actionError && (
+        <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-600">
+          {actionError}
+        </div>
+      )}
     </div>
   );
 }
@@ -141,50 +140,68 @@ function ViewModal({ id, onClose }) {
   const { data } = useQuery({ queryKey: ['invoice', id], queryFn: () => invoicesApi.get(id) });
   if (!data) return null;
   return (
-    <div className="fixed inset-0 z-20 flex items-center justify-center bg-black/30 p-4">
-      <div className="max-h-[85vh] w-[640px] overflow-auto card p-5">
-        <div className="mb-1 flex items-center justify-between">
-          <span className="text-lg font-semibold text-ink">{data.invoice_no || data.original_invoice_no || `Held #${data.id}`}</span>
-          <Badge variant={STATUS_VARIANT[data.payment_status] || 'neutral'}>{data.payment_status || data.status}</Badge>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs">
+      <div className="max-h-[85vh] w-[640px] overflow-auto rounded-3xl border border-[#D5E3F7] bg-white p-6 shadow-2xl">
+        <div className="mb-2 flex items-center justify-between border-b border-[#EAF1FA] pb-3">
+          <div className="flex items-center gap-2.5">
+            <span className="font-mono text-lg font-black text-[#0B1B45]">{data.invoice_no || data.original_invoice_no || `Held #${data.id}`}</span>
+            <Badge variant={STATUS_VARIANT[data.payment_status] || 'neutral'}>{data.payment_status || data.status}</Badge>
+          </div>
+          <button
+            onClick={onClose}
+            className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
+          >
+            <X className="h-5 w-5" />
+          </button>
         </div>
-        <div className="mb-3 text-xs text-ink-muted">
+        <div className="mb-4 text-xs font-medium text-slate-500">
           {data.customer_name || 'Walk-in'} · {data.invoice_date} · Billed by {data.employee_name}
-          {data.edited_at && <span> · Last edited {data.edited_at}</span>}
+          {data.edited_at && <span className="text-amber-600 font-semibold"> · Last edited {data.edited_at}</span>}
         </div>
-        <table className="mb-3 w-full text-xs">
-          <thead>
-            <tr className="border-b border-border-soft text-left text-ink-muted">
-              <th className="py-1">Item</th><th className="py-1">Qty</th><th className="py-1">Rate</th><th className="py-1">Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.items.map((line) => (
-              <tr key={line.id} className="border-b border-border-soft">
-                <td className="py-1">{line.item_name_snapshot}</td>
-                <td className="py-1">{line.qty} {line.unit_code}</td>
-                <td className="py-1">{line.rate}</td>
-                <td className="py-1">{line.net_amount ?? line.line_total}</td>
+        <div className="mb-4 overflow-hidden rounded-2xl border border-[#D5E3F7]">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-[#D5E3F7] bg-[#F5F8FF] text-left text-xs font-bold uppercase tracking-wider text-slate-600">
+                <th className="py-2.5 px-3">Item</th>
+                <th className="py-2.5 px-3">Qty</th>
+                <th className="py-2.5 px-3 text-right">Rate</th>
+                <th className="py-2.5 px-3 text-right">Total</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-        <div className="mb-3 flex justify-end text-sm font-semibold text-ink">Grand Total: Rs. {data.grand_total}</div>
+            </thead>
+            <tbody className="divide-y divide-[#EAF1FA]">
+              {data.items.map((line) => (
+                <tr key={line.id} className="hover:bg-[#F8FAFD]">
+                  <td className="py-2.5 px-3 font-bold text-[#0B1B45]">{line.item_name_snapshot}</td>
+                  <td className="py-2.5 px-3 font-semibold text-slate-700">{line.qty} {line.unit_code}</td>
+                  <td className="py-2.5 px-3 text-right text-slate-600 whitespace-nowrap">₹{line.rate}</td>
+                  <td className="py-2.5 px-3 text-right font-bold text-[#2449C6] whitespace-nowrap">₹{line.net_amount ?? line.line_total}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="mb-4 flex justify-end">
+          <div className="rounded-xl border border-[#D5E3F7] bg-gradient-to-r from-[#F8FAFD] to-[#EDF5FF] px-4 py-2 text-right">
+            <span className="text-xs font-semibold text-slate-600 mr-2">Grand Total:</span>
+            <span className="text-base font-black text-[#0B1B45]">₹{data.grand_total}</span>
+          </div>
+        </div>
         {data.bill_type === 'gst' && data.status === 'completed' && (
           <GstFilingPanel invoice={data} canManage={canManageGst} />
         )}
         {data.status === 'cancelled' && (
-          <div className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-danger">
+          <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-xs font-semibold text-rose-600">
             Cancelled by {data.cancelled_by_name || 'user'} on {data.cancelled_at}{data.cancel_reason ? ` — ${data.cancel_reason}` : ''}
           </div>
         )}
         {data.status === 'deleted' && (
-          <div className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-danger">
+          <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-xs font-semibold text-rose-600">
             Deleted by {data.deleted_by_name || 'user'} on {data.deleted_at}{data.delete_reason ? ` — ${data.delete_reason}` : ''}
             {data.original_invoice_no && <span> · was {data.original_invoice_no}, number freed for reuse</span>}
           </div>
         )}
         <div className="flex justify-end">
-          <Button variant="secondary" onClick={onClose}>Close</Button>
+          <Button variant="secondary" onClick={onClose} className="border-[#D5E3F7]">Close</Button>
         </div>
       </div>
     </div>
@@ -194,10 +211,10 @@ function ViewModal({ id, onClose }) {
 function CancelModal({ invoice, onClose, onConfirm, error }) {
   const [reason, setReason] = useState('');
   return (
-    <div className="fixed inset-0 z-20 flex items-center justify-center bg-black/30 p-4">
-      <div className="w-[420px] card p-5">
-        <div className="mb-1 text-lg font-semibold text-ink">Cancel {invoice.invoice_no}</div>
-        <p className="mb-3 text-xs text-ink-muted">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs">
+      <div className="w-[440px] rounded-3xl border border-[#D5E3F7] bg-white p-6 shadow-2xl">
+        <div className="mb-2 text-lg font-bold text-[#0B1B45]">Cancel {invoice.invoice_no}</div>
+        <p className="mb-3 text-xs text-slate-500 font-medium">
           This reverses the stock deducted by this sale and, if it was a credit sale, reduces the customer's
           outstanding by whatever is still unpaid. This cannot be undone — rebill the customer separately if needed.
         </p>
@@ -205,12 +222,12 @@ function CancelModal({ invoice, onClose, onConfirm, error }) {
           value={reason}
           onChange={(e) => setReason(e.target.value)}
           placeholder="Reason for cancellation (optional)"
-          className="input mb-3 h-20 resize-none"
+          className="w-full rounded-xl border border-[#D5E3F7] bg-[#F8FAFD] p-3 text-xs text-slate-800 transition focus:border-[#2449C6] focus:bg-white focus:outline-none mb-3 h-20 resize-none"
         />
-        {error && <p className="mb-2 text-sm text-danger">{error}</p>}
-        <div className="flex justify-end gap-2">
-          <Button variant="secondary" onClick={onClose}>Back</Button>
-          <Button variant="danger" onClick={() => onConfirm(reason)}>Confirm Cancel</Button>
+        {error && <p className="mb-3 text-xs font-semibold text-rose-600 bg-rose-50 p-2.5 rounded-xl border border-rose-200">{error}</p>}
+        <div className="flex justify-end gap-2.5">
+          <Button variant="secondary" onClick={onClose} className="border-[#D5E3F7]">Back</Button>
+          <Button variant="danger" onClick={() => onConfirm(reason)} className="bg-gradient-to-r from-rose-600 to-rose-700 text-white shadow-xs">Confirm Cancel</Button>
         </div>
       </div>
     </div>
@@ -220,10 +237,10 @@ function CancelModal({ invoice, onClose, onConfirm, error }) {
 function DeleteModal({ invoice, onClose, onConfirm, error }) {
   const [reason, setReason] = useState('');
   return (
-    <div className="fixed inset-0 z-20 flex items-center justify-center bg-black/30 p-4">
-      <div className="w-[420px] card p-5">
-        <div className="mb-1 text-lg font-semibold text-ink">Delete {invoice.invoice_no}</div>
-        <p className="mb-3 text-xs text-ink-muted">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs">
+      <div className="w-[440px] rounded-3xl border border-[#D5E3F7] bg-white p-6 shadow-2xl">
+        <div className="mb-2 text-lg font-bold text-[#0B1B45]">Delete {invoice.invoice_no}</div>
+        <p className="mb-3 text-xs text-slate-500 font-medium">
           This reverses the stock deducted by this sale and, if it was a credit sale, reduces the customer's
           outstanding by whatever is still unpaid — same as Cancel. Unlike Cancel, the invoice is hidden from
           reports entirely and its number ({invoice.invoice_no}) becomes available for reuse by the next invoice.
@@ -233,12 +250,12 @@ function DeleteModal({ invoice, onClose, onConfirm, error }) {
           value={reason}
           onChange={(e) => setReason(e.target.value)}
           placeholder="Reason for deletion (optional)"
-          className="input mb-3 h-20 resize-none"
+          className="w-full rounded-xl border border-[#D5E3F7] bg-[#F8FAFD] p-3 text-xs text-slate-800 transition focus:border-[#2449C6] focus:bg-white focus:outline-none mb-3 h-20 resize-none"
         />
-        {error && <p className="mb-2 text-sm text-danger">{error}</p>}
-        <div className="flex justify-end gap-2">
-          <Button variant="secondary" onClick={onClose}>Back</Button>
-          <Button variant="danger" onClick={() => onConfirm(reason)}>Confirm Delete</Button>
+        {error && <p className="mb-3 text-xs font-semibold text-rose-600 bg-rose-50 p-2.5 rounded-xl border border-rose-200">{error}</p>}
+        <div className="flex justify-end gap-2.5">
+          <Button variant="secondary" onClick={onClose} className="border-[#D5E3F7]">Back</Button>
+          <Button variant="danger" onClick={() => onConfirm(reason)} className="bg-gradient-to-r from-rose-600 to-rose-700 text-white shadow-xs">Confirm Delete</Button>
         </div>
       </div>
     </div>
@@ -255,7 +272,7 @@ function EditModal({ id, onClose }) {
   const customersQuery = useQuery({ queryKey: ['customers'], queryFn: customersApi.list });
 
   const [customerId, setCustomerId] = useState('');
-  const [lines, setLines] = useState(null); // null until invoice loads
+  const [lines, setLines] = useState(null);
   const [error, setError] = useState('');
   const [confirming, setConfirming] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -353,34 +370,41 @@ function EditModal({ id, onClose }) {
 
   if (!invoice || lines === null) {
     return (
-      <div className="fixed inset-0 z-20 flex items-center justify-center bg-black/30 p-4">
-        <div className="card p-6 text-sm text-ink-muted">Loading invoice…</div>
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs">
+        <div className="rounded-3xl border border-[#D5E3F7] bg-white p-8 text-sm font-semibold text-slate-500 shadow-2xl">
+          Loading invoice…
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="fixed inset-0 z-20 flex items-center justify-center bg-black/30 p-4">
-      <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto card p-5">
-        <div className="mb-1 flex items-center justify-between">
-          <div className="text-lg font-semibold text-ink">Edit {invoice.invoice_no}</div>
-          <Badge variant="warning">Original total: Rs. {invoice.grand_total}</Badge>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs">
+      <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-[#D5E3F7] bg-white p-6 shadow-2xl">
+        <div className="mb-2 flex items-center justify-between border-b border-[#EAF1FA] pb-3">
+          <div className="text-lg font-bold text-[#0B1B45]">Edit {invoice.invoice_no}</div>
+          <Badge variant="warning">Original total: ₹{invoice.grand_total}</Badge>
         </div>
-        <p className="mb-3 text-xs text-ink-muted">
+        <p className="mb-4 text-xs font-medium text-slate-500">
           Stock for the old items is reversed and stock for the new items is applied automatically. Payments already
-          collected (Rs. {invoice.paid_amount}) are never altered — only the remaining balance and the customer's
+          collected (₹{invoice.paid_amount}) are never altered — only the remaining balance and the customer's
           credit are adjusted by the difference.
         </p>
 
         {success ? (
-          <div className="rounded-lg bg-success-bg px-4 py-3 text-sm font-medium text-success">
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs font-bold text-emerald-800 flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
             Invoice updated successfully.
           </div>
         ) : (
           <>
-            <div className="mb-3">
-              <label className="mb-1 block text-xs font-medium text-ink-muted">Customer</label>
-              <select value={customerId} onChange={(e) => setCustomerId(e.target.value)} className="input w-64">
+            <div className="mb-4">
+              <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-600">Customer</label>
+              <select
+                value={customerId}
+                onChange={(e) => setCustomerId(e.target.value)}
+                className="w-full sm:w-72 rounded-xl border border-[#D5E3F7] bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-800 transition focus:border-[#2449C6] focus:outline-none"
+              >
                 <option value="">Walk-in Customer</option>
                 {customers.map((c) => (
                   <option key={c.id} value={c.id}>{c.ledger_name}</option>
@@ -388,85 +412,103 @@ function EditModal({ id, onClose }) {
               </select>
             </div>
 
-            <div className="mb-3 flex flex-col gap-2">
+            <div className="mb-4 flex flex-col gap-2.5 max-h-60 overflow-y-auto pr-1">
               {pricedLines.map((line) => (
-                <div key={line.key} className="rounded-lg border border-border-soft p-2">
-                  <div className="mb-1 flex items-center justify-between gap-2">
-                    <span className="text-sm font-semibold text-ink">{line.item.item_name}</span>
-                    <button onClick={() => removeLine(line.key)} className="text-ink-muted hover:text-danger">
-                      <Trash2 size={15} />
+                <div key={line.key} className="rounded-2xl border border-[#D5E3F7] bg-[#F8FAFD] p-3">
+                  <div className="mb-1.5 flex items-center justify-between gap-2">
+                    <span className="text-xs font-bold text-[#0B1B45]">{line.item.item_name}</span>
+                    <button onClick={() => removeLine(line.key)} className="rounded-lg p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition">
+                      <Trash2 size={14} />
                     </button>
                   </div>
-                  <div className="flex flex-wrap items-center gap-3 text-sm">
-                    <label className="flex items-center gap-1">
+                  <div className="flex flex-wrap items-center gap-3 text-xs">
+                    <label className="flex items-center gap-1.5 font-semibold text-slate-600">
                       Qty
                       <input
                         type="number" min="0" step="any" value={line.qty}
                         onChange={(e) => updateLine(line.key, { qty: e.target.value })}
-                        className="w-16 rounded border border-border-soft px-1 py-0.5 text-center"
+                        className="w-16 rounded-lg border border-[#D5E3F7] bg-white px-2 py-1 text-center font-bold text-slate-800 transition focus:border-[#2449C6] focus:outline-none"
                       />
                     </label>
-                    <label className="flex items-center gap-1">
+                    <label className="flex items-center gap-1.5 font-semibold text-slate-600">
                       Rate
                       <input
                         type="number" step="any" disabled={!canEditPrice} value={line.rate}
                         onChange={(e) => updateLine(line.key, { rate: e.target.value })}
-                        className="w-20 rounded border border-border-soft px-1 py-0.5 text-right disabled:bg-page"
+                        className="w-20 rounded-lg border border-[#D5E3F7] bg-white px-2 py-1 text-right font-bold text-slate-800 transition focus:border-[#2449C6] focus:outline-none disabled:bg-slate-50"
                       />
                     </label>
                     {canDiscount && (
-                      <label className="flex items-center gap-1">
+                      <label className="flex items-center gap-1.5 font-semibold text-slate-600">
                         Disc
-                        <div className="flex overflow-hidden rounded border border-border-soft">
-                          <button type="button" onClick={() => updateLine(line.key, { discount_mode: 'percent' })} className={`px-1.5 py-0.5 text-xs font-medium ${line.discount_mode !== 'amount' ? 'bg-gold text-white' : 'bg-white text-ink-muted'}`}>%</button>
-                          <button type="button" onClick={() => updateLine(line.key, { discount_mode: 'amount' })} className={`px-1.5 py-0.5 text-xs font-medium ${line.discount_mode === 'amount' ? 'bg-gold text-white' : 'bg-white text-ink-muted'}`}>Rs.</button>
+                        <div className="flex overflow-hidden rounded-lg border border-[#D5E3F7]">
+                          <button
+                            type="button"
+                            onClick={() => updateLine(line.key, { discount_mode: 'percent' })}
+                            className={`px-2 py-0.5 text-xs font-bold transition ${line.discount_mode !== 'amount' ? 'bg-[#0B1B45] text-white' : 'bg-white text-slate-600'}`}
+                          >
+                            %
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => updateLine(line.key, { discount_mode: 'amount' })}
+                            className={`px-2 py-0.5 text-xs font-bold transition ${line.discount_mode === 'amount' ? 'bg-[#0B1B45] text-white' : 'bg-white text-slate-600'}`}
+                          >
+                            ₹
+                          </button>
                         </div>
                         {line.discount_mode === 'amount' ? (
-                          <input type="number" min="0" step="any" value={line.discount_amount} onChange={(e) => updateLine(line.key, { discount_amount: e.target.value })} className="w-16 rounded border border-border-soft px-1 py-0.5" />
+                          <input type="number" min="0" step="any" value={line.discount_amount} onChange={(e) => updateLine(line.key, { discount_amount: e.target.value })} className="w-16 rounded-lg border border-[#D5E3F7] bg-white px-2 py-1 font-bold text-slate-800 focus:border-[#2449C6] focus:outline-none" />
                         ) : (
-                          <input type="number" min="0" step="any" value={line.discount_percent} onChange={(e) => updateLine(line.key, { discount_percent: e.target.value })} className="w-14 rounded border border-border-soft px-1 py-0.5" />
+                          <input type="number" min="0" step="any" value={line.discount_percent} onChange={(e) => updateLine(line.key, { discount_percent: e.target.value })} className="w-14 rounded-lg border border-[#D5E3F7] bg-white px-2 py-1 font-bold text-slate-800 focus:border-[#2449C6] focus:outline-none" />
                         )}
                       </label>
                     )}
-                    <span className="ml-auto font-semibold text-ink">Rs. {line.priced.line_total.toFixed(2)}</span>
+                    <span className="ml-auto font-black text-[#2449C6]">₹{line.priced.line_total.toFixed(2)}</span>
                   </div>
                 </div>
               ))}
-              {lines.length === 0 && <p className="py-4 text-center text-sm text-ink-muted">No items — add at least one below.</p>}
+              {lines.length === 0 && <p className="py-4 text-center text-xs font-semibold text-slate-400">No items — add at least one below.</p>}
             </div>
 
-            <div className="mb-3 flex items-center gap-2">
-              <select onChange={(e) => { if (e.target.value) { addLine(e.target.value); e.target.value = ''; } }} className="input flex-1" defaultValue="">
+            <div className="mb-4 flex items-center gap-2">
+              <select
+                onChange={(e) => { if (e.target.value) { addLine(e.target.value); e.target.value = ''; } }}
+                className="w-full rounded-xl border border-[#D5E3F7] bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-800 transition focus:border-[#2449C6] focus:outline-none"
+                defaultValue=""
+              >
                 <option value="" disabled>+ Add an item…</option>
                 {items.map((i) => <option key={i.id} value={i.id}>{i.item_name}</option>)}
               </select>
             </div>
 
-            <div className="mb-3 rounded-lg bg-page p-3 text-sm">
-              <div className="flex justify-between text-ink-muted"><span>Subtotal</span><span>{totals.subtotal.toFixed(2)}</span></div>
-              <div className="flex justify-between text-ink-muted"><span>GST</span><span>{(totals.cgst + totals.sgst + totals.cessAmount).toFixed(2)}</span></div>
-              <div className="flex justify-between text-ink-muted"><span>Discount</span><span>{totals.discountAmount.toFixed(2)}</span></div>
-              <div className="mt-1 flex justify-between border-t border-border-soft pt-1 font-bold text-ink"><span>New Total</span><span>Rs. {totals.grandTotal.toFixed(2)}</span></div>
+            <div className="mb-4 rounded-2xl border border-[#D5E3F7] bg-gradient-to-br from-[#F8FAFD] to-[#EDF5FF] p-4 text-xs space-y-1.5">
+              <div className="flex justify-between text-slate-600 font-medium"><span>Subtotal</span><span>₹{totals.subtotal.toFixed(2)}</span></div>
+              <div className="flex justify-between text-slate-600 font-medium"><span>GST</span><span>₹{(totals.cgst + totals.sgst + totals.cessAmount).toFixed(2)}</span></div>
+              <div className="flex justify-between text-slate-600 font-medium"><span>Discount</span><span>₹{totals.discountAmount.toFixed(2)}</span></div>
+              <div className="mt-2 flex justify-between border-t border-[#D5E3F7] pt-2 text-sm font-black text-[#0B1B45]">
+                <span>New Total</span><span>₹{totals.grandTotal.toFixed(2)}</span>
+              </div>
             </div>
 
-            {error && <p className="mb-2 text-sm text-danger">{error}</p>}
+            {error && <p className="mb-3 text-xs font-semibold text-rose-600 bg-rose-50 p-2.5 rounded-xl border border-rose-200">{error}</p>}
 
             {confirming ? (
-              <div className="rounded-lg bg-warning-bg px-3 py-3 text-sm text-warning">
-                <p className="mb-2 font-medium">Are you sure you want to update this invoice?</p>
-                <p className="mb-3 text-xs">
-                  Total changes from Rs. {invoice.grand_total} to Rs. {totals.grandTotal.toFixed(2)}. Stock and the customer's
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-900 shadow-xs">
+                <p className="mb-1 font-bold">Are you sure you want to update this invoice?</p>
+                <p className="mb-3 text-[11px] font-medium text-amber-800">
+                  Total changes from ₹{invoice.grand_total} to ₹{totals.grandTotal.toFixed(2)}. Stock and the customer's
                   credit balance will be adjusted accordingly.
                 </p>
                 <div className="flex justify-end gap-2">
-                  <Button variant="secondary" size="sm" onClick={() => setConfirming(false)} disabled={editMutation.isPending}>Back</Button>
-                  <Button size="sm" onClick={() => editMutation.mutate()} disabled={editMutation.isPending}>Yes, Update Invoice</Button>
+                  <Button variant="secondary" size="sm" onClick={() => setConfirming(false)} disabled={editMutation.isPending} className="border-amber-300">Back</Button>
+                  <Button size="sm" onClick={() => editMutation.mutate()} disabled={editMutation.isPending} className="bg-gradient-to-r from-[#0B1B45] to-[#2449C6] text-white shadow-xs">Yes, Update Invoice</Button>
                 </div>
               </div>
             ) : (
-              <div className="flex justify-end gap-2">
-                <Button variant="secondary" onClick={onClose}>Cancel</Button>
-                <Button onClick={() => { setError(''); setConfirming(true); }} disabled={lines.length === 0}>Save Changes</Button>
+              <div className="flex justify-end gap-2.5">
+                <Button variant="secondary" onClick={onClose} className="border-[#D5E3F7]">Cancel</Button>
+                <Button onClick={() => { setError(''); setConfirming(true); }} disabled={lines.length === 0} className="bg-gradient-to-r from-[#0B1B45] to-[#2449C6] text-white shadow-xs">Save Changes</Button>
               </div>
             )}
           </>
@@ -474,7 +516,7 @@ function EditModal({ id, onClose }) {
 
         {success && (
           <div className="mt-4 flex justify-end">
-            <Button onClick={onClose}>Close</Button>
+            <Button onClick={onClose} className="bg-gradient-to-r from-[#0B1B45] to-[#2449C6] text-white shadow-xs">Close</Button>
           </div>
         )}
       </div>
@@ -529,24 +571,40 @@ export function InvoiceManagement() {
   }, [invoices, search]);
 
   return (
-    <div>
-      <h1 className="mb-1 text-2xl font-bold text-ink">Invoice Management</h1>
-      <p className="mb-4 text-sm text-ink-muted">Search, view, print, edit and cancel invoices.</p>
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#D5E3F7] pb-4">
+        <div>
+          <h1 className="text-2xl font-black tracking-tight text-[#0B1B45] flex items-center gap-3">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#0B1B45] to-[#2449C6] text-white shadow-xs">
+              <Receipt className="w-5 h-5" />
+            </span>
+            Invoice Management
+          </h1>
+          <p className="text-xs font-semibold text-slate-500 mt-1">Search, view, print, edit, and cancel invoices</p>
+        </div>
+      </div>
 
-      <Card
-        title="Invoices"
-        actions={
-          <div className="flex items-center gap-2">
-            <div className="relative">
-              <Search size={14} className="absolute left-2.5 top-2.5 text-ink-muted" />
+      <div className="rounded-2xl border border-[#D5E3F7] bg-white shadow-xs overflow-hidden">
+        <div className="px-5 py-4 border-b border-[#EAF1FA] flex flex-col sm:flex-row items-center justify-between gap-3 bg-gradient-to-r from-[#F5F8FF] to-white">
+          <h3 className="font-bold text-[#0B1B45] text-sm flex items-center gap-2">
+            <FileText className="h-4 w-4 text-[#2449C6]" />
+            Invoices Register
+          </h3>
+          <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
+            <div className="relative flex-1 sm:w-64">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search invoice # or customer"
-                className="input w-56 pl-8 text-sm"
+                className="w-full rounded-xl border border-[#D5E3F7] bg-[#F8FAFD] pl-9 pr-3.5 py-2 text-sm font-medium text-slate-800 transition focus:border-[#2449C6] focus:bg-white focus:outline-none"
               />
             </div>
-            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="input w-40 text-sm">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="rounded-xl border border-[#D5E3F7] bg-white px-3 py-2 text-sm font-semibold text-slate-800 transition focus:border-[#2449C6] focus:outline-none"
+            >
               <option value="">All statuses</option>
               <option value="completed">Completed</option>
               <option value="cancelled">Cancelled</option>
@@ -554,55 +612,96 @@ export function InvoiceManagement() {
               <option value="deleted">Deleted</option>
             </select>
           </div>
-        }
-      >
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border-soft text-left text-xs uppercase text-ink-muted">
-              <th className="px-4 py-2">Invoice #</th><th className="px-4 py-2">Customer</th><th className="px-4 py-2">Date</th>
-              <th className="px-4 py-2">Total</th><th className="px-4 py-2">Payment</th><th className="px-4 py-2">Status</th><th className="px-4 py-2 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((inv) => (
-              <tr key={inv.id} className="border-b border-border-soft">
-                <td className="px-4 py-2 font-medium text-ink">{inv.invoice_no || inv.original_invoice_no || `Held #${inv.id}`}</td>
-                <td className="px-4 py-2">{inv.customer_name || 'Walk-in'}</td>
-                <td className="px-4 py-2 text-ink-muted">{inv.invoice_date}</td>
-                <td className="px-4 py-2">{inv.grand_total}</td>
-                <td className="px-4 py-2"><Badge variant={STATUS_VARIANT[inv.payment_status] || 'neutral'}>{inv.payment_status || '-'}</Badge></td>
-                <td className="px-4 py-2 capitalize">{inv.status}{inv.edited_at ? ' (edited)' : ''}</td>
-                <td className="px-4 py-2">
-                  <div className="flex justify-end gap-2">
-                    <button title="View" onClick={() => setViewingId(inv.id)} className="text-ink-muted hover:text-ink">
-                      <Eye size={16} />
-                    </button>
-                    <button title="Print" onClick={() => setPrintingId(inv.id)} className="text-ink-muted hover:text-ink">
-                      <Printer size={16} />
-                    </button>
-                    {canEdit && inv.status === 'completed' && (
-                      <button title="Edit" onClick={() => setEditingId(inv.id)} className="text-ink-muted hover:text-gold">
-                        <Pencil size={16} />
-                      </button>
-                    )}
-                    {canCancel && inv.status === 'completed' && (
-                      <button title="Cancel" onClick={() => { setCancelling(inv); setCancelError(''); }} className="text-danger hover:text-red-700">
-                        <Ban size={16} />
-                      </button>
-                    )}
-                    {canDelete && inv.status === 'completed' && (
-                      <button title="Delete" onClick={() => { setDeleting(inv); setDeleteError(''); }} className="text-danger hover:text-red-700">
-                        <Trash2 size={16} />
-                      </button>
-                    )}
-                  </div>
-                </td>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="border-b border-[#D5E3F7] bg-[#F5F8FF] text-xs font-bold uppercase tracking-wider text-slate-600">
+                <th className="px-3.5 py-2.5">Invoice #</th>
+                <th className="px-3.5 py-2.5">Customer</th>
+                <th className="px-3.5 py-2.5">Date</th>
+                <th className="px-3.5 py-2.5 text-right">Total</th>
+                <th className="px-3.5 py-2.5">Payment</th>
+                <th className="px-3.5 py-2.5">Status</th>
+                <th className="px-3.5 py-2.5 text-right">Actions</th>
               </tr>
-            ))}
-            {filtered.length === 0 && <tr><td colSpan={7} className="px-4 py-6 text-center text-ink-muted">No invoices found.</td></tr>}
-          </tbody>
-        </table>
-      </Card>
+            </thead>
+            <tbody className="divide-y divide-[#EAF1FA]">
+              {filtered.map((inv) => (
+                <tr key={inv.id} className="hover:bg-[#F8FAFD] transition">
+                  <td className="px-3.5 py-2.5 font-mono font-bold text-[#0B1B45]">
+                    {inv.invoice_no || inv.original_invoice_no || `Held #${inv.id}`}
+                  </td>
+                  <td className="px-3.5 py-2.5 font-medium text-slate-800">{inv.customer_name || 'Walk-in'}</td>
+                  <td className="px-3.5 py-2.5 text-slate-500 font-mono text-xs">{inv.invoice_date}</td>
+                  <td className="px-3.5 py-2.5 text-right font-black text-[#2449C6] whitespace-nowrap">₹{inv.grand_total}</td>
+                  <td className="px-3.5 py-2.5">
+                    <Badge variant={STATUS_VARIANT[inv.payment_status] || 'neutral'}>
+                      {inv.payment_status || '-'}
+                    </Badge>
+                  </td>
+                  <td className="px-3.5 py-2.5 capitalize font-semibold text-slate-600">
+                    {inv.status}{inv.edited_at ? ' (edited)' : ''}
+                  </td>
+                  <td className="px-3.5 py-2.5 text-right">
+                    <div className="flex justify-end gap-1.5">
+                      <button
+                        title="View"
+                        onClick={() => setViewingId(inv.id)}
+                        className="rounded-lg border border-[#D5E3F7] bg-white p-1.5 text-slate-600 hover:bg-[#EDF5FF] hover:text-[#2449C6] transition shadow-2xs"
+                      >
+                        <Eye size={14} />
+                      </button>
+                      <button
+                        title="Print"
+                        onClick={() => setPrintingId(inv.id)}
+                        className="rounded-lg border border-[#D5E3F7] bg-white p-1.5 text-slate-600 hover:bg-[#EDF5FF] hover:text-[#2449C6] transition shadow-2xs"
+                      >
+                        <Printer size={14} />
+                      </button>
+                      {canEdit && inv.status === 'completed' && (
+                        <button
+                          title="Edit"
+                          onClick={() => setEditingId(inv.id)}
+                          className="rounded-lg border border-[#D5E3F7] bg-white p-1.5 text-amber-600 hover:bg-amber-50 transition shadow-2xs"
+                        >
+                          <Pencil size={14} />
+                        </button>
+                      )}
+                      {canCancel && inv.status === 'completed' && (
+                        <button
+                          title="Cancel"
+                          onClick={() => { setCancelling(inv); setCancelError(''); }}
+                          className="rounded-lg border border-rose-200 bg-rose-50 p-1.5 text-rose-600 hover:bg-rose-100 transition shadow-2xs"
+                        >
+                          <Ban size={14} />
+                        </button>
+                      )}
+                      {canDelete && inv.status === 'completed' && (
+                        <button
+                          title="Delete"
+                          onClick={() => { setDeleting(inv); setDeleteError(''); }}
+                          className="rounded-lg border border-rose-200 bg-rose-50 p-1.5 text-rose-600 hover:bg-rose-100 transition shadow-2xs"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {filtered.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="px-4 py-10 text-center text-slate-400 text-xs font-semibold">
+                    No invoices found.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
       {viewingId && <ViewModal id={viewingId} onClose={() => setViewingId(null)} />}
       {printingId && <PrintPreviewModal invoiceId={printingId} onClose={() => setPrintingId(null)} />}

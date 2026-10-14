@@ -63,7 +63,7 @@ function PurchaseItemLineEditor({ lines, setLines, items, unitsByItemId, onPickI
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <label className="text-xs font-semibold text-ink-muted">GRN Item Lines *</label>
+        <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600">GRN Item Lines <span className="text-red-500">*</span></label>
       </div>
 
       {lines.map((line) => {
@@ -71,7 +71,7 @@ function PurchaseItemLineEditor({ lines, setLines, items, unitsByItemId, onPickI
         const priced = priceGrnLine(line);
         const availableUnits = unitsByItemId[line.item_id] || (item ? [{ id: item.base_unit_id, short_code: item.base_unit_code }] : []);
         return (
-          <div key={line.key} className="rounded-lg border border-border-soft/60 p-3 bg-surface-subtle/20 space-y-2">
+          <div key={line.key} className="rounded-xl border border-[#D5E3F7] p-3.5 bg-[#F8FAFD] space-y-2.5">
             <div className="flex items-center gap-2">
               <select
                 value={line.item_id}
@@ -86,7 +86,7 @@ function PurchaseItemLineEditor({ lines, setLines, items, unitsByItemId, onPickI
                   });
                   if (picked) onPickItem(picked.id);
                 }}
-                className="input text-xs flex-1"
+                className="flex-1 rounded-xl border border-[#D5E3F7] bg-white px-3 py-1.5 text-xs font-semibold text-slate-900 focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15 outline-none transition-all"
               >
                 <option value="">Select Item</option>
                 {items.map((i) => (
@@ -100,15 +100,13 @@ function PurchaseItemLineEditor({ lines, setLines, items, unitsByItemId, onPickI
                 onChange={(e) => {
                   const unitId = e.target.value;
                   if (item) {
-                    // Switching to the item's secondary unit (e.g. PCS -> BOX)
-                    // re-prices from S-MRP/S-NET_PURRATE, never the primary rate.
                     const pricing = resolveUnitPricing(item, unitId ? Number(unitId) : null);
                     updateLine(line.key, { unit_id: unitId, mrp: pricing.mrp, rate: pricing.net_purrate });
                   } else {
                     updateLine(line.key, { unit_id: unitId });
                   }
                 }}
-                className="input text-xs w-24"
+                className="w-24 rounded-xl border border-[#D5E3F7] bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-900 focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15 outline-none transition-all"
               >
                 <option value="">Unit</option>
                 {availableUnits.map((u) => (
@@ -121,7 +119,7 @@ function PurchaseItemLineEditor({ lines, setLines, items, unitsByItemId, onPickI
                 <button
                   type="button"
                   onClick={() => removeLine(line.key)}
-                  className="p-1 text-red-400 hover:text-red-300 transition"
+                  className="rounded-lg p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 transition"
                   title="Remove Line"
                 >
                   <X className="w-4 h-4" />
@@ -131,51 +129,51 @@ function PurchaseItemLineEditor({ lines, setLines, items, unitsByItemId, onPickI
 
             <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 text-xs">
               <div>
-                <label className="text-[10px] text-ink-muted block">Qty</label>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-0.5">Qty</label>
                 <input
                   type="number"
                   step="any"
                   min="0"
                   value={line.qty}
                   onChange={(e) => updateLine(line.key, { qty: e.target.value })}
-                  className="input w-full text-xs"
+                  className="w-full rounded-lg border border-[#D5E3F7] bg-white px-2 py-1 text-xs font-semibold text-slate-900 focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15 outline-none transition-all"
                 />
               </div>
               <div>
-                <label className="text-[10px] text-ink-muted block">Free Qty</label>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-0.5">Free Qty</label>
                 <input
                   type="number"
                   step="any"
                   min="0"
                   value={line.free_qty}
                   onChange={(e) => updateLine(line.key, { free_qty: e.target.value })}
-                  className="input w-full text-xs"
+                  className="w-full rounded-lg border border-[#D5E3F7] bg-white px-2 py-1 text-xs font-semibold text-slate-900 focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15 outline-none transition-all"
                 />
               </div>
               <div>
-                <label className="text-[10px] text-ink-muted block">MRP</label>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-0.5">MRP</label>
                 <input
                   type="number"
                   step="any"
                   min="0"
                   value={line.mrp}
                   onChange={(e) => updateLine(line.key, { mrp: e.target.value })}
-                  className="input w-full text-xs"
+                  className="w-full rounded-lg border border-[#D5E3F7] bg-white px-2 py-1 text-xs font-semibold text-slate-900 focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15 outline-none transition-all"
                 />
               </div>
               <div>
-                <label className="text-[10px] text-ink-muted block">Purchase Rate</label>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-0.5">Pur Rate</label>
                 <input
                   type="number"
                   step="any"
                   min="0"
                   value={line.rate}
                   onChange={(e) => updateLine(line.key, { rate: e.target.value })}
-                  className="input w-full text-xs"
+                  className="w-full rounded-lg border border-[#D5E3F7] bg-white px-2 py-1 text-xs font-semibold text-slate-900 focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15 outline-none transition-all"
                 />
               </div>
               <div>
-                <label className="text-[10px] text-ink-muted block">Disc (%)</label>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-0.5">Disc (%)</label>
                 <input
                   type="number"
                   step="any"
@@ -183,25 +181,25 @@ function PurchaseItemLineEditor({ lines, setLines, items, unitsByItemId, onPickI
                   max="100"
                   value={line.discount_percent}
                   onChange={(e) => updateLine(line.key, { discount_percent: e.target.value })}
-                  className="input w-full text-xs"
+                  className="w-full rounded-lg border border-[#D5E3F7] bg-white px-2 py-1 text-xs font-semibold text-slate-900 focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15 outline-none transition-all"
                 />
               </div>
               <div>
-                <label className="text-[10px] text-ink-muted block">Tax (%)</label>
+                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-0.5">Tax (%)</label>
                 <input
                   type="number"
                   step="any"
                   min="0"
                   value={line.tax_percent}
                   onChange={(e) => updateLine(line.key, { tax_percent: e.target.value })}
-                  className="input w-full text-xs"
+                  className="w-full rounded-lg border border-[#D5E3F7] bg-white px-2 py-1 text-xs font-semibold text-slate-900 focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15 outline-none transition-all"
                 />
               </div>
             </div>
 
-            <div className="flex items-center justify-between text-[11px] text-ink-muted pt-1 border-t border-border-soft/40">
-              <span>Total Qty: <strong className="text-ink">{priced.totalQty}</strong></span>
-              <span>Net: <strong className="text-emerald-400">₹{priced.netAmount.toFixed(2)}</strong></span>
+            <div className="flex items-center justify-between text-xs text-slate-600 pt-1.5 border-t border-[#D5E3F7]">
+              <span>Total Qty: <strong className="text-slate-900">{priced.totalQty}</strong></span>
+              <span>Net: <strong className="text-[#2449C6] font-bold">₹{priced.netAmount.toFixed(2)}</strong></span>
             </div>
           </div>
         );
@@ -210,9 +208,9 @@ function PurchaseItemLineEditor({ lines, setLines, items, unitsByItemId, onPickI
       <button
         type="button"
         onClick={addLine}
-        className="text-xs font-semibold text-indigo-400 hover:text-indigo-300 transition"
+        className="inline-flex items-center gap-1.5 text-xs font-bold text-[#2449C6] hover:text-[#142B5C] py-1 transition"
       >
-        + Add Another Item
+        <Plus size={14} /> Add Another Item
       </button>
     </div>
   );
@@ -335,30 +333,32 @@ function GrnFormCard({ editing, onDone, items, unitsByItemId, onPickItem }) {
   const saving = createMutation.isPending || updateMutation.isPending;
 
   return (
-    <div className="card p-5 space-y-4 sticky top-6">
-      <div className="flex items-center justify-between border-b border-border-soft pb-3">
-        <h2 className="font-semibold text-ink text-base flex items-center gap-2">
-          {isEdit ? <Pencil className="w-4 h-4 text-cyan-400" /> : <Plus className="w-4 h-4 text-emerald-400" />}
+    <div className="rounded-2xl border border-[#D5E3F7] bg-white shadow-xs p-5 space-y-4 sticky top-6">
+      <div className="flex items-center justify-between border-b border-[#D5E3F7] pb-3">
+        <h2 className="text-base font-bold text-[#0B1B45] flex items-center gap-2">
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#EDF5FF] text-[#2449C6]">
+            {isEdit ? <Pencil className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+          </span>
           {isEdit ? `Edit ${editing.grn_no}` : 'New GRN (Goods Received)'}
         </h2>
         {isEdit && (
-          <button onClick={onDone} className="text-xs text-ink-muted hover:text-ink underline">
+          <button onClick={onDone} className="text-xs font-bold text-[#2449C6] hover:underline">
             Cancel Edit
           </button>
         )}
       </div>
 
-      <div className="space-y-3">
-        {error && <div className="text-xs text-red-400 bg-red-950/40 p-2.5 rounded border border-red-800/40">{error}</div>}
+      <div className="space-y-3.5">
+        {error && <div className="text-xs font-semibold text-red-800 bg-red-50 p-2.5 rounded-xl border border-red-200">{error}</div>}
 
         <div>
-          <label className="text-xs font-medium text-ink-muted block mb-1">Supplier *</label>
+          <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">Supplier <span className="text-red-500">*</span></label>
           <select
             required
             disabled={isEdit}
             value={supplierId}
             onChange={(e) => setSupplierId(e.target.value)}
-            className="input w-full disabled:opacity-50"
+            className="w-full rounded-xl border border-[#D5E3F7] bg-[#F8FAFD] px-3 py-2 text-xs font-semibold text-slate-900 focus:bg-white focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15 outline-none transition-all disabled:opacity-60"
           >
             <option value="">-- Select Supplier --</option>
             {suppliers.map((s) => (
@@ -371,22 +371,22 @@ function GrnFormCard({ editing, onDone, items, unitsByItemId, onPickItem }) {
 
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="text-xs font-medium text-ink-muted block mb-1">Supplier Invoice #</label>
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">Supplier Invoice #</label>
             <input
               type="text"
               placeholder="INV-98765"
               value={supplierInvoiceNo}
               onChange={(e) => setSupplierInvoiceNo(e.target.value)}
-              className="input w-full"
+              className="w-full rounded-xl border border-[#D5E3F7] bg-[#F8FAFD] px-3 py-2 text-xs font-semibold text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15 outline-none transition-all"
             />
           </div>
           <div>
-            <label className="text-xs font-medium text-ink-muted block mb-1">Payment Mode</label>
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">Payment Mode</label>
             <select
               disabled={isEdit}
               value={paymentMode}
               onChange={(e) => setPaymentMode(e.target.value)}
-              className="input w-full disabled:opacity-50"
+              className="w-full rounded-xl border border-[#D5E3F7] bg-[#F8FAFD] px-3 py-2 text-xs font-semibold text-slate-900 focus:bg-white focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15 outline-none transition-all disabled:opacity-60"
             >
               <option value="credit">Credit</option>
               <option value="cash">Cash</option>
@@ -397,7 +397,7 @@ function GrnFormCard({ editing, onDone, items, unitsByItemId, onPickItem }) {
         </div>
 
         <div>
-          <label className="text-xs font-medium text-ink-muted block mb-1">Paid Amount (₹)</label>
+          <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">Paid Amount (₹)</label>
           <input
             disabled={isEdit}
             type="number"
@@ -405,7 +405,7 @@ function GrnFormCard({ editing, onDone, items, unitsByItemId, onPickItem }) {
             placeholder="0.00"
             value={paidAmount}
             onChange={(e) => setPaidAmount(e.target.value)}
-            className="input w-full disabled:opacity-50"
+            className="w-full rounded-xl border border-[#D5E3F7] bg-[#F8FAFD] px-3 py-2 text-xs font-semibold text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15 outline-none transition-all disabled:opacity-60"
           />
         </div>
 
@@ -417,25 +417,25 @@ function GrnFormCard({ editing, onDone, items, unitsByItemId, onPickItem }) {
           onPickItem={onPickItem}
         />
 
-        <div className="p-3 rounded-lg bg-surface-subtle/30 border border-border-soft/60 space-y-1 text-xs">
-          <div className="flex justify-between text-ink-muted">
-            <span>Total Qty: <strong className="text-ink">{totals.qty}</strong></span>
-            <span>Free Qty: <strong className="text-ink">{totals.freeQty}</strong></span>
+        <div className="p-3.5 rounded-xl bg-gradient-to-br from-[#EDF5FF] to-[#F5F8FF] border border-[#D5E3F7] space-y-1.5 text-xs">
+          <div className="flex justify-between text-slate-600">
+            <span>Total Qty: <strong className="text-slate-900">{totals.qty}</strong></span>
+            <span>Free Qty: <strong className="text-slate-900">{totals.freeQty}</strong></span>
           </div>
-          <div className="flex justify-between text-ink-muted">
-            <span>Gross Total: <strong>₹{totals.gross.toFixed(2)}</strong></span>
-            <span>Discount: <strong>₹{totals.discount.toFixed(2)}</strong></span>
+          <div className="flex justify-between text-slate-600">
+            <span>Gross Total: <strong className="text-slate-900">₹{totals.gross.toFixed(2)}</strong></span>
+            <span>Discount: <strong className="text-slate-900">₹{totals.discount.toFixed(2)}</strong></span>
           </div>
-          <div className="flex justify-between text-ink font-semibold text-sm pt-1 border-t border-border-soft/40">
+          <div className="flex justify-between text-slate-900 font-bold text-sm pt-2 border-t border-[#D5E3F7]">
             <span>Grand Total:</span>
-            <span className="text-emerald-400">₹{totals.net.toFixed(2)}</span>
+            <span className="text-[#2449C6] text-base font-extrabold">₹{totals.net.toFixed(2)}</span>
           </div>
         </div>
 
         {confirming && isEdit ? (
-          <div className="rounded-lg bg-amber-500/10 border border-amber-500/30 p-3 text-xs text-amber-300 space-y-2">
-            <p className="font-semibold">Confirm GRN Update?</p>
-            <p className="text-[11px] text-amber-400/80">Stock and supplier balances will be recalculated.</p>
+          <div className="rounded-xl bg-amber-50 border border-amber-200 p-3.5 text-xs text-amber-900 space-y-2">
+            <p className="font-bold">Confirm GRN Update?</p>
+            <p className="text-[11px] text-amber-700">Stock and supplier balances will be recalculated.</p>
             <div className="flex justify-end gap-2 pt-1">
               <Button variant="secondary" onClick={() => setConfirming(false)} disabled={saving}>
                 Back
@@ -453,7 +453,7 @@ function GrnFormCard({ editing, onDone, items, unitsByItemId, onPickItem }) {
               onClick={() => (isEdit ? setConfirming(true) : submit())}
               disabled={!supplierId || validLines.length === 0 || saving}
               loading={saving}
-              className="w-full"
+              className="w-full justify-center py-2.5 text-xs font-bold"
             >
               {isEdit ? 'Save Changes' : 'Save GRN & Update Stock'}
             </Button>
@@ -464,7 +464,7 @@ function GrnFormCard({ editing, onDone, items, unitsByItemId, onPickItem }) {
   );
 }
 
-function GrnPanel({ canManage, canEdit, canViewCost, canDelete }) {
+export function GrnPanel({ canManage, canEdit, canViewCost, canDelete }) {
   const queryClient = useQueryClient();
   const [editingGrn, setEditingGrn] = useState(undefined);
   const [unitsByItemId, setUnitsByItemId] = useState({});
@@ -612,117 +612,117 @@ function GrnPanel({ canManage, canEdit, canViewCost, canDelete }) {
 
       {/* Right Column Table */}
       <div className="lg:col-span-7 space-y-4">
-        <div className="card p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="rounded-2xl border border-[#D5E3F7] bg-white shadow-xs p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="relative w-full sm:w-72">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
               placeholder="Search GRNs..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="input pl-9 w-full text-xs"
+              className="w-full rounded-xl border border-[#D5E3F7] bg-[#F8FAFD] pl-9 pr-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-400 focus:bg-white focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15 outline-none transition-all"
             />
           </div>
-          <span className="text-xs text-ink-muted">{filteredPurchases.length} record(s)</span>
+          <span className="rounded-full bg-[#EDF5FF] border border-[#D5E3F7] px-2.5 py-0.5 text-xs font-bold text-[#2449C6]">{filteredPurchases.length} record(s)</span>
         </div>
 
-        <div className="card overflow-hidden">
-          <div className="px-5 py-4 border-b border-border-soft flex flex-wrap items-center justify-between gap-2">
-            <h3 className="font-semibold text-ink text-sm">GRN Register</h3>
+        <div className="rounded-2xl border border-[#D5E3F7] bg-white shadow-xs overflow-hidden">
+          <div className="px-5 py-4 border-b border-[#D5E3F7] bg-gradient-to-r from-white via-[#F8FAFD] to-white flex flex-wrap items-center justify-between gap-2">
+            <h3 className="font-bold text-[#0B1B45] text-sm">GRN Register</h3>
             <div className="flex flex-wrap items-center gap-2">
-              <button onClick={handlePrint} className="rounded bg-gray-100 px-3 py-1.5 text-xs font-medium text-ink hover:bg-gray-200">Print</button>
-              <button onClick={handleExportPdf} className="rounded bg-gray-100 px-3 py-1.5 text-xs font-medium text-ink hover:bg-gray-200">Download PDF</button>
-              <button onClick={handleExportExcel} disabled={exporting} className="rounded bg-gray-100 px-3 py-1.5 text-xs font-medium text-ink hover:bg-gray-200 disabled:opacity-60">
+              <Button variant="secondary" size="sm" onClick={handlePrint}>Print</Button>
+              <Button variant="secondary" size="sm" onClick={handleExportPdf}>Download PDF</Button>
+              <Button variant="secondary" size="sm" onClick={handleExportExcel} disabled={exporting}>
                 {exporting ? 'Exporting…' : 'Export Excel'}
-              </button>
-              <button onClick={handleExportSelectedExcel} disabled={exporting} className="rounded bg-gray-100 px-3 py-1.5 text-xs font-medium text-ink hover:bg-gray-200 disabled:opacity-60">
+              </Button>
+              <Button variant="secondary" size="sm" onClick={handleExportSelectedExcel} disabled={exporting}>
                 Export Selected
-              </button>
-              {selectedIds.length > 0 && <span className="text-xs text-ink-muted">{selectedIds.length} selected</span>}
+              </Button>
+              {selectedIds.length > 0 && <span className="text-xs font-bold text-[#2449C6]">{selectedIds.length} selected</span>}
             </div>
           </div>
-          {exportError && <div className="mx-5 mt-3 text-xs text-red-400 bg-red-950/40 p-2 rounded border border-red-800/40">{exportError}</div>}
+          {exportError && <div className="mx-5 mt-3 text-xs font-semibold text-red-800 bg-red-50 p-2.5 rounded-xl border border-red-200">{exportError}</div>}
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
+            <table className="w-full text-left text-sm">
               <thead>
-                <tr className="border-b border-border-soft bg-surface-subtle/30 text-ink-muted font-medium">
-                  <th className="w-8 px-4 py-3">
+                <tr className="border-b border-[#D5E3F7] bg-[#F8FAFD] text-xs font-bold uppercase tracking-wider text-slate-500">
+                  <th className="w-8 px-3.5 py-2.5">
                     {filteredPurchases.length > 0 && (
-                      <input type="checkbox" checked={selectedIds.length === filteredPurchases.length} onChange={toggleSelectAll} />
+                      <input type="checkbox" checked={selectedIds.length === filteredPurchases.length} onChange={toggleSelectAll} className="accent-[#2449C6] rounded" />
                     )}
                   </th>
-                  <th className="px-4 py-3">GRN #</th>
-                  <th className="px-4 py-3">Supplier</th>
-                  {canViewCost && <th className="px-4 py-3">Grand Total</th>}
-                  {canViewCost && <th className="px-4 py-3">Pending</th>}
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3 text-right">Actions</th>
+                  <th className="px-3.5 py-2.5">GRN #</th>
+                  <th className="px-3.5 py-2.5">Supplier</th>
+                  {canViewCost && <th className="px-3.5 py-2.5 text-right">Grand Total</th>}
+                  {canViewCost && <th className="px-3.5 py-2.5 text-right">Pending</th>}
+                  <th className="px-3.5 py-2.5 text-center">Status</th>
+                  <th className="px-3.5 py-2.5 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border-soft/60">
+              <tbody className="divide-y divide-[#EAF1FA]">
                 {filteredPurchases.map((p) => (
                   <tr
                     key={p.id}
-                    className={`hover:bg-surface-subtle/20 transition ${
+                    className={`hover:bg-[#F5F8FF]/80 transition ${
                       p.status === 'cancelled' ? 'opacity-50 line-through' : ''
                     }`}
                   >
-                    <td className="px-4 py-3">
-                      <input type="checkbox" checked={selectedIds.includes(p.id)} onChange={() => toggleSelect(p.id)} />
+                    <td className="px-3.5 py-2.5">
+                      <input type="checkbox" checked={selectedIds.includes(p.id)} onChange={() => toggleSelect(p.id)} className="accent-[#2449C6] rounded" />
                     </td>
-                    <td className="px-4 py-3 font-mono font-medium text-ink">
+                    <td className="px-3.5 py-2.5 font-mono font-bold text-[#0B1B45]">
                       {p.grn_no}
-                      {p.supplier_invoice_no && <div className="text-[10px] text-ink-muted font-mono">{p.supplier_invoice_no}</div>}
+                      {p.supplier_invoice_no && <div className="text-[10px] text-slate-400 font-mono font-normal">{p.supplier_invoice_no}</div>}
                     </td>
-                    <td className="px-4 py-3 font-medium text-ink">{p.supplier_name}</td>
-                    {canViewCost && <td className="px-4 py-3 font-medium text-ink">₹{Number(p.grand_total).toFixed(2)}</td>}
+                    <td className="px-3.5 py-2.5 font-semibold text-slate-800">{p.supplier_name}</td>
+                    {canViewCost && <td className="px-3.5 py-2.5 text-right font-bold text-slate-900 whitespace-nowrap">₹{Number(p.grand_total).toFixed(2)}</td>}
                     {canViewCost && (
-                      <td className="px-4 py-3 font-semibold">
+                      <td className="px-3.5 py-2.5 text-right font-semibold whitespace-nowrap">
                         {Number(p.pending_balance) > 0 ? (
-                          <span className="text-red-400">₹{Number(p.pending_balance).toFixed(2)}</span>
+                          <span className="font-bold text-rose-600">₹{Number(p.pending_balance).toFixed(2)}</span>
                         ) : (
-                          <span className="text-emerald-400">Paid</span>
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-bold text-emerald-700 border border-emerald-200">Paid</span>
                         )}
                       </td>
                     )}
-                    <td className="px-4 py-3 capitalize">
+                    <td className="px-3.5 py-2.5 text-center capitalize">
                       {p.status === 'active' ? (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
                           Active
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-500/10 text-gray-400 border border-gray-500/20">
-                          <span className="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 border border-slate-200">
                           {p.status}
                         </span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-right space-x-1">
-                      {canEdit && p.status === 'active' && (
-                        <button
-                          onClick={() => openEdit(p)}
-                          className="p-1 rounded hover:bg-surface-subtle text-ink-muted hover:text-cyan-400 transition"
-                          title="Edit GRN"
-                        >
-                          <Pencil className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                      {canDelete && p.status === 'active' && (
-                        <button
-                          onClick={() => deleteMutation.mutate(p.id)}
-                          className="p-1 rounded hover:bg-surface-subtle text-ink-muted hover:text-red-400 transition"
-                          title="Delete GRN"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
+                    <td className="px-3.5 py-2.5 text-right">
+                      <div className="inline-flex items-center gap-1">
+                        {canEdit && p.status === 'active' && (
+                          <button
+                            onClick={() => openEdit(p)}
+                            className="rounded-lg bg-slate-50 border border-[#D5E3F7] p-1.5 text-slate-600 hover:bg-[#EDF5FF] hover:text-[#2449C6] hover:border-[#2449C6]/30 transition"
+                            title="Edit GRN"
+                          >
+                            <Pencil size={13} />
+                          </button>
+                        )}
+                        {canDelete && p.status === 'active' && (
+                          <button
+                            onClick={() => deleteMutation.mutate(p.id)}
+                            className="rounded-lg bg-slate-50 border border-[#D5E3F7] p-1.5 text-slate-600 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition"
+                            title="Delete GRN"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
                 {filteredPurchases.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="px-4 py-8 text-center text-ink-muted text-xs">
+                    <td colSpan={7} className="px-4 py-8 text-center text-slate-400 font-medium">
                       No GRN records found.
                     </td>
                   </tr>
@@ -736,7 +736,7 @@ function GrnPanel({ canManage, canEdit, canViewCost, canDelete }) {
   );
 }
 
-function SupplierPaymentsPanel({ canManage }) {
+export function SupplierPaymentsPanel({ canManage }) {
   const queryClient = useQueryClient();
   const [supplierId, setSupplierId] = useState('');
   const [amount, setAmount] = useState('');
@@ -910,25 +910,27 @@ function SupplierPaymentsPanel({ canManage }) {
       {/* Left Column Form */}
       <div className="lg:col-span-5">
         {canManage && (
-          <div className="card p-5 space-y-4 sticky top-6">
-            <div className="border-b border-border-soft pb-3">
-              <h2 className="font-semibold text-ink text-base flex items-center gap-2">
-                <CreditCard className="w-4 h-4 text-emerald-400" />
+          <div className="rounded-2xl border border-[#D5E3F7] bg-white shadow-xs p-5 space-y-4 sticky top-6">
+            <div className="border-b border-[#D5E3F7] pb-3">
+              <h2 className="text-base font-bold text-[#0B1B45] flex items-center gap-2">
+                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#EDF5FF] text-[#2449C6]">
+                  <CreditCard className="w-4 h-4" />
+                </span>
                 Record Supplier Payment
               </h2>
             </div>
 
-            <form onSubmit={submit} className="space-y-3">
-              {error && <div className="text-xs text-red-400 bg-red-950/40 p-2.5 rounded border border-red-800/40">{error}</div>}
+            <form onSubmit={submit} className="space-y-3.5">
+              {error && <div className="text-xs font-semibold text-red-800 bg-red-50 p-2.5 rounded-xl border border-red-200">{error}</div>}
               {result && (
-                <div className="text-xs text-emerald-400 bg-emerald-950/40 p-2.5 rounded border border-emerald-800/40 flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4" />
+                <div className="text-xs font-semibold text-emerald-800 bg-emerald-50 p-2.5 rounded-xl border border-emerald-200 flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                   Allocated ₹{result.allocated_total} across {Object.keys(result.allocations).length} GRN(s).
                 </div>
               )}
 
               <div>
-                <label className="text-xs font-medium text-ink-muted block mb-1">Supplier *</label>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Supplier <span className="text-red-500">*</span></label>
                 <select
                   required
                   value={supplierId}
@@ -936,7 +938,7 @@ function SupplierPaymentsPanel({ canManage }) {
                     setSupplierId(e.target.value);
                     setResult(null);
                   }}
-                  className="input w-full"
+                  className="w-full rounded-xl border border-[#D5E3F7] bg-[#F8FAFD] px-3 py-2 text-sm font-medium text-slate-900 focus:bg-white focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15 outline-none transition-all"
                 >
                   <option value="">-- Select Supplier --</option>
                   {suppliers.map((s) => (
@@ -948,7 +950,7 @@ function SupplierPaymentsPanel({ canManage }) {
               </div>
 
               <div>
-                <label className="text-xs font-medium text-ink-muted block mb-1">Payment Amount (₹) *</label>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Payment Amount (₹) <span className="text-red-500">*</span></label>
                 <input
                   required
                   type="number"
@@ -957,17 +959,17 @@ function SupplierPaymentsPanel({ canManage }) {
                   placeholder="0.00"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  className="input w-full"
+                  className="w-full rounded-xl border border-[#D5E3F7] bg-[#F8FAFD] px-3 py-2 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15 outline-none transition-all"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="text-xs font-medium text-ink-muted block mb-1">Payment Mode</label>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Payment Mode</label>
                   <select
                     value={paymentMode}
                     onChange={(e) => setPaymentMode(e.target.value)}
-                    className="input w-full"
+                    className="w-full rounded-xl border border-[#D5E3F7] bg-[#F8FAFD] px-3 py-2 text-sm font-medium text-slate-900 focus:bg-white focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15 outline-none transition-all"
                   >
                     <option value="bank_transfer">Bank Transfer</option>
                     <option value="cash">Cash</option>
@@ -976,35 +978,35 @@ function SupplierPaymentsPanel({ canManage }) {
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-ink-muted block mb-1">Ref / UTR #</label>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Ref / UTR #</label>
                   <input
                     type="text"
                     placeholder="Ref #"
                     value={referenceNo}
                     onChange={(e) => setReferenceNo(e.target.value)}
-                    className="input w-full"
+                    className="w-full rounded-xl border border-[#D5E3F7] bg-[#F8FAFD] px-3 py-2 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15 outline-none transition-all"
                   />
                 </div>
               </div>
 
               {supplierId && unpaid.length > 0 && (
-                <div className="space-y-1 pt-1">
-                  <label className="text-[11px] font-medium text-ink-muted block">FIFO Allocation Preview</label>
-                  <div className="overflow-hidden rounded-lg border border-border-soft/60">
-                    <table className="w-full text-left text-[11px]">
+                <div className="space-y-1.5 pt-1">
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-600">FIFO Allocation Preview</label>
+                  <div className="overflow-hidden rounded-xl border border-[#D5E3F7]">
+                    <table className="w-full text-left text-sm">
                       <thead>
-                        <tr className="bg-surface-subtle/30 text-ink-muted">
+                        <tr className="border-b border-[#D5E3F7] bg-[#F8FAFD] text-xs font-bold uppercase tracking-wider text-slate-500">
                           <th className="px-3 py-1.5">GRN #</th>
-                          <th className="px-3 py-1.5">Pending</th>
-                          <th className="px-3 py-1.5">Applied</th>
+                          <th className="px-3 py-1.5 text-right">Pending</th>
+                          <th className="px-3 py-1.5 text-right">Applied</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-border-soft/40">
+                      <tbody className="divide-y divide-[#EAF1FA]">
                         {preview.map((g) => (
-                          <tr key={g.id}>
-                            <td className="px-3 py-1.5 font-mono text-ink">{g.grn_no}</td>
-                            <td className="px-3 py-1.5 text-ink-muted">₹{g.pending_balance}</td>
-                            <td className="px-3 py-1.5 font-semibold text-emerald-400">₹{g.applied.toFixed(2)}</td>
+                          <tr key={g.id} className="hover:bg-[#F5F8FF]/80">
+                            <td className="px-3 py-1.5 font-mono font-bold text-[#0B1B45]">{g.grn_no}</td>
+                            <td className="px-3 py-1.5 text-right font-medium text-slate-600 whitespace-nowrap">₹{g.pending_balance}</td>
+                            <td className="px-3 py-1.5 text-right font-bold text-emerald-600 whitespace-nowrap">₹{g.applied.toFixed(2)}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -1019,7 +1021,7 @@ function SupplierPaymentsPanel({ canManage }) {
                   variant="primary"
                   loading={createMutation.isPending}
                   disabled={!supplierId || !amount}
-                  className="w-full"
+                  className="w-full justify-center py-2.5 text-sm font-bold"
                 >
                   Settle Supplier Balance
                 </Button>
@@ -1031,74 +1033,74 @@ function SupplierPaymentsPanel({ canManage }) {
 
       {/* Right Column Table */}
       <div className="lg:col-span-7 space-y-4">
-        <div className="card p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="rounded-2xl border border-[#D5E3F7] bg-white shadow-xs p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="relative w-full sm:w-72">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
               placeholder="Search payments..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="input pl-9 w-full text-xs"
+              className="w-full rounded-xl border border-[#D5E3F7] bg-[#F8FAFD] pl-9 pr-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-400 focus:bg-white focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15 outline-none transition-all"
             />
           </div>
-          <span className="text-xs text-ink-muted">{filteredPayments.length} payment record(s)</span>
+          <span className="rounded-full bg-[#EDF5FF] border border-[#D5E3F7] px-2.5 py-0.5 text-xs font-bold text-[#2449C6]">{filteredPayments.length} payment record(s)</span>
         </div>
 
-        <div className="card overflow-hidden">
-          <div className="px-5 py-4 border-b border-border-soft flex flex-wrap items-center justify-between gap-2">
-            <h3 className="font-semibold text-ink text-sm">Supplier Payment Register</h3>
+        <div className="rounded-2xl border border-[#D5E3F7] bg-white shadow-xs overflow-hidden">
+          <div className="px-5 py-4 border-b border-[#D5E3F7] bg-gradient-to-r from-white via-[#F8FAFD] to-white flex flex-wrap items-center justify-between gap-2">
+            <h3 className="font-bold text-[#0B1B45] text-sm">Supplier Payment Register</h3>
             <div className="flex flex-wrap items-center gap-2">
-              <button onClick={handlePaymentsPrint} className="rounded bg-gray-100 px-3 py-1.5 text-xs font-medium text-ink hover:bg-gray-200">Print</button>
-              <button onClick={handlePaymentsExportPdf} className="rounded bg-gray-100 px-3 py-1.5 text-xs font-medium text-ink hover:bg-gray-200">Download PDF</button>
-              <button onClick={handlePaymentsExportExcel} disabled={exporting} className="rounded bg-gray-100 px-3 py-1.5 text-xs font-medium text-ink hover:bg-gray-200 disabled:opacity-60">
+              <Button variant="secondary" size="sm" onClick={handlePaymentsPrint}>Print</Button>
+              <Button variant="secondary" size="sm" onClick={handlePaymentsExportPdf}>Download PDF</Button>
+              <Button variant="secondary" size="sm" onClick={handlePaymentsExportExcel} disabled={exporting}>
                 {exporting ? 'Exporting…' : 'Export Excel'}
-              </button>
-              <button onClick={handlePaymentsExportSelectedExcel} disabled={exporting} className="rounded bg-gray-100 px-3 py-1.5 text-xs font-medium text-ink hover:bg-gray-200 disabled:opacity-60">
+              </Button>
+              <Button variant="secondary" size="sm" onClick={handlePaymentsExportSelectedExcel} disabled={exporting}>
                 Export Selected
-              </button>
-              {selectedPaymentIds.length > 0 && <span className="text-xs text-ink-muted">{selectedPaymentIds.length} selected</span>}
+              </Button>
+              {selectedPaymentIds.length > 0 && <span className="text-xs font-bold text-[#2449C6]">{selectedPaymentIds.length} selected</span>}
             </div>
           </div>
-          {exportError && <div className="mx-5 mt-3 text-xs text-red-400 bg-red-950/40 p-2 rounded border border-red-800/40">{exportError}</div>}
+          {exportError && <div className="mx-5 mt-3 text-xs font-semibold text-red-800 bg-red-50 p-2.5 rounded-xl border border-red-200">{exportError}</div>}
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
+            <table className="w-full text-left text-sm">
               <thead>
-                <tr className="border-b border-border-soft bg-surface-subtle/30 text-ink-muted font-medium">
-                  <th className="w-8 px-4 py-3">
+                <tr className="border-b border-[#D5E3F7] bg-[#F8FAFD] text-xs font-bold uppercase tracking-wider text-slate-500">
+                  <th className="w-8 px-3.5 py-2.5">
                     {filteredPayments.length > 0 && (
-                      <input type="checkbox" checked={selectedPaymentIds.length === filteredPayments.length} onChange={togglePaymentSelectAll} />
+                      <input type="checkbox" checked={selectedPaymentIds.length === filteredPayments.length} onChange={togglePaymentSelectAll} className="accent-[#2449C6] rounded" />
                     )}
                   </th>
-                  <th className="px-4 py-3">Code</th>
-                  <th className="px-4 py-3">Supplier</th>
-                  <th className="px-4 py-3">Mode</th>
-                  <th className="px-4 py-3">Reference</th>
-                  <th className="px-4 py-3">Amount</th>
-                  <th className="px-4 py-3">Date</th>
+                  <th className="px-3.5 py-2.5">Code</th>
+                  <th className="px-3.5 py-2.5">Supplier</th>
+                  <th className="px-3.5 py-2.5">Mode</th>
+                  <th className="px-3.5 py-2.5">Reference</th>
+                  <th className="px-3.5 py-2.5 text-right">Amount</th>
+                  <th className="px-3.5 py-2.5">Date</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border-soft/60">
+              <tbody className="divide-y divide-[#EAF1FA]">
                 {filteredPayments.map((p) => (
-                  <tr key={p.id} className="hover:bg-surface-subtle/20 transition">
-                    <td className="px-4 py-3">
-                      <input type="checkbox" checked={selectedPaymentIds.includes(p.id)} onChange={() => togglePaymentSelect(p.id)} />
+                  <tr key={p.id} className="hover:bg-[#F5F8FF]/80 transition">
+                    <td className="px-3.5 py-2.5">
+                      <input type="checkbox" checked={selectedPaymentIds.includes(p.id)} onChange={() => togglePaymentSelect(p.id)} className="accent-[#2449C6] rounded" />
                     </td>
-                    <td className="px-4 py-3 font-mono font-medium text-ink">{p.payment_code}</td>
-                    <td className="px-4 py-3 font-medium text-ink">{p.supplier_name}</td>
-                    <td className="px-4 py-3">
-                      <span className="px-2 py-0.5 rounded text-[10px] uppercase font-medium bg-slate-800 text-slate-300 border border-slate-700">
+                    <td className="px-3.5 py-2.5 font-mono font-bold text-[#0B1B45]">{p.payment_code}</td>
+                    <td className="px-3.5 py-2.5 font-semibold text-slate-800">{p.supplier_name}</td>
+                    <td className="px-3.5 py-2.5">
+                      <span className="px-2 py-0.5 rounded-lg text-[10px] uppercase font-bold tracking-wide bg-[#EDF5FF] text-[#2449C6] border border-[#D5E3F7]">
                         {p.payment_mode?.replace('_', ' ')}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-ink-muted font-mono">{p.reference_no || '-'}</td>
-                    <td className="px-4 py-3 font-semibold text-emerald-400">₹{Number(p.amount).toFixed(2)}</td>
-                    <td className="px-4 py-3 text-ink-muted">{p.paid_at}</td>
+                    <td className="px-3.5 py-2.5 text-slate-500 font-mono text-xs">{p.reference_no || '-'}</td>
+                    <td className="px-3.5 py-2.5 text-right font-bold text-emerald-600 whitespace-nowrap">₹{Number(p.amount).toFixed(2)}</td>
+                    <td className="px-3.5 py-2.5 text-slate-500 font-medium text-xs">{p.paid_at}</td>
                   </tr>
                 ))}
                 {filteredPayments.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="px-4 py-8 text-center text-ink-muted text-xs">
+                    <td colSpan={7} className="px-4 py-8 text-center text-slate-400 font-medium">
                       No supplier payment records logged yet.
                     </td>
                   </tr>
@@ -1120,14 +1122,14 @@ export function Purchasing() {
   const canSettle = usePermission('purchases.settle_supplier_payment');
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border-soft/40 pb-4">
+    <div className="space-y-4">
+      <div className="flex items-center gap-3">
+        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-[#0B1B45] to-[#2449C6] text-white shadow-md shadow-[#2449C6]/20 ring-4 ring-[#EDF5FF]">
+          <ShoppingBag className="h-5 w-5 text-[#E8C985]" />
+        </div>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-ink flex items-center gap-2.5">
-            <ShoppingBag className="w-7 h-7 text-indigo-400" />
-            Purchasing &amp; Goods Receipt
-          </h1>
-          <p className="text-xs text-ink-muted mt-1">Manage Goods Received Notes (GRN), inventory batch creation, and supplier settlements</p>
+          <h1 className="text-2xl font-black text-[#0B1B45] tracking-tight">Purchasing &amp; Goods Receipt</h1>
+          <p className="text-xs font-medium text-slate-500">Manage Goods Received Notes (GRN), inventory batch creation, and supplier settlements</p>
         </div>
       </div>
 
@@ -1136,6 +1138,7 @@ export function Purchasing() {
           {
             key: 'grn',
             label: 'GRN (Purchases)',
+            icon: ShoppingBag,
             content: (
               <GrnPanel
                 canManage={canGrn}
@@ -1148,6 +1151,7 @@ export function Purchasing() {
           {
             key: 'payments',
             label: 'Supplier Payments',
+            icon: CreditCard,
             content: <SupplierPaymentsPanel canManage={canSettle} />,
           },
         ]}

@@ -1,53 +1,183 @@
-import { useEffect } from 'react';
-import { NavLink } from 'react-router-dom';
+import { useEffect, useState, useRef } from 'react';
+import { NavLink, Link, useLocation } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   LayoutDashboard, ShoppingCart, Package, Users, Truck, Warehouse, RotateCcw,
   Wallet, Banknote, Receipt, BarChart3, ShieldCheck, Settings as SettingsIcon,
-  LogOut, ChevronDown, MapPin, FileText, ClipboardList, Tag,
+  LogOut, ChevronDown, MapPin, FileText, ClipboardList, Tag, Menu, X, MoreHorizontal,
+  Building2,
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { usePermission } from '../hooks/usePermission';
 import { useBranchStore } from '../store/branchStore';
 import { branchesApi } from '../api/branches';
 
-const NAV_ITEMS = [
-  { to: '/', label: 'Dashboard', perm: 'dashboard.view_financial_summary', icon: LayoutDashboard },
-  { to: '/pos', label: 'Billing', perm: 'pos.access', icon: ShoppingCart },
-  { to: '/catalog', label: 'Catalog', perm: 'catalog.manage_items', icon: Package },
-  { to: '/price-adjustment', label: 'Price Adjustment', perm: 'catalog.manage_items', icon: Tag },
-  { to: '/parties', label: 'Parties', perm: 'parties.manage_customers', icon: Users },
-  { to: '/purchasing', label: 'Purchasing', perm: 'purchases.create_grn', icon: Truck },
-  { to: '/orders', label: 'Orders & Indents', perm: ['orders.create_prebooking', 'orders.create_purchase_indent', 'orders.approve_purchase_request', 'orders.manage_prebooking_status'], icon: ClipboardList },
-  { to: '/inventory', label: 'Inventory', perm: 'inventory.view_stock', icon: Warehouse },
-  { to: '/returns', label: 'Returns', perm: 'returns.sales_return', icon: RotateCcw },
-  { to: '/invoices', label: 'Invoices', perm: 'pos.access', icon: FileText },
-  { to: '/collections', label: 'Collections', perm: 'collections.field_collection_entry', icon: Wallet },
-  { to: '/cash-handover', label: 'Cash Handover', perm: 'handover.submit_cash_handover', icon: Banknote },
-  { to: '/expenses', label: 'Expenses', perm: 'expenses.manage', icon: Receipt },
-  { to: '/reports', label: 'Reports', perm: 'reports.view_all', icon: BarChart3 },
-  { to: '/staff', label: 'Staff', perm: 'staff.manage_permissions', icon: ShieldCheck },
-  { to: '/settings', label: 'Settings', perm: 'settings.manage', icon: SettingsIcon },
-];
+// Hook to close dropdowns on click outside
+function useClickOutside(ref, handler) {
+  const handlerRef = useRef(handler);
+  useEffect(() => {
+    handlerRef.current = handler;
+  });
 
+  useEffect(() => {
+    const listener = (event) => {
+      if (!ref.current || ref.current.contains(event.target)) return;
+      handlerRef.current?.(event);
+    };
+    document.addEventListener('mousedown', listener);
+    document.addEventListener('touchstart', listener);
+    return () => {
+      document.removeEventListener('mousedown', listener);
+      document.removeEventListener('touchstart', listener);
+    };
+  }, [ref]);
+}
 
-function NavItem({ to, label, icon: Icon, end }) {
+// Single Navigation Link Component
+function NavItem({ to, label, icon: Icon, end, activePaths, onClick }) {
+  const location = useLocation();
+  const isCustomActive = activePaths
+    ? activePaths.some((p) => location.pathname === p || location.pathname.startsWith(p + '/'))
+    : undefined;
+
   return (
     <NavLink
       to={to}
       end={end}
-      className={({ isActive }) =>
-        `flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-          isActive ? 'bg-navbar-alt text-gold shadow-inner' : 'text-ink-onnavy/80 hover:bg-white/5 hover:text-ink-onnavy'
-        }`
-      }
+      onClick={onClick}
+      className={({ isActive }) => {
+        const active = isCustomActive !== undefined ? isCustomActive : isActive;
+        return `flex shrink-0 items-center gap-1.5 rounded-xl px-2 py-1 text-xs font-semibold transition-all whitespace-nowrap ${
+          active
+            ? 'bg-gradient-to-b from-[#FFF5DE] via-[#FCE9BD] to-[#E8C985] text-[#0B1B45] shadow-[0_2px_8px_rgba(232,201,133,0.3)] font-bold'
+            : 'text-white/85 hover:bg-white/10 hover:text-white'
+        }`;
+      }}
     >
-      <Icon size={16} />
-      <span>{label}</span>
+      {({ isActive }) => {
+        const active = isCustomActive !== undefined ? isCustomActive : isActive;
+        return (
+          <>
+            <Icon size={14} className={active ? 'text-[#0B1B45]' : 'text-white/85'} />
+            <span>{label}</span>
+          </>
+        );
+      }}
     </NavLink>
   );
 }
 
+// Dropdown Navigation Group Component
+function NavDropdown({ label, icon: Icon, to, items, align = 'left' }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
+  const location = useLocation();
+
+  useClickOutside(dropdownRef, () => setIsOpen(false));
+
+  // Close on Escape key
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') setIsOpen(false);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen]);
+
+  // Close when path or query changes
+  useEffect(() => {
+    setIsOpen(false);
+  }, [location.pathname, location.search]);
+
+  // Check if any sub-item is active
+  const isChildActive = items.some((item) => {
+    const itemPath = item.to.split('?')[0];
+    const itemQuery = item.to.includes('?') ? item.to.split('?')[1] : null;
+    if (location.pathname !== itemPath) return false;
+    if (!itemQuery) return true;
+    return location.search.includes(itemQuery);
+  });
+
+  const isParentActive = isChildActive || (to && location.pathname === to);
+
+  // Filter allowed items
+  const permittedItems = items.filter((item) => {
+    if (!item.perm) return true;
+    return Array.isArray(item.perm) ? item.perm.some(Boolean) : Boolean(item.permAllowed);
+  });
+
+  if (permittedItems.length === 0) return null;
+
+  return (
+    <div
+      ref={dropdownRef}
+      className="relative shrink-0"
+      onMouseEnter={() => setIsOpen(true)}
+      onMouseLeave={() => setIsOpen(false)}
+    >
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          setIsOpen(true);
+        }}
+        aria-haspopup="true"
+        aria-expanded={isOpen}
+        className={`flex items-center gap-1 rounded-xl px-1.5 py-1 text-xs font-semibold transition-all whitespace-nowrap cursor-pointer ${
+          isParentActive
+            ? 'bg-gradient-to-b from-[#FFF5DE] via-[#FCE9BD] to-[#E8C985] text-[#0B1B45] shadow-[0_2px_8px_rgba(232,201,133,0.3)] font-bold'
+            : 'text-white/85 hover:bg-white/10 hover:text-white'
+        }`}
+      >
+        <Icon size={14} className={isParentActive ? 'text-[#0B1B45]' : 'text-white/85'} />
+        <span>{label}</span>
+        <ChevronDown
+          size={11}
+          className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''} ${
+            isParentActive ? 'text-[#0B1B45]' : 'text-white/60'
+          }`}
+        />
+      </button>
+
+      {isOpen && (
+        <div
+          role="menu"
+          className={`absolute ${
+            align === 'right' ? 'right-0' : 'left-0'
+          } top-full mt-1.5 min-w-[210px] rounded-2xl bg-[#0B1B45]/95 backdrop-blur-md border border-[#1C3675] shadow-[0_12px_30px_rgba(0,0,0,0.5)] p-1.5 z-50 animate-in fade-in zoom-in-95 duration-100`}
+        >
+          {permittedItems.map((item) => {
+            const SubIcon = item.icon;
+            const itemPath = item.to.split('?')[0];
+            const itemQuery = item.to.includes('?') ? item.to.split('?')[1] : null;
+            const isSubActive =
+              location.pathname === itemPath && (!itemQuery || location.search.includes(itemQuery));
+
+            return (
+              <Link
+                key={item.to}
+                to={item.to}
+                role="menuitem"
+                onClick={() => setIsOpen(false)}
+                className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs transition-all ${
+                  isSubActive
+                    ? 'bg-gradient-to-r from-[#FFF5DE] via-[#FCE9BD] to-[#E8C985] text-[#0B1B45] font-bold shadow-xs'
+                    : 'text-white/85 hover:bg-[#142B5C] hover:text-[#E8C985] font-medium'
+                }`}
+              >
+                <SubIcon size={14} className={isSubActive ? 'text-[#0B1B45]' : 'text-[#E8C985]'} />
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Branch Context Switcher (Main Branch)
 function BranchSwitcher() {
   const canSwitch = usePermission('branches.switch_context');
   const queryClient = useQueryClient();
@@ -67,15 +197,16 @@ function BranchSwitcher() {
   if (!canSwitch) return null;
 
   return (
-    <div className="flex shrink-0 items-center gap-1.5 rounded-lg bg-navbar-alt px-2.5 py-1.5">
-      <MapPin size={14} className="text-gold" />
+    <div className="flex shrink-0 items-center gap-1.5 rounded-xl bg-[#0B1B45]/70 border border-[#2449C6]/30 px-2 py-1 shadow-[0_2px_8px_rgba(0,0,0,0.2)]">
+      <MapPin size={13} className="text-[#315BFF] shrink-0" />
       <select
         value={selectedBranchId ?? ''}
         onChange={(e) => {
           setSelectedBranchId(Number(e.target.value));
           queryClient.invalidateQueries();
         }}
-        className="border-none bg-transparent text-sm font-medium text-ink-onnavy focus:outline-none [&>option]:text-ink"
+        aria-label="Select active branch"
+        className="border-none bg-transparent text-xs font-semibold text-white focus:outline-none [&>option]:text-[#14264F] cursor-pointer max-w-[85px] sm:max-w-[120px] truncate"
       >
         {branches.map((b) => (
           <option key={b.id} value={b.id}>{b.branch_name}</option>
@@ -86,56 +217,200 @@ function BranchSwitcher() {
 }
 
 export function TopNav() {
-  const { user, logout } = useAuth();
-  const initials = (user?.name || '?')
-    .split(' ')
-    .map((p) => p[0])
-    .slice(0, 2)
-    .join('')
-    .toUpperCase();
+  const { logout } = useAuth();
+  const location = useLocation();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Permission flags
+  const canDashboard = usePermission('dashboard.view_financial_summary');
+  const canPos = usePermission('pos.access');
+  const canCatalog = usePermission('catalog.manage_items');
+  const canSettings = usePermission('settings.manage');
+  const canStaff = usePermission('staff.manage_permissions');
+  const canCustomers = usePermission('parties.manage_customers');
+  const canSuppliers = usePermission('parties.manage_suppliers');
+  const canGrn = usePermission('purchases.create_grn');
+  const canReturns = usePermission('returns.sales_return');
+  const canCollections = usePermission('collections.field_collection_entry');
+  const canExpenses = usePermission('expenses.manage');
+  const canHandover = usePermission('handover.submit_cash_handover');
+  const canOrders = usePermission(['orders.create_prebooking', 'orders.create_purchase_indent', 'orders.approve_purchase_request', 'orders.manage_prebooking_status']);
+  const canInventory = usePermission('inventory.view_stock');
+  const canReports = usePermission('reports.view_all');
+
+  // Remaining individual items (Orders, Invoices, Inventory, Reports)
+  const remainingItems = [
+    { to: '/orders', label: 'Orders & Indents', icon: ClipboardList, allowed: canOrders },
+    { to: '/invoices', label: 'Invoices', icon: FileText, allowed: canPos },
+    { to: '/inventory', label: 'Inventory', icon: Warehouse, allowed: canInventory },
+    { to: '/reports', label: 'Reports', icon: BarChart3, allowed: canReports },
+  ].filter((i) => i.allowed);
+
+  const moreDropdownGroup = {
+    label: 'More',
+    icon: MoreHorizontal,
+    to: null,
+    items: remainingItems.map((item) => ({
+      to: item.to,
+      label: item.label,
+      icon: item.icon,
+      permAllowed: true,
+    })),
+  };
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location.pathname, location.search]);
 
   return (
-    <header className="bg-navbar px-4 py-2.5">
-      <div className="flex items-center gap-4">
-        <div className="flex shrink-0 flex-col leading-none">
-          <span className="brand-wordmark text-lg">AJ Agency</span>
-          <span className="text-[10px] font-medium uppercase tracking-widest text-ink-onnavy/50">
-            Distributor Billing &amp; Inventory
-          </span>
-        </div>
+    <header className="relative bg-gradient-to-r from-[#071333] via-[#0B1B45] to-[#122A63] border-b border-[#1C3675]/60 px-4 py-2 shadow-md select-none">
+      {/* Decorative subtle gold flourish sweep arc under the brand */}
+      <svg className="pointer-events-none absolute -left-1 -bottom-1 w-36 h-8 overflow-hidden opacity-60" viewBox="0 0 160 35" fill="none">
+        <path d="M 0 28 C 30 32, 60 12, 100 15 C 130 18, 150 8, 160 2" stroke="url(#goldSweepGrad)" strokeWidth="1.2" strokeLinecap="round" />
+        <defs>
+          <linearGradient id="goldSweepGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#FFF7E0" stopOpacity="0.9" />
+            <stop offset="40%" stopColor="#E8C985" stopOpacity="0.8" />
+            <stop offset="100%" stopColor="#B3872F" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+      </svg>
 
-        <nav className="flex flex-1 items-center gap-1 overflow-x-auto">
-          {NAV_ITEMS.map((item) => (
-            <PermissionGatedNavItem key={item.to} {...item} />
-          ))}
+      <div className="relative flex items-center justify-between gap-2">
+        {/* Left: Compact AJ Agency Brand Identity */}
+        <Link to="/" className="flex shrink-0 items-center gap-2 pr-1.5 focus:outline-none select-none group">
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#122A63] via-[#0B1B45] to-[#071333] border border-[#E8C985]/40 text-[#E8C985] shadow-xs ring-1 ring-white/10 group-hover:border-[#E8C985] transition-colors">
+            <span className="font-serif font-black text-xs tracking-tighter">AJ</span>
+          </div>
+          <div className="flex flex-col leading-none">
+            <span className="font-serif text-[15px] font-bold tracking-tight text-white group-hover:text-[#FFF5DE] transition-colors drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]">
+              AJ Agency
+            </span>
+            <span className="text-[6.5px] font-bold uppercase tracking-wider text-[#E8C985]/90 mt-0.5 whitespace-nowrap">
+              Distributor Billing &amp; Inventory
+            </span>
+          </div>
+        </Link>
+
+        {/* Center: Desktop Navigation Bar (Direct links, No dropdown arrows on grouped sections) */}
+        <nav className="hidden xl:flex flex-1 items-center gap-0.5 overflow-visible">
+          {/* Target Structure: Dashboard | Billing | Catalog */}
+          {canDashboard && <NavItem to="/" label="Dashboard" icon={LayoutDashboard} end />}
+          {canPos && <NavItem to="/pos" label="Billing" icon={ShoppingCart} />}
+          {canCatalog && <NavItem to="/catalog" label="Catalog" icon={Package} />}
+
+          {/* Settings (Direct page with General, Price Adjustment, Staff Price Adjustment, Staff tabs) */}
+          {(canSettings || canCatalog || canStaff) && (
+            <NavItem
+              to="/settings"
+              label="Settings"
+              icon={SettingsIcon}
+              activePaths={['/settings', '/price-adjustment', '/staff']}
+            />
+          )}
+
+          {/* Parties & Purchasing (Direct page with Customers, Suppliers, Routes, Cities, Purchasing, Purchase Orders, GRN tabs) */}
+          {(canCustomers || canSuppliers || canGrn) && (
+            <NavItem
+              to="/parties"
+              label="Parties & Purchasing"
+              icon={Users}
+              activePaths={['/parties', '/purchasing']}
+            />
+          )}
+
+          {/* Returns & Credit (Direct page with Returns and Credit tabs) */}
+          {(canReturns || canCollections) && (
+            <NavItem
+              to="/returns"
+              label="Returns & Credit"
+              icon={RotateCcw}
+              activePaths={['/returns', '/collections']}
+            />
+          )}
+
+          {/* Expenses & Handover (Direct page with Expenses and Handover tabs) */}
+          {(canExpenses || canHandover) && (
+            <NavItem
+              to="/expenses"
+              label="Expenses & Handover"
+              icon={Receipt}
+              activePaths={['/expenses', '/cash-handover']}
+            />
+          )}
+
+          {/* On very wide screens (>= 1520px), show remaining items inline */}
+          <div className="hidden min-[1520px]:flex items-center gap-0.5">
+            {remainingItems.map((item) => (
+              <NavItem key={item.to} to={item.to} label={item.label} icon={item.icon} />
+            ))}
+          </div>
+
+          {/* On standard desktop screens (< 1520px), show remaining items in compact More dropdown */}
+          {remainingItems.length > 0 && (
+            <div className="block min-[1520px]:hidden">
+              <NavDropdown {...moreDropdownGroup} align="right" />
+            </div>
+          )}
         </nav>
 
-        <BranchSwitcher />
+        {/* Right: Branch Context & Logout Action */}
+        <div className="flex shrink-0 items-center gap-2">
+          <BranchSwitcher />
 
-        <div className="flex shrink-0 items-center gap-3 border-l border-white/10 pl-4">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gold text-xs font-bold text-navbar">
-            {initials}
-          </div>
-          <div className="hidden leading-tight sm:block">
-            <div className="text-sm font-semibold text-ink-onnavy">{user?.name}</div>
-            <div className="text-xs text-ink-onnavy/60">{user?.role}</div>
-          </div>
-          <ChevronDown size={14} className="hidden text-ink-onnavy/60 sm:block" />
           <button
+            type="button"
             onClick={logout}
-            className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-medium text-ink-onnavy/80 hover:bg-white/5 hover:text-ink-onnavy"
+            className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs font-semibold text-white/85 hover:bg-rose-500/20 hover:text-rose-200 hover:border-rose-500/30 transition-all cursor-pointer shadow-2xs"
+            title="Logout of session"
           >
-            <LogOut size={16} />
+            <LogOut size={14} className="text-white/85" />
             <span className="hidden sm:inline">Logout</span>
+          </button>
+
+          {/* Mobile Menu Hamburger Toggle */}
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen((prev) => !prev)}
+            aria-label="Toggle mobile menu"
+            className="xl:hidden p-1.5 rounded-xl text-white/85 hover:text-white hover:bg-white/10 transition cursor-pointer"
+          >
+            {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
         </div>
       </div>
+
+      {/* Mobile Navigation Drawer / Menu (Accessible down to 375px) */}
+      {mobileMenuOpen && (
+        <div className="xl:hidden mt-3 rounded-2xl bg-[#0B1B45] border border-[#1C3675] shadow-2xl p-3.5 space-y-2.5 animate-in slide-in-from-top-2 duration-150">
+          <div className="grid grid-cols-2 gap-1.5">
+            {canDashboard && <NavItem to="/" label="Dashboard" icon={LayoutDashboard} end onClick={() => setMobileMenuOpen(false)} />}
+            {canPos && <NavItem to="/pos" label="Billing" icon={ShoppingCart} onClick={() => setMobileMenuOpen(false)} />}
+            {canCatalog && <NavItem to="/catalog" label="Catalog" icon={Package} onClick={() => setMobileMenuOpen(false)} />}
+            {(canSettings || canCatalog || canStaff) && (
+              <NavItem to="/settings" label="Settings" icon={SettingsIcon} activePaths={['/settings', '/price-adjustment', '/staff']} onClick={() => setMobileMenuOpen(false)} />
+            )}
+            {(canCustomers || canSuppliers || canGrn) && (
+              <NavItem to="/parties" label="Parties & Purchasing" icon={Users} activePaths={['/parties', '/purchasing']} onClick={() => setMobileMenuOpen(false)} />
+            )}
+            {(canReturns || canCollections) && (
+              <NavItem to="/returns" label="Returns & Credit" icon={RotateCcw} activePaths={['/returns', '/collections']} onClick={() => setMobileMenuOpen(false)} />
+            )}
+            {(canExpenses || canHandover) && (
+              <NavItem to="/expenses" label="Expenses & Handover" icon={Receipt} activePaths={['/expenses', '/cash-handover']} onClick={() => setMobileMenuOpen(false)} />
+            )}
+          </div>
+
+          {remainingItems.length > 0 && (
+            <div className="border-t border-[#1C3675]/60 pt-2 grid grid-cols-2 gap-1.5">
+              {remainingItems.map((item) => (
+                <NavItem key={item.to} to={item.to} label={item.label} icon={item.icon} onClick={() => setMobileMenuOpen(false)} />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </header>
   );
-}
-
-function PermissionGatedNavItem({ perm, ...item }) {
-  const allowed = usePermission(perm);
-  if (!allowed) return null;
-  return <NavItem end={item.to === '/'} {...item} />;
 }

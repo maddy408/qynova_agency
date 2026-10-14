@@ -1,13 +1,17 @@
 import { useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  Users, Truck, MapPin, Building2, CheckCircle2, Power, Edit2, Trash2, Search, Plus, Phone, CreditCard, Tag
+  Users, Truck, MapPin, Building2, CheckCircle2, Power, Edit2, Trash2, Search, Plus, Phone, CreditCard, Tag,
+  ClipboardList, ShoppingBag, Receipt
 } from 'lucide-react';
 import { routesApi, citiesApi, customersApi, suppliersApi } from '../api/parties';
 import { routeSuppliersApi } from '../api/purchasing';
 import { Tabs } from '../components/Tabs';
 import { Button } from '../components/Button.jsx';
 import { usePermission } from '../hooks/usePermission';
+import { GrnPanel, SupplierPaymentsPanel } from './Purchasing.jsx';
+import { SupplierRequestPanel } from './OrderManagement.jsx';
 
 // CUSTOMERS PANEL (Left Form, Right Directory Table)
 function CustomersPanel({ canManage }) {
@@ -175,35 +179,35 @@ function CustomersPanel({ canManage }) {
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
       {/* LEFT FORM */}
       <div className="lg:col-span-5">
-        <div className="card p-5 border border-border-soft bg-white shadow-xs rounded-2xl sticky top-4">
-          <div className="flex items-center justify-between border-b border-border-soft pb-3 mb-4">
-            <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-              <Users className="h-5 w-5 text-indigo-600" />
+        <div className="overflow-hidden rounded-2xl border border-[#D5E3F7] bg-white shadow-xs p-5 sticky top-4">
+          <div className="flex items-center justify-between border-b border-[#EAF1FA] pb-3 mb-4">
+            <h2 className="text-sm font-bold text-[#0B1B45] flex items-center gap-2">
+              <Users className="h-5 w-5 text-[#2449C6]" />
               {editingId ? 'Edit Customer' : 'Create Customer'}
             </h2>
             {editingId && (
-              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">
+              <span className="rounded-full bg-amber-50 border border-amber-200/80 px-2.5 py-0.5 text-[10px] font-bold text-amber-800">
                 Editing #{editingId}
               </span>
             )}
           </div>
 
           {successMsg && (
-            <div className="mb-4 rounded-xl bg-emerald-50 p-3 text-xs font-semibold text-emerald-800 border border-emerald-200 flex items-center gap-1.5">
-              <CheckCircle2 size={16} /> {successMsg}
+            <div className="mb-4 rounded-xl bg-emerald-50 p-3 text-xs font-bold text-emerald-700 border border-emerald-200 flex items-center gap-1.5 shadow-2xs">
+              <CheckCircle2 size={16} className="text-emerald-600" /> {successMsg}
             </div>
           )}
 
           {formError && (
-            <div className="mb-4 rounded-xl bg-red-50 p-3 text-xs font-semibold text-red-800 border border-red-200">
+            <div className="mb-4 rounded-xl bg-rose-50 p-3 text-xs font-bold text-rose-700 border border-rose-200">
               {formError}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-3">
+          <form onSubmit={handleSubmit} className="space-y-3.5">
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-                Customer Name / Ledger <span className="text-red-500">*</span>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
+                Customer Name / Ledger <span className="text-rose-500">*</span>
               </label>
               <input
                 type="text"
@@ -211,78 +215,78 @@ function CustomersPanel({ canManage }) {
                 onChange={(e) => setLedgerName(e.target.value)}
                 placeholder="e.g., Sri Ragavendra Traders"
                 disabled={!canManage}
-                className="input w-full"
+                className="w-full rounded-xl border border-[#D5E3F7] bg-white px-3.5 py-2 text-sm font-medium text-[#0B1B45] shadow-xs outline-none transition focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Phone Number</label>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Phone Number</label>
               <input
                 type="text"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="e.g., 9876543210"
                 disabled={!canManage}
-                className="input w-full"
+                className="w-full rounded-xl border border-[#D5E3F7] bg-white px-3.5 py-2 text-sm font-medium text-[#0B1B45] shadow-xs outline-none transition focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15"
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-2.5">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Route</label>
-                <select value={routeId} onChange={(e) => setRouteId(e.target.value)} disabled={!canManage} className="input w-full">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Route</label>
+                <select value={routeId} onChange={(e) => setRouteId(e.target.value)} disabled={!canManage} className="w-full rounded-xl border border-[#D5E3F7] bg-white px-3 py-2 text-sm font-medium text-[#0B1B45] shadow-xs outline-none transition focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15">
                   <option value="">-- Select Route --</option>
                   {routes.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
                 </select>
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">City</label>
-                <select value={cityId} onChange={(e) => setCityId(e.target.value)} disabled={!canManage} className="input w-full">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">City</label>
+                <select value={cityId} onChange={(e) => setCityId(e.target.value)} disabled={!canManage} className="w-full rounded-xl border border-[#D5E3F7] bg-white px-3 py-2 text-sm font-medium text-[#0B1B45] shadow-xs outline-none transition focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15">
                   <option value="">-- Select City --</option>
                   {cities.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-2.5">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Credit Limit (Rs.)</label>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Credit Limit (Rs.)</label>
                 <input
                   type="number"
                   value={creditLimit}
                   onChange={(e) => setCreditLimit(e.target.value)}
                   placeholder="0"
                   disabled={!canManage}
-                  className="input w-full"
+                  className="w-full rounded-xl border border-[#D5E3F7] bg-white px-3.5 py-2 text-sm font-medium text-[#0B1B45] shadow-xs outline-none transition focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Opening Balance (Rs.)</label>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Opening Balance (Rs.)</label>
                 <input
                   type="number"
                   value={openingBalance}
                   onChange={(e) => setOpeningBalance(e.target.value)}
                   placeholder="0"
                   disabled={!canManage}
-                  className="input w-full"
+                  className="w-full rounded-xl border border-[#D5E3F7] bg-white px-3.5 py-2 text-sm font-medium text-[#0B1B45] shadow-xs outline-none transition focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15"
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-2.5">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Customer Type</label>
-                <select value={isLocalCustomer} onChange={(e) => setIsLocalCustomer(e.target.value)} disabled={!canManage} className="input w-full">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Customer Type</label>
+                <select value={isLocalCustomer} onChange={(e) => setIsLocalCustomer(e.target.value)} disabled={!canManage} className="w-full rounded-xl border border-[#D5E3F7] bg-white px-3 py-2 text-sm font-medium text-[#0B1B45] shadow-xs outline-none transition focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15">
                   <option value="1">Local Customer</option>
                   <option value="0">Outstation Customer</option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Pricing Type</label>
-                <select value={pricingType} onChange={(e) => setPricingType(e.target.value)} disabled={!canManage} className="input w-full">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Pricing Type</label>
+                <select value={pricingType} onChange={(e) => setPricingType(e.target.value)} disabled={!canManage} className="w-full rounded-xl border border-[#D5E3F7] bg-white px-3 py-2 text-sm font-medium text-[#0B1B45] shadow-xs outline-none transition focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15">
                   <option value="normal">Normal</option>
                   <option value="retail">Retail</option>
                   <option value="wholesale">Wholesale</option>
@@ -290,92 +294,92 @@ function CustomersPanel({ canManage }) {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-2.5">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">GST No / GSTIN</label>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">GST No / GSTIN</label>
                 <input
                   type="text"
                   value={gstin}
                   onChange={(e) => setGstin(e.target.value)}
                   placeholder="e.g., 33AAAAA0000A1Z5"
                   disabled={!canManage}
-                  className="input w-full"
+                  className="w-full rounded-xl border border-[#D5E3F7] bg-white px-3.5 py-2 text-sm font-medium text-[#0B1B45] shadow-xs outline-none transition focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Group</label>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Group</label>
                 <input
                   type="text"
                   value={customerGroup}
                   onChange={(e) => setCustomerGroup(e.target.value)}
                   placeholder="e.g., Wholesaler"
                   disabled={!canManage}
-                  className="input w-full"
+                  className="w-full rounded-xl border border-[#D5E3F7] bg-white px-3.5 py-2 text-sm font-medium text-[#0B1B45] shadow-xs outline-none transition focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Address</label>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Address</label>
               <textarea
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
                 rows={2}
                 placeholder="Full address"
                 disabled={!canManage}
-                className="input w-full"
+                className="w-full rounded-xl border border-[#D5E3F7] bg-white px-3.5 py-2 text-sm font-medium text-[#0B1B45] shadow-xs outline-none transition focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15"
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-2.5">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Date of Joining</label>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Date of Joining</label>
                 <input
                   type="date"
                   value={doj}
                   onChange={(e) => setDoj(e.target.value)}
                   disabled={!canManage}
-                  className="input w-full"
+                  className="w-full rounded-xl border border-[#D5E3F7] bg-white px-3 py-2 text-sm font-medium text-[#0B1B45] shadow-xs outline-none transition focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15"
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Date of Birth</label>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Date of Birth</label>
                 <input
                   type="date"
                   value={dob}
                   onChange={(e) => setDob(e.target.value)}
                   disabled={!canManage}
-                  className="input w-full"
+                  className="w-full rounded-xl border border-[#D5E3F7] bg-white px-3 py-2 text-sm font-medium text-[#0B1B45] shadow-xs outline-none transition focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">Status</label>
-              <div className="flex items-center gap-4 bg-slate-50 p-2.5 rounded-xl border border-border-soft">
-                <label className="flex items-center gap-2 text-xs font-bold cursor-pointer text-slate-800">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Status</label>
+              <div className="flex items-center gap-4 bg-[#F8FAFD] p-3 rounded-xl border border-[#D5E3F7]">
+                <label className="flex items-center gap-2 text-sm font-bold cursor-pointer text-[#0B1B45]">
                   <input
                     type="radio"
                     name="cust_status"
                     checked={isActive}
                     onChange={() => setIsActive(true)}
                     disabled={!canManage}
-                    className="accent-emerald-600 h-4 w-4"
+                    className="accent-[#2449C6] h-4 w-4"
                   />
-                  <span className="flex items-center gap-1 text-emerald-700"><Power size={14} /> Active</span>
+                  <span className="flex items-center gap-1.5 text-emerald-700"><Power size={14} /> Active</span>
                 </label>
 
-                <label className="flex items-center gap-2 text-xs font-bold cursor-pointer text-slate-800">
+                <label className="flex items-center gap-2 text-sm font-bold cursor-pointer text-slate-500">
                   <input
                     type="radio"
                     name="cust_status"
                     checked={!isActive}
                     onChange={() => setIsActive(false)}
                     disabled={!canManage}
-                    className="accent-rose-600 h-4 w-4"
+                    className="accent-slate-400 h-4 w-4"
                   />
-                  <span className="flex items-center gap-1 text-slate-500"><Power size={14} /> Inactive</span>
+                  <span className="flex items-center gap-1.5 text-slate-500"><Power size={14} /> Inactive</span>
                 </label>
               </div>
             </div>
@@ -398,26 +402,30 @@ function CustomersPanel({ canManage }) {
 
       {/* RIGHT TABLE */}
       <div className="lg:col-span-7">
-        <div className="card border border-border-soft bg-white shadow-xs rounded-2xl overflow-hidden">
-          <div className="p-4 border-b border-border-soft flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+        <div className="rounded-2xl border border-[#D5E3F7] bg-white shadow-xs overflow-hidden">
+          <div className="p-4 border-b border-[#D5E3F7] bg-gradient-to-r from-white via-[#F8FAFD] to-white flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <h2 className="text-base font-bold text-[#0B1B45] flex items-center gap-2">
               <span>Customer Directory</span>
-              <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-700">{filtered.length} Total</span>
+              <span className="rounded-full bg-[#EDF5FF] border border-[#D5E3F7] px-2.5 py-0.5 text-xs font-bold text-[#2449C6]">{filtered.length} Total</span>
             </h2>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <div className="relative">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
                 <input
                   type="text"
                   placeholder="Search customers..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="input pl-8 py-1 text-xs w-44 sm:w-56"
+                  className="rounded-xl border border-[#D5E3F7] bg-[#F8FAFD] pl-9 pr-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-400 focus:bg-white focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15 outline-none transition-all w-44 sm:w-52"
                 />
               </div>
 
-              <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="input py-1 text-xs w-28">
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="rounded-xl border border-[#D5E3F7] bg-[#F8FAFD] px-3 py-1.5 text-xs font-medium text-slate-800 focus:bg-white focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15 outline-none transition-all w-28"
+              >
                 <option value="all">All Status</option>
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
@@ -432,7 +440,7 @@ function CustomersPanel({ canManage }) {
           </div>
 
           {importOpen && (
-            <div className="border-b border-border-soft bg-slate-50/60 p-4">
+            <div className="border-b border-[#D5E3F7] bg-[#F5F8FF] p-4">
               <div className="flex flex-wrap items-center gap-2">
                 <Button variant="secondary" size="sm" onClick={() => customersApi.downloadImportTemplate()}>Download Template</Button>
                 <input
@@ -440,7 +448,7 @@ function CustomersPanel({ canManage }) {
                   type="file"
                   accept=".xlsx,.xls,.csv"
                   onChange={(e) => { setImportFile(e.target.files[0] || null); setImportResult(null); }}
-                  className="text-xs"
+                  className="text-xs text-slate-600 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-[#EDF5FF] file:text-[#2449C6] hover:file:bg-[#2449C6] hover:file:text-white transition-all cursor-pointer"
                 />
                 <Button
                   size="sm"
@@ -473,7 +481,7 @@ function CustomersPanel({ canManage }) {
                     {importResult.committed && ` · Inserted: ${importResult.inserted} · Updated: ${importResult.updated}`}
                   </div>
                   {importResult.rows.filter((r) => r.errors.length > 0).length > 0 && (
-                    <div className="mt-2 max-h-40 overflow-y-auto rounded-lg border border-red-200 bg-red-50 p-2">
+                    <div className="mt-2 max-h-40 overflow-y-auto rounded-xl border border-red-200 bg-red-50 p-2.5">
                       {importResult.rows.filter((r) => r.errors.length > 0).map((r) => (
                         <div key={r.row} className="text-red-800">
                           Row {r.row} ({r.customer || 'unnamed'}): {r.errors.join(', ')}
@@ -487,60 +495,74 @@ function CustomersPanel({ canManage }) {
           )}
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
+            <table className="w-full text-left text-sm">
               <thead>
-                <tr className="border-b border-border-soft bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                  <th className="px-4 py-3">#</th>
-                  <th className="px-4 py-3">Customer Name</th>
-                  <th className="px-4 py-3">Phone</th>
-                  <th className="px-4 py-3">Route / City</th>
-                  <th className="px-4 py-3">GSTIN</th>
-                  <th className="px-4 py-3">Pricing Type</th>
-                  <th className="px-4 py-3">Credit Limit</th>
-                  <th className="px-4 py-3">Status</th>
-                  {canManage && <th className="px-4 py-3 text-right">Actions</th>}
+                <tr className="border-b border-[#D5E3F7] bg-[#F8FAFD] text-xs font-bold uppercase tracking-wider text-slate-500">
+                  <th className="px-3.5 py-2.5">#</th>
+                  <th className="px-3.5 py-2.5">Customer Name</th>
+                  <th className="px-3.5 py-2.5">Phone</th>
+                  <th className="px-3.5 py-2.5">Route / City</th>
+                  <th className="px-3.5 py-2.5">GSTIN</th>
+                  <th className="px-3.5 py-2.5 text-center">Pricing Type</th>
+                  <th className="px-3.5 py-2.5 text-right">Credit Limit</th>
+                  <th className="px-3.5 py-2.5 text-center">Status</th>
+                  {canManage && <th className="px-3.5 py-2.5 text-right">Actions</th>}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border-soft">
+              <tbody className="divide-y divide-[#EAF1FA]">
                 {filtered.map((r, index) => {
                   const cActive = r.status !== 'inactive' && r.is_active !== 0 && r.is_active !== false;
                   return (
-                    <tr key={r.id} className="hover:bg-slate-50/50 transition-colors">
-                      <td className="px-4 py-3 font-semibold text-slate-400">{index + 1}</td>
-                      <td className="px-4 py-3 font-bold text-slate-900">{r.ledger_name || r.name}</td>
-                      <td className="px-4 py-3 font-medium text-slate-600">{r.phone || '-'}</td>
-                      <td className="px-4 py-3 font-medium text-slate-600">
+                    <tr key={r.id} className="hover:bg-[#F5F8FF]/80 transition-colors">
+                      <td className="px-3.5 py-2.5 font-semibold text-slate-400">{index + 1}</td>
+                      <td className="px-3.5 py-2.5 font-bold text-[#0B1B45]">{r.ledger_name || r.name}</td>
+                      <td className="px-3.5 py-2.5 font-medium text-slate-600">{r.phone || '-'}</td>
+                      <td className="px-3.5 py-2.5 font-medium text-slate-600">
                         {routeMap.get(r.route_id) || 'No Route'} {cityMap.get(r.city_id) ? `(${cityMap.get(r.city_id)})` : ''}
                       </td>
-                      <td className="px-4 py-3 font-medium text-slate-600">{r.gstin || '-'}</td>
-                      <td className="px-4 py-3">
-                        <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-bold capitalize text-slate-700">
+                      <td className="px-3.5 py-2.5 font-medium text-slate-600">{r.gstin || '-'}</td>
+                      <td className="px-3.5 py-2.5 text-center">
+                        <span className="inline-flex items-center rounded-lg bg-[#EDF5FF] border border-[#D5E3F7] px-2 py-0.5 text-xs font-bold capitalize text-[#2449C6]">
                           {r.pricing_type || 'normal'}
                         </span>
                       </td>
-                      <td className="px-4 py-3 font-bold text-indigo-600">Rs. {Number(r.credit_limit || 0).toLocaleString()}</td>
-                      <td className="px-4 py-3">
+                      <td className="px-3.5 py-2.5 text-right whitespace-nowrap font-bold text-[#2449C6]">Rs. {Number(r.credit_limit || 0).toLocaleString()}</td>
+                      <td className="px-3.5 py-2.5 text-center">
                         {cActive ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700 border border-emerald-200">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-bold text-emerald-700 border border-emerald-200">
                             Active
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-bold text-slate-500 border border-slate-200">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-500 border border-slate-200">
                             Inactive
                           </span>
                         )}
                       </td>
                       {canManage && (
-                        <td className="px-4 py-3 text-right space-x-1">
-                          <button onClick={() => handleEdit(r)} className="rounded-lg bg-slate-100 p-1.5 text-slate-700 hover:bg-indigo-50 hover:text-indigo-600"><Edit2 size={14} /></button>
-                          <button onClick={() => { if (confirm(`Delete "${r.ledger_name || r.name}"?`)) removeMutation.mutate(r.id); }} className="rounded-lg bg-slate-100 p-1.5 text-slate-700 hover:bg-rose-50 hover:text-rose-600"><Trash2 size={14} /></button>
+                        <td className="px-3.5 py-2.5 text-right">
+                          <div className="inline-flex items-center gap-1">
+                            <button
+                              onClick={() => handleEdit(r)}
+                              className="rounded-lg bg-slate-50 border border-[#D5E3F7] p-1.5 text-slate-600 hover:bg-[#EDF5FF] hover:text-[#2449C6] hover:border-[#2449C6]/30 transition-all"
+                              title="Edit"
+                            >
+                              <Edit2 size={14} />
+                            </button>
+                            <button
+                              onClick={() => { if (confirm(`Delete "${r.ledger_name || r.name}"?`)) removeMutation.mutate(r.id); }}
+                              className="rounded-lg bg-slate-50 border border-[#D5E3F7] p-1.5 text-slate-600 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-all"
+                              title="Delete"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
                         </td>
                       )}
                     </tr>
                   );
                 })}
                 {filtered.length === 0 && (
-                  <tr><td colSpan={canManage ? 9 : 8} className="px-4 py-8 text-center text-slate-400 font-medium">No customers found.</td></tr>
+                  <tr><td colSpan={canManage ? 9 : 8} className="px-3.5 py-8 text-center text-slate-400 font-medium">No customers found.</td></tr>
                 )}
               </tbody>
             </table>
@@ -650,59 +672,89 @@ function SuppliersPanel({ canManage }) {
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
       {/* LEFT FORM */}
       <div className="lg:col-span-4">
-        <div className="card p-5 border border-border-soft bg-white shadow-xs rounded-2xl sticky top-4">
-          <div className="flex items-center justify-between border-b border-border-soft pb-3 mb-4">
-            <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-              <Truck className="h-5 w-5 text-indigo-600" />
+        <div className="rounded-2xl border border-[#D5E3F7] bg-white shadow-xs p-5 sticky top-4">
+          <div className="flex items-center justify-between border-b border-[#D5E3F7] pb-3 mb-4">
+            <h2 className="text-base font-bold text-[#0B1B45] flex items-center gap-2">
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#EDF5FF] text-[#2449C6]">
+                <Truck className="h-4 w-4" />
+              </span>
               {editingId ? 'Edit Supplier' : 'Create Supplier'}
             </h2>
-            {editingId && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800">Editing #{editingId}</span>}
+            {editingId && <span className="rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-[10px] font-bold text-amber-800">Editing #{editingId}</span>}
           </div>
 
           {successMsg && <div className="mb-4 rounded-xl bg-emerald-50 p-3 text-xs font-semibold text-emerald-800 border border-emerald-200 flex items-center gap-1.5"><CheckCircle2 size={16} /> {successMsg}</div>}
           {formError && <div className="mb-4 rounded-xl bg-red-50 p-3 text-xs font-semibold text-red-800 border border-red-200">{formError}</div>}
 
-          <form onSubmit={handleSubmit} className="space-y-3">
+          <form onSubmit={handleSubmit} className="space-y-3.5">
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Supplier Name <span className="text-red-500">*</span></label>
-              <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., HUL Distributors" disabled={!canManage} className="input w-full" />
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Supplier Name <span className="text-red-500">*</span></label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g., HUL Distributors"
+                disabled={!canManage}
+                className="w-full rounded-xl border border-[#D5E3F7] bg-[#F8FAFD] px-3 py-2 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15 outline-none transition-all disabled:opacity-60"
+              />
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Phone Number</label>
-              <input type="text" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="e.g., 9443322110" disabled={!canManage} className="input w-full" />
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Phone Number</label>
+              <input
+                type="text"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="e.g., 9443322110"
+                disabled={!canManage}
+                className="w-full rounded-xl border border-[#D5E3F7] bg-[#F8FAFD] px-3 py-2 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15 outline-none transition-all disabled:opacity-60"
+              />
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">GSTIN Number</label>
-              <input type="text" value={gstin} onChange={(e) => setGstin(e.target.value)} placeholder="e.g., 33AAAAA0000A1Z5" disabled={!canManage} className="input w-full" />
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">GSTIN Number</label>
+              <input
+                type="text"
+                value={gstin}
+                onChange={(e) => setGstin(e.target.value)}
+                placeholder="e.g., 33AAAAA0000A1Z5"
+                disabled={!canManage}
+                className="w-full rounded-xl border border-[#D5E3F7] bg-[#F8FAFD] px-3 py-2 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15 outline-none transition-all disabled:opacity-60"
+              />
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Opening Balance (Rs.)</label>
-              <input type="number" value={openingBalance} onChange={(e) => setOpeningBalance(e.target.value)} placeholder="0" disabled={!canManage} className="input w-full" />
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Opening Balance (Rs.)</label>
+              <input
+                type="number"
+                value={openingBalance}
+                onChange={(e) => setOpeningBalance(e.target.value)}
+                placeholder="0"
+                disabled={!canManage}
+                className="w-full rounded-xl border border-[#D5E3F7] bg-[#F8FAFD] px-3 py-2 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15 outline-none transition-all disabled:opacity-60"
+              />
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">Status</label>
-              <div className="flex items-center gap-4 bg-slate-50 p-2.5 rounded-xl border border-border-soft">
-                <label className="flex items-center gap-2 text-xs font-bold cursor-pointer text-slate-800">
-                  <input type="radio" name="sup_status" checked={isActive} onChange={() => setIsActive(true)} disabled={!canManage} className="accent-emerald-600 h-4 w-4" />
-                  <span className="flex items-center gap-1 text-emerald-700"><Power size={14} /> Active</span>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Status</label>
+              <div className="flex items-center gap-4 bg-[#F8FAFD] p-2.5 rounded-xl border border-[#D5E3F7]">
+                <label className="flex items-center gap-2 text-sm font-bold cursor-pointer text-slate-800">
+                  <input type="radio" name="sup_status" checked={isActive} onChange={() => setIsActive(true)} disabled={!canManage} className="accent-[#2449C6] h-4 w-4" />
+                  <span className="flex items-center gap-1 text-emerald-700"><Power size={13} /> Active</span>
                 </label>
-                <label className="flex items-center gap-2 text-xs font-bold cursor-pointer text-slate-800">
+                <label className="flex items-center gap-2 text-sm font-bold cursor-pointer text-slate-800">
                   <input type="radio" name="sup_status" checked={!isActive} onChange={() => setIsActive(false)} disabled={!canManage} className="accent-rose-600 h-4 w-4" />
-                  <span className="flex items-center gap-1 text-slate-500"><Power size={14} /> Inactive</span>
+                  <span className="flex items-center gap-1 text-slate-500"><Power size={13} /> Inactive</span>
                 </label>
               </div>
             </div>
 
             {canManage && (
               <div className="flex items-center gap-2 pt-2">
-                <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending} className="flex-1 justify-center py-2 text-xs font-bold">
+                <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending} className="flex-1 justify-center py-2 text-sm font-bold">
                   {editingId ? 'Update Supplier' : 'Save Supplier'}
                 </Button>
-                {editingId && <Button type="button" variant="secondary" onClick={resetForm} className="py-2 text-xs font-bold">Cancel</Button>}
+                {editingId && <Button type="button" variant="secondary" onClick={resetForm} className="py-2 text-sm font-bold">Cancel</Button>}
               </div>
             )}
           </form>
@@ -711,19 +763,29 @@ function SuppliersPanel({ canManage }) {
 
       {/* RIGHT TABLE */}
       <div className="lg:col-span-8">
-        <div className="card border border-border-soft bg-white shadow-xs rounded-2xl overflow-hidden">
-          <div className="p-4 border-b border-border-soft flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+        <div className="rounded-2xl border border-[#D5E3F7] bg-white shadow-xs overflow-hidden">
+          <div className="p-4 border-b border-[#D5E3F7] bg-gradient-to-r from-white via-[#F8FAFD] to-white flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <h2 className="text-base font-bold text-[#0B1B45] flex items-center gap-2">
               <span>Supplier Directory</span>
-              <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-700">{filtered.length} Total</span>
+              <span className="rounded-full bg-[#EDF5FF] border border-[#D5E3F7] px-2.5 py-0.5 text-xs font-bold text-[#2449C6]">{filtered.length} Total</span>
             </h2>
 
             <div className="flex items-center gap-2">
               <div className="relative">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-                <input type="text" placeholder="Search suppliers..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="input pl-8 py-1 text-xs w-44 sm:w-56" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                <input
+                  type="text"
+                  placeholder="Search suppliers..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="rounded-xl border border-[#D5E3F7] bg-[#F8FAFD] pl-9 pr-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-400 focus:bg-white focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15 outline-none transition-all w-44 sm:w-56"
+                />
               </div>
-              <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="input py-1 text-xs w-28">
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="rounded-xl border border-[#D5E3F7] bg-[#F8FAFD] px-3 py-1.5 text-xs font-medium text-slate-800 focus:bg-white focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15 outline-none transition-all w-28"
+              >
                 <option value="all">All Status</option>
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
@@ -732,45 +794,67 @@ function SuppliersPanel({ canManage }) {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
+            <table className="w-full text-left text-sm">
               <thead>
-                <tr className="border-b border-border-soft bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                  <th className="px-4 py-3">#</th>
-                  <th className="px-4 py-3">Supplier Name</th>
-                  <th className="px-4 py-3">Phone</th>
-                  <th className="px-4 py-3">GSTIN</th>
-                  <th className="px-4 py-3">Outstanding</th>
-                  <th className="px-4 py-3">Status</th>
-                  {canManage && <th className="px-4 py-3 text-right">Actions</th>}
+                <tr className="border-b border-[#D5E3F7] bg-[#F8FAFD] text-xs font-bold uppercase tracking-wider text-slate-500">
+                  <th className="px-3.5 py-2.5">#</th>
+                  <th className="px-3.5 py-2.5">Supplier Name</th>
+                  <th className="px-3.5 py-2.5">Phone</th>
+                  <th className="px-3.5 py-2.5">GSTIN</th>
+                  <th className="px-3.5 py-2.5 text-right">Outstanding</th>
+                  <th className="px-3.5 py-2.5 text-center">Status</th>
+                  {canManage && <th className="px-3.5 py-2.5 text-right">Actions</th>}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border-soft">
+              <tbody className="divide-y divide-[#EAF1FA]">
                 {filtered.map((r, index) => {
                   const sActive = r.status !== 'inactive' && r.is_active !== 0 && r.is_active !== false;
                   const val = Number(balanceById.get(r.id)?.current_outstanding ?? 0);
                   return (
-                    <tr key={r.id} className="hover:bg-slate-50/50 transition-colors">
-                      <td className="px-4 py-3 font-semibold text-slate-400">{index + 1}</td>
-                      <td className="px-4 py-3 font-bold text-slate-900">{r.name}</td>
-                      <td className="px-4 py-3 font-medium text-slate-600">{r.phone || '-'}</td>
-                      <td className="px-4 py-3 font-medium text-slate-600">{r.gstin || '-'}</td>
-                      <td className="px-4 py-3 font-bold">
+                    <tr key={r.id} className="hover:bg-[#F5F8FF]/80 transition-colors">
+                      <td className="px-3.5 py-2.5 font-semibold text-slate-400">{index + 1}</td>
+                      <td className="px-3.5 py-2.5 font-bold text-[#0B1B45]">{r.name}</td>
+                      <td className="px-3.5 py-2.5 font-medium text-slate-600">{r.phone || '-'}</td>
+                      <td className="px-3.5 py-2.5 font-medium text-slate-600">{r.gstin || '-'}</td>
+                      <td className="px-3.5 py-2.5 text-right whitespace-nowrap font-bold">
                         <span className={val > 0 ? 'text-rose-600' : 'text-emerald-600'}>Rs. {val.toFixed(2)}</span>
                       </td>
-                      <td className="px-4 py-3">
-                        {sActive ? <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700 border border-emerald-200">Active</span> : <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-bold text-slate-500 border border-slate-200">Inactive</span>}
+                      <td className="px-3.5 py-2.5 text-center">
+                        {sActive ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-bold text-emerald-700 border border-emerald-200">
+                            Active
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-500 border border-slate-200">
+                            Inactive
+                          </span>
+                        )}
                       </td>
                       {canManage && (
-                        <td className="px-4 py-3 text-right space-x-1">
-                          <button onClick={() => handleEdit(r)} className="rounded-lg bg-slate-100 p-1.5 text-slate-700 hover:bg-indigo-50 hover:text-indigo-600"><Edit2 size={14} /></button>
-                          <button onClick={() => { if (confirm(`Delete "${r.name}"?`)) removeMutation.mutate(r.id); }} className="rounded-lg bg-slate-100 p-1.5 text-slate-700 hover:bg-rose-50 hover:text-rose-600"><Trash2 size={14} /></button>
+                        <td className="px-3.5 py-2.5 text-right">
+                          <div className="inline-flex items-center gap-1">
+                            <button
+                              onClick={() => handleEdit(r)}
+                              className="rounded-lg bg-slate-50 border border-[#D5E3F7] p-1.5 text-slate-600 hover:bg-[#EDF5FF] hover:text-[#2449C6] hover:border-[#2449C6]/30 transition-all"
+                              title="Edit"
+                            >
+                              <Edit2 size={14} />
+                            </button>
+                            <button
+                              onClick={() => { if (confirm(`Delete "${r.name}"?`)) removeMutation.mutate(r.id); }}
+                              className="rounded-lg bg-slate-50 border border-[#D5E3F7] p-1.5 text-slate-600 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-all"
+                              title="Delete"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
                         </td>
                       )}
                     </tr>
                   );
                 })}
                 {filtered.length === 0 && (
-                  <tr><td colSpan={canManage ? 7 : 6} className="px-4 py-8 text-center text-slate-400 font-medium">No suppliers found.</td></tr>
+                  <tr><td colSpan={canManage ? 7 : 6} className="px-3.5 py-8 text-center text-slate-400 font-medium">No suppliers found.</td></tr>
                 )}
               </tbody>
             </table>
@@ -856,33 +940,43 @@ function RoutesPanel({ canManage }) {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         {/* LEFT FORM */}
         <div className="lg:col-span-4">
-          <div className="card p-5 border border-border-soft bg-white shadow-xs rounded-2xl sticky top-4">
-            <div className="flex items-center justify-between border-b border-border-soft pb-3 mb-4">
-              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <MapPin className="h-5 w-5 text-indigo-600" />
+          <div className="rounded-2xl border border-[#D5E3F7] bg-white shadow-xs p-5 sticky top-4">
+            <div className="flex items-center justify-between border-b border-[#D5E3F7] pb-3 mb-4">
+              <h2 className="text-base font-bold text-[#0B1B45] flex items-center gap-2">
+                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#EDF5FF] text-[#2449C6]">
+                  <MapPin className="h-4 w-4" />
+                </span>
                 {editingId ? 'Edit Route' : 'Create Route'}
               </h2>
+              {editingId && <span className="rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-[10px] font-bold text-amber-800">Editing #{editingId}</span>}
             </div>
 
             {successMsg && <div className="mb-4 rounded-xl bg-emerald-50 p-3 text-xs font-semibold text-emerald-800 border border-emerald-200 flex items-center gap-1.5"><CheckCircle2 size={16} /> {successMsg}</div>}
             {formError && <div className="mb-4 rounded-xl bg-red-50 p-3 text-xs font-semibold text-red-800 border border-red-200">{formError}</div>}
 
-            <form onSubmit={handleSubmit} className="space-y-3">
+            <form onSubmit={handleSubmit} className="space-y-3.5">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Route Name <span className="text-red-500">*</span></label>
-                <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., North Town Route" disabled={!canManage} className="input w-full" />
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">Route Name <span className="text-red-500">*</span></label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="e.g., North Town Route"
+                  disabled={!canManage}
+                  className="w-full rounded-xl border border-[#D5E3F7] bg-[#F8FAFD] px-3 py-2 text-xs font-semibold text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15 outline-none transition-all disabled:opacity-60"
+                />
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">Status</label>
-                <div className="flex items-center gap-4 bg-slate-50 p-2.5 rounded-xl border border-border-soft">
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1.5">Status</label>
+                <div className="flex items-center gap-4 bg-[#F8FAFD] p-2.5 rounded-xl border border-[#D5E3F7]">
                   <label className="flex items-center gap-2 text-xs font-bold cursor-pointer text-slate-800">
-                    <input type="radio" name="route_status" checked={isActive} onChange={() => setIsActive(true)} disabled={!canManage} className="accent-emerald-600 h-4 w-4" />
-                    <span className="flex items-center gap-1 text-emerald-700"><Power size={14} /> Active</span>
+                    <input type="radio" name="route_status" checked={isActive} onChange={() => setIsActive(true)} disabled={!canManage} className="accent-[#2449C6] h-4 w-4" />
+                    <span className="flex items-center gap-1 text-emerald-700"><Power size={13} /> Active</span>
                   </label>
                   <label className="flex items-center gap-2 text-xs font-bold cursor-pointer text-slate-800">
                     <input type="radio" name="route_status" checked={!isActive} onChange={() => setIsActive(false)} disabled={!canManage} className="accent-rose-600 h-4 w-4" />
-                    <span className="flex items-center gap-1 text-slate-500"><Power size={14} /> Inactive</span>
+                    <span className="flex items-center gap-1 text-slate-500"><Power size={13} /> Inactive</span>
                   </label>
                 </div>
               </div>
@@ -901,50 +995,78 @@ function RoutesPanel({ canManage }) {
 
         {/* RIGHT TABLE */}
         <div className="lg:col-span-8">
-          <div className="card border border-border-soft bg-white shadow-xs rounded-2xl overflow-hidden">
-            <div className="p-4 border-b border-border-soft flex items-center justify-between">
-              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+          <div className="rounded-2xl border border-[#D5E3F7] bg-white shadow-xs overflow-hidden">
+            <div className="p-4 border-b border-[#D5E3F7] bg-gradient-to-r from-white via-[#F8FAFD] to-white flex items-center justify-between">
+              <h2 className="text-base font-bold text-[#0B1B45] flex items-center gap-2">
                 <span>Routes Directory</span>
-                <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-700">{filtered.length} Total</span>
+                <span className="rounded-full bg-[#EDF5FF] border border-[#D5E3F7] px-2.5 py-0.5 text-xs font-bold text-[#2449C6]">{filtered.length} Total</span>
               </h2>
 
               <div className="relative">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-                <input type="text" placeholder="Search routes..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="input pl-8 py-1 text-xs w-48" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+                <input
+                  type="text"
+                  placeholder="Search routes..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="rounded-xl border border-[#D5E3F7] bg-[#F8FAFD] pl-9 pr-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-400 focus:bg-white focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15 outline-none transition-all w-48"
+                />
               </div>
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
+              <table className="w-full text-left text-sm">
                 <thead>
-                  <tr className="border-b border-border-soft bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                    <th className="px-4 py-3">#</th>
-                    <th className="px-4 py-3">Route Name</th>
-                    <th className="px-4 py-3">Status</th>
-                    {canManage && <th className="px-4 py-3 text-right">Actions</th>}
+                  <tr className="border-b border-[#D5E3F7] bg-[#F8FAFD] text-xs font-bold uppercase tracking-wider text-slate-500">
+                    <th className="px-3.5 py-2.5">#</th>
+                    <th className="px-3.5 py-2.5">Route Name</th>
+                    <th className="px-3.5 py-2.5 text-center">Status</th>
+                    {canManage && <th className="px-3.5 py-2.5 text-right">Actions</th>}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border-soft">
+                <tbody className="divide-y divide-[#EAF1FA]">
                   {filtered.map((r, index) => {
                     const rActive = r.is_active === undefined ? true : Boolean(Number(r.is_active));
                     return (
-                      <tr key={r.id} className="hover:bg-slate-50/50 transition-colors">
-                        <td className="px-4 py-3 font-semibold text-slate-400">{index + 1}</td>
-                        <td className="px-4 py-3 font-bold text-slate-900">{r.name}</td>
-                        <td className="px-4 py-3">
-                          {rActive ? <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700 border border-emerald-200">Active</span> : <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-bold text-slate-500 border border-slate-200">Inactive</span>}
+                      <tr key={r.id} className="hover:bg-[#F5F8FF]/80 transition-colors">
+                        <td className="px-3.5 py-2.5 font-semibold text-slate-400">{index + 1}</td>
+                        <td className="px-3.5 py-2.5 font-bold text-[#0B1B45]">{r.name}</td>
+                        <td className="px-3.5 py-2.5 text-center">
+                          {rActive ? (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-bold text-emerald-700 border border-emerald-200">
+                              Active
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-500 border border-slate-200">
+                              Inactive
+                            </span>
+                          )}
                         </td>
                         {canManage && (
-                          <td className="px-4 py-3 text-right space-x-1">
-                            <button onClick={() => handleEdit(r)} className="rounded-lg bg-slate-100 p-1.5 text-slate-700 hover:bg-indigo-50 hover:text-indigo-600"><Edit2 size={14} /></button>
-                            <button onClick={() => { if (confirm(`Delete "${r.name}"?`)) removeMutation.mutate(r.id); }} className="rounded-lg bg-slate-100 p-1.5 text-slate-700 hover:bg-rose-50 hover:text-rose-600"><Trash2 size={14} /></button>
+                          <td className="px-3.5 py-2.5 text-right">
+                            <div className="inline-flex items-center gap-1">
+                              <button
+                                onClick={() => handleEdit(r)}
+                                className="rounded-lg bg-slate-50 border border-[#D5E3F7] p-1.5 text-slate-600 hover:bg-[#EDF5FF] hover:text-[#2449C6] hover:border-[#2449C6]/30 transition-all"
+                                title="Edit"
+                              >
+                                <Edit2 size={14} />
+                              </button>
+                              <button
+                                onClick={() => { if (confirm(`Delete "${r.name}"?`)) removeMutation.mutate(r.id); }}
+                                className="rounded-lg bg-slate-50 border border-[#D5E3F7] p-1.5 text-slate-600 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-all"
+                                title="Delete"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
                           </td>
                         )}
                       </tr>
                     );
                   })}
                   {filtered.length === 0 && (
-                    <tr><td colSpan={canManage ? 4 : 3} className="px-4 py-8 text-center text-slate-400 font-medium">No routes found.</td></tr>
+                    <tr><td colSpan={canManage ? 4 : 3} className="px-3.5 py-8 text-center text-slate-400 font-medium">No routes found.</td></tr>
                   )}
                 </tbody>
               </table>
@@ -1040,41 +1162,56 @@ function CitiesPanel({ canManage }) {
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
       {/* LEFT FORM */}
       <div className="lg:col-span-4">
-        <div className="card p-5 border border-border-soft bg-white shadow-xs rounded-2xl sticky top-4">
-          <div className="flex items-center justify-between border-b border-border-soft pb-3 mb-4">
-            <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-              <Building2 className="h-5 w-5 text-indigo-600" />
+        <div className="rounded-2xl border border-[#D5E3F7] bg-white shadow-xs p-5 sticky top-4">
+          <div className="flex items-center justify-between border-b border-[#D5E3F7] pb-3 mb-4">
+            <h2 className="text-base font-bold text-[#0B1B45] flex items-center gap-2">
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#EDF5FF] text-[#2449C6]">
+                <Building2 className="h-4 w-4" />
+              </span>
               {editingId ? 'Edit City' : 'Create City'}
             </h2>
+            {editingId && <span className="rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-[10px] font-bold text-amber-800">Editing #{editingId}</span>}
           </div>
 
           {successMsg && <div className="mb-4 rounded-xl bg-emerald-50 p-3 text-xs font-semibold text-emerald-800 border border-emerald-200 flex items-center gap-1.5"><CheckCircle2 size={16} /> {successMsg}</div>}
           {formError && <div className="mb-4 rounded-xl bg-red-50 p-3 text-xs font-semibold text-red-800 border border-red-200">{formError}</div>}
 
-          <form onSubmit={handleSubmit} className="space-y-3">
+          <form onSubmit={handleSubmit} className="space-y-3.5">
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">City Name <span className="text-red-500">*</span></label>
-              <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Madurai, Trichy" disabled={!canManage} className="input w-full" />
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">City Name <span className="text-red-500">*</span></label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g., Madurai, Trichy"
+                disabled={!canManage}
+                className="w-full rounded-xl border border-[#D5E3F7] bg-[#F8FAFD] px-3 py-2 text-xs font-semibold text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15 outline-none transition-all disabled:opacity-60"
+              />
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">Assigned Route <span className="text-red-500">*</span></label>
-              <select value={routeId} onChange={(e) => setRouteId(e.target.value)} disabled={!canManage} className="input w-full">
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">Assigned Route <span className="text-red-500">*</span></label>
+              <select
+                value={routeId}
+                onChange={(e) => setRouteId(e.target.value)}
+                disabled={!canManage}
+                className="w-full rounded-xl border border-[#D5E3F7] bg-[#F8FAFD] px-3 py-2 text-xs font-semibold text-slate-900 focus:bg-white focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15 outline-none transition-all disabled:opacity-60"
+              >
                 <option value="">-- Select Route --</option>
                 {routes.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
               </select>
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">Status</label>
-              <div className="flex items-center gap-4 bg-slate-50 p-2.5 rounded-xl border border-border-soft">
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1.5">Status</label>
+              <div className="flex items-center gap-4 bg-[#F8FAFD] p-2.5 rounded-xl border border-[#D5E3F7]">
                 <label className="flex items-center gap-2 text-xs font-bold cursor-pointer text-slate-800">
-                  <input type="radio" name="city_status" checked={isActive} onChange={() => setIsActive(true)} disabled={!canManage} className="accent-emerald-600 h-4 w-4" />
-                  <span className="flex items-center gap-1 text-emerald-700"><Power size={14} /> Active</span>
+                  <input type="radio" name="city_status" checked={isActive} onChange={() => setIsActive(true)} disabled={!canManage} className="accent-[#2449C6] h-4 w-4" />
+                  <span className="flex items-center gap-1 text-emerald-700"><Power size={13} /> Active</span>
                 </label>
                 <label className="flex items-center gap-2 text-xs font-bold cursor-pointer text-slate-800">
                   <input type="radio" name="city_status" checked={!isActive} onChange={() => setIsActive(false)} disabled={!canManage} className="accent-rose-600 h-4 w-4" />
-                  <span className="flex items-center gap-1 text-slate-500"><Power size={14} /> Inactive</span>
+                  <span className="flex items-center gap-1 text-slate-500"><Power size={13} /> Inactive</span>
                 </label>
               </div>
             </div>
@@ -1093,52 +1230,80 @@ function CitiesPanel({ canManage }) {
 
       {/* RIGHT TABLE */}
       <div className="lg:col-span-8">
-        <div className="card border border-border-soft bg-white shadow-xs rounded-2xl overflow-hidden">
-          <div className="p-4 border-b border-border-soft flex items-center justify-between">
-            <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+        <div className="rounded-2xl border border-[#D5E3F7] bg-white shadow-xs overflow-hidden">
+          <div className="p-4 border-b border-[#D5E3F7] bg-gradient-to-r from-white via-[#F8FAFD] to-white flex items-center justify-between">
+            <h2 className="text-base font-bold text-[#0B1B45] flex items-center gap-2">
               <span>Cities Directory</span>
-              <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-700">{filtered.length} Total</span>
+              <span className="rounded-full bg-[#EDF5FF] border border-[#D5E3F7] px-2.5 py-0.5 text-xs font-bold text-[#2449C6]">{filtered.length} Total</span>
             </h2>
 
             <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-              <input type="text" placeholder="Search cities..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="input pl-8 py-1 text-xs w-48" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+              <input
+                type="text"
+                placeholder="Search cities..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="rounded-xl border border-[#D5E3F7] bg-[#F8FAFD] pl-9 pr-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-400 focus:bg-white focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15 outline-none transition-all w-48"
+              />
             </div>
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
+            <table className="w-full text-left text-sm">
               <thead>
-                <tr className="border-b border-border-soft bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                  <th className="px-4 py-3">#</th>
-                  <th className="px-4 py-3">City Name</th>
-                  <th className="px-4 py-3">Route</th>
-                  <th className="px-4 py-3">Status</th>
-                  {canManage && <th className="px-4 py-3 text-right">Actions</th>}
+                <tr className="border-b border-[#D5E3F7] bg-[#F8FAFD] text-xs font-bold uppercase tracking-wider text-slate-500">
+                  <th className="px-3.5 py-2.5">#</th>
+                  <th className="px-3.5 py-2.5">City Name</th>
+                  <th className="px-3.5 py-2.5">Route</th>
+                  <th className="px-3.5 py-2.5 text-center">Status</th>
+                  {canManage && <th className="px-3.5 py-2.5 text-right">Actions</th>}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border-soft">
+              <tbody className="divide-y divide-[#EAF1FA]">
                 {filtered.map((r, index) => {
                   const rActive = r.is_active === undefined ? true : Boolean(Number(r.is_active));
                   return (
-                    <tr key={r.id} className="hover:bg-slate-50/50 transition-colors">
-                      <td className="px-4 py-3 font-semibold text-slate-400">{index + 1}</td>
-                      <td className="px-4 py-3 font-bold text-slate-900">{r.name}</td>
-                      <td className="px-4 py-3 font-semibold text-indigo-600">{routeMap.get(r.route_id) || '-'}</td>
-                      <td className="px-4 py-3">
-                        {rActive ? <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700 border border-emerald-200">Active</span> : <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-bold text-slate-500 border border-slate-200">Inactive</span>}
+                    <tr key={r.id} className="hover:bg-[#F5F8FF]/80 transition-colors">
+                      <td className="px-3.5 py-2.5 font-semibold text-slate-400">{index + 1}</td>
+                      <td className="px-3.5 py-2.5 font-bold text-[#0B1B45]">{r.name}</td>
+                      <td className="px-3.5 py-2.5 font-semibold text-[#2449C6]">{routeMap.get(r.route_id) || '-'}</td>
+                      <td className="px-3.5 py-2.5 text-center">
+                        {rActive ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-bold text-emerald-700 border border-emerald-200">
+                            Active
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-500 border border-slate-200">
+                            Inactive
+                          </span>
+                        )}
                       </td>
                       {canManage && (
-                        <td className="px-4 py-3 text-right space-x-1">
-                          <button onClick={() => handleEdit(r)} className="rounded-lg bg-slate-100 p-1.5 text-slate-700 hover:bg-indigo-50 hover:text-indigo-600"><Edit2 size={14} /></button>
-                          <button onClick={() => { if (confirm(`Delete "${r.name}"?`)) removeMutation.mutate(r.id); }} className="rounded-lg bg-slate-100 p-1.5 text-slate-700 hover:bg-rose-50 hover:text-rose-600"><Trash2 size={14} /></button>
+                        <td className="px-3.5 py-2.5 text-right">
+                          <div className="inline-flex items-center gap-1">
+                            <button
+                              onClick={() => handleEdit(r)}
+                              className="rounded-lg bg-slate-50 border border-[#D5E3F7] p-1.5 text-slate-600 hover:bg-[#EDF5FF] hover:text-[#2449C6] hover:border-[#2449C6]/30 transition-all"
+                              title="Edit"
+                            >
+                              <Edit2 size={14} />
+                            </button>
+                            <button
+                              onClick={() => { if (confirm(`Delete "${r.name}"?`)) removeMutation.mutate(r.id); }}
+                              className="rounded-lg bg-slate-50 border border-[#D5E3F7] p-1.5 text-slate-600 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-all"
+                              title="Delete"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
                         </td>
                       )}
                     </tr>
                   );
                 })}
                 {filtered.length === 0 && (
-                  <tr><td colSpan={canManage ? 5 : 4} className="px-4 py-8 text-center text-slate-400 font-medium">No cities found.</td></tr>
+                  <tr><td colSpan={canManage ? 5 : 4} className="px-3.5 py-8 text-center text-slate-400 font-medium">No cities found.</td></tr>
                 )}
               </tbody>
             </table>
@@ -1182,13 +1347,15 @@ function RouteSupplierMappingPanel({ canManage }) {
   };
 
   return (
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 border-t border-border-soft pt-6">
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 border-t border-[#D5E3F7] pt-6">
       {/* LEFT FORM */}
       <div className="lg:col-span-5">
-        <div className="card p-5 border border-border-soft bg-white shadow-xs rounded-2xl sticky top-4 space-y-4">
-          <div className="border-b border-border-soft pb-3">
-            <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-              <MapPin className="h-5 w-5 text-indigo-600" />
+        <div className="rounded-2xl border border-[#D5E3F7] bg-white shadow-xs p-5 sticky top-4 space-y-4">
+          <div className="border-b border-[#D5E3F7] pb-3">
+            <h2 className="text-base font-bold text-[#0B1B45] flex items-center gap-2">
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#EDF5FF] text-[#2449C6]">
+                <MapPin className="h-4 w-4" />
+              </span>
               Route → Supplier Mapping
             </h2>
             <p className="text-xs text-slate-500 font-medium mt-1">
@@ -1203,10 +1370,15 @@ function RouteSupplierMappingPanel({ canManage }) {
           )}
 
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">
               Select Route
             </label>
-            <select value={routeId} onChange={(e) => pickRoute(e.target.value)} disabled={!canManage} className="input w-full">
+            <select
+              value={routeId}
+              onChange={(e) => pickRoute(e.target.value)}
+              disabled={!canManage}
+              className="w-full rounded-xl border border-[#D5E3F7] bg-[#F8FAFD] px-3 py-2 text-xs font-semibold text-slate-900 focus:bg-white focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15 outline-none transition-all disabled:opacity-60"
+            >
               <option value="">-- Choose Route --</option>
               {routes.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
             </select>
@@ -1215,13 +1387,13 @@ function RouteSupplierMappingPanel({ canManage }) {
           {routeId && (
             <>
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-2">
                   Allowed Suppliers
                 </label>
-                <div className="max-h-60 overflow-y-auto space-y-2 p-3 bg-slate-50 rounded-xl border border-border-soft">
+                <div className="max-h-60 overflow-y-auto space-y-2 p-3 bg-[#F8FAFD] rounded-xl border border-[#D5E3F7]">
                   {suppliers.map((s) => (
-                    <label key={s.id} className="flex items-center gap-2 text-xs font-bold text-slate-800 cursor-pointer p-1 rounded-lg hover:bg-white transition-colors">
-                      <input type="checkbox" checked={selected.includes(s.id)} onChange={() => toggle(s.id)} disabled={!canManage} className="accent-indigo-600 h-4 w-4 rounded" />
+                    <label key={s.id} className="flex items-center gap-2.5 text-xs font-semibold text-slate-800 cursor-pointer p-1.5 rounded-lg hover:bg-white transition-colors">
+                      <input type="checkbox" checked={selected.includes(s.id)} onChange={() => toggle(s.id)} disabled={!canManage} className="accent-[#2449C6] h-4 w-4 rounded" />
                       <span>{s.name}</span>
                       {s.phone && <span className="text-[10px] text-slate-400">({s.phone})</span>}
                     </label>
@@ -1242,26 +1414,28 @@ function RouteSupplierMappingPanel({ canManage }) {
 
       {/* RIGHT LIST */}
       <div className="lg:col-span-7">
-        <div className="card border border-border-soft bg-white shadow-xs rounded-2xl overflow-hidden p-4">
-          <h2 className="text-base font-bold text-slate-900 mb-3 flex items-center justify-between">
+        <div className="rounded-2xl border border-[#D5E3F7] bg-white shadow-xs overflow-hidden p-4">
+          <h2 className="text-base font-bold text-[#0B1B45] mb-3 flex items-center justify-between border-b border-[#D5E3F7] pb-3">
             <span>Mapped Route Overview</span>
-            <span className="text-xs text-slate-500 font-normal">{routes.length} Routes</span>
+            <span className="rounded-full bg-[#EDF5FF] border border-[#D5E3F7] px-2.5 py-0.5 text-xs font-bold text-[#2449C6]">{routes.length} Routes</span>
           </h2>
 
-          <div className="space-y-3 max-h-[70vh] overflow-y-auto pr-1">
+          <div className="space-y-2.5 max-h-[70vh] overflow-y-auto pr-1">
             {routes.map((r) => (
               <div
                 key={r.id}
                 onClick={() => pickRoute(r.id)}
                 className={`p-3.5 rounded-xl border transition-all cursor-pointer ${
                   String(routeId) === String(r.id)
-                    ? 'border-indigo-500 bg-indigo-50/40 ring-1 ring-indigo-500/20'
-                    : 'border-border-soft bg-white hover:border-slate-300'
+                    ? 'border-[#2449C6] bg-[#EDF5FF] ring-2 ring-[#2449C6]/20 shadow-xs'
+                    : 'border-[#D5E3F7] bg-white hover:border-[#2449C6]/40 hover:bg-[#F5F8FF]'
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-xs text-slate-900">{r.name}</span>
-                  <span className="text-[11px] font-semibold text-indigo-600 hover:underline">Select &amp; Edit →</span>
+                  <span className="font-bold text-xs text-[#0B1B45]">{r.name}</span>
+                  <span className="text-[11px] font-bold text-[#2449C6] flex items-center gap-1 hover:underline">
+                    Select &amp; Edit →
+                  </span>
                 </div>
               </div>
             ))}
@@ -1272,19 +1446,52 @@ function RouteSupplierMappingPanel({ canManage }) {
   );
 }
 
-export function Parties() {
+export function Parties({ defaultTab }) {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const validTabs = ['customers', 'suppliers', 'routes', 'cities', 'purchasing', 'purchase-orders', 'grn'];
+  const tabFromUrl = searchParams.get('tab');
+  
+  // Normalize legacy tab aliases
+  let initialTab = tabFromUrl;
+  if (initialTab === 'payments') initialTab = 'purchasing';
+  if (initialTab === 'orders' || initialTab === 'requests' || initialTab === 'indents') initialTab = 'purchase-orders';
+  if (!initialTab && defaultTab) initialTab = defaultTab;
+
+  const activeTab = validTabs.includes(initialTab) ? initialTab : 'customers';
+
   const canManageCustomers = usePermission('parties.manage_customers');
   const canManageSuppliers = usePermission('parties.manage_suppliers');
+  const canGrn = usePermission('purchases.create_grn');
+  const canEditGrn = usePermission('purchases.edit_grn');
+  const canDeleteGrn = usePermission('purchases.delete_grn');
+  const canViewCost = usePermission('purchases.view_purchase_cost');
+  const canSettle = usePermission('purchases.settle_supplier_payment');
 
   return (
-    <div>
-      <h1 className="mb-4 text-2xl font-bold text-slate-900 tracking-tight">Parties &amp; Master Management</h1>
+    <div className="space-y-4 font-sans">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1">
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-[#0B1B45] to-[#2449C6] text-white shadow-md shadow-[#2449C6]/20 ring-4 ring-[#EDF5FF]">
+            <Users className="h-5 w-5 text-[#E8C985]" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-black text-[#0B1B45] tracking-tight">Parties &amp; Purchasing</h1>
+            <p className="text-xs sm:text-sm font-medium text-slate-500">Manage customers, suppliers, routes, purchase orders, and goods receipts (GRN)</p>
+          </div>
+        </div>
+      </div>
+
       <Tabs
+        activeKey={activeTab}
+        onTabChange={(k) => setSearchParams({ tab: k })}
         tabs={[
-          { key: 'customers', label: 'Customers', content: <CustomersPanel canManage={canManageCustomers} /> },
-          { key: 'suppliers', label: 'Suppliers', content: <SuppliersPanel canManage={canManageSuppliers} /> },
-          { key: 'routes', label: 'Routes', content: <RoutesPanel canManage={canManageCustomers} /> },
-          { key: 'cities', label: 'Cities', content: <CitiesPanel canManage={canManageCustomers} /> },
+          { key: 'customers', label: 'Customers', icon: Users, content: <CustomersPanel canManage={canManageCustomers} /> },
+          { key: 'suppliers', label: 'Suppliers', icon: Truck, content: <SuppliersPanel canManage={canManageSuppliers} /> },
+          { key: 'routes', label: 'Routes', icon: MapPin, content: <RoutesPanel canManage={canManageCustomers} /> },
+          { key: 'cities', label: 'Cities', icon: Building2, content: <CitiesPanel canManage={canManageCustomers} /> },
+          { key: 'purchasing', label: 'Purchasing', icon: CreditCard, content: <SupplierPaymentsPanel canManage={canSettle} /> },
+          { key: 'purchase-orders', label: 'Purchase Orders', icon: ClipboardList, content: <SupplierRequestPanel /> },
+          { key: 'grn', label: 'Goods Receipt (GRN)', icon: ShoppingBag, content: <GrnPanel canManage={canGrn} canEdit={canEditGrn} canViewCost={canViewCost} canDelete={canDeleteGrn} /> },
         ]}
       />
     </div>

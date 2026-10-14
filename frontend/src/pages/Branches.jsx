@@ -110,20 +110,24 @@ export function Branches({ hideHeader = false }) {
   return (
     <div className="space-y-6">
       {!hideHeader && (
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border-soft/40 pb-4">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-ink flex items-center gap-2.5">
-              <Building2 className="w-7 h-7 text-indigo-400" />
-              Branch Management
-            </h1>
-            <p className="text-xs text-ink-muted mt-1">Configure company branches, invoice headers, tax details, and locations</p>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#D5E3F7] pb-5">
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[#0B1B45] to-[#2449C6] text-[#E8C985] shadow-md">
+              <Building2 className="w-6 h-6" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight text-[#0B1B45]">
+                Branch Management
+              </h1>
+              <p className="text-xs font-medium text-slate-500 mt-0.5">Configure company branches, invoice headers, tax details, and locations</p>
+            </div>
           </div>
         </div>
       )}
 
       {successMsg && (
-        <div className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-sm px-4 py-3 rounded-lg flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4" />
+        <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold px-4 py-3 rounded-2xl flex items-center gap-2 shadow-xs">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600" />
           {successMsg}
         </div>
       )}
@@ -131,165 +135,165 @@ export function Branches({ hideHeader = false }) {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         {/* Left Column: Form */}
         <div className="lg:col-span-4">
-          <div className="card p-5 space-y-4 sticky top-6">
-            <div className="flex items-center justify-between border-b border-border-soft pb-3">
-              <h2 className="font-semibold text-ink text-base flex items-center gap-2">
-                {editingId ? <Edit2 className="w-4 h-4 text-cyan-400" /> : <Plus className="w-4 h-4 text-emerald-400" />}
+          <div className="overflow-hidden rounded-2xl border border-[#D5E3F7] bg-white shadow-xs p-5 space-y-4 sticky top-6">
+            <div className="flex items-center justify-between border-b border-[#EAF1FA] pb-3.5">
+              <h2 className="font-bold text-[#0B1B45] text-sm flex items-center gap-2">
+                {editingId ? <Edit2 className="w-4 h-4 text-[#2449C6]" /> : <Plus className="w-4 h-4 text-[#2449C6]" />}
                 {editingId ? 'Edit Branch' : 'Create New Branch'}
               </h2>
               {editingId && (
-                <button onClick={resetForm} className="text-xs text-ink-muted hover:text-ink underline">
+                <button onClick={resetForm} className="text-xs font-bold text-[#2449C6] hover:underline">
                   Cancel Edit
                 </button>
               )}
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-3">
-              {error && <div className="text-xs text-red-400 bg-red-950/40 p-2.5 rounded border border-red-800/40">{error}</div>}
+            <form onSubmit={handleSubmit} className="space-y-3.5">
+              {error && <div className="text-xs font-semibold text-rose-600 bg-rose-50 p-3 rounded-xl border border-rose-200">{error}</div>}
 
               <div>
-                <label className="text-xs font-medium text-ink-muted block mb-1">Branch Name *</label>
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-600 block mb-1">Branch Name *</label>
                 <input
                   required
                   type="text"
                   placeholder="Main Showroom / Warehouse"
                   value={form.branch_name}
                   onChange={updateField('branch_name')}
-                  className="input w-full"
+                  className="w-full rounded-xl border border-[#D5E3F7] bg-white px-3.5 py-2 text-sm font-medium text-[#0B1B45] shadow-xs outline-none transition focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-medium text-ink-muted block mb-1">Print Name (Header) *</label>
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-600 block mb-1">Print Name (Header) *</label>
                 <input
                   required
                   type="text"
                   placeholder="Header title printed on invoice"
                   value={form.print_name}
                   onChange={updateField('print_name')}
-                  className="input w-full"
+                  className="w-full rounded-xl border border-[#D5E3F7] bg-white px-3.5 py-2 text-sm font-medium text-[#0B1B45] shadow-xs outline-none transition focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-2.5">
                 <div>
-                  <label className="text-xs font-medium text-ink-muted block mb-1">GSTIN</label>
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-600 block mb-1">GSTIN</label>
                   <input
                     type="text"
                     placeholder="33AAAAA0000A1Z5"
                     value={form.gstin}
                     onChange={updateField('gstin')}
-                    className="input w-full"
+                    className="w-full rounded-xl border border-[#D5E3F7] bg-white px-3 py-2 text-sm font-medium text-[#0B1B45] shadow-xs outline-none transition focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-ink-muted block mb-1">PAN Number</label>
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-600 block mb-1">PAN Number</label>
                   <input
                     type="text"
                     placeholder="ABCDE1234F"
                     value={form.pan_number}
                     onChange={updateField('pan_number')}
-                    className="input w-full"
+                    className="w-full rounded-xl border border-[#D5E3F7] bg-white px-3 py-2 text-sm font-medium text-[#0B1B45] shadow-xs outline-none transition focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-2.5">
                 <div>
-                  <label className="text-xs font-medium text-ink-muted block mb-1">Phone</label>
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-600 block mb-1">Phone</label>
                   <input
                     type="text"
                     placeholder="+91 9876543210"
                     value={form.phone}
                     onChange={updateField('phone')}
-                    className="input w-full"
+                    className="w-full rounded-xl border border-[#D5E3F7] bg-white px-3 py-2 text-sm font-medium text-[#0B1B45] shadow-xs outline-none transition focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-ink-muted block mb-1">Email</label>
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-600 block mb-1">Email</label>
                   <input
                     type="email"
                     placeholder="branch@store.com"
                     value={form.support_email}
                     onChange={updateField('support_email')}
-                    className="input w-full"
+                    className="w-full rounded-xl border border-[#D5E3F7] bg-white px-3 py-2 text-sm font-medium text-[#0B1B45] shadow-xs outline-none transition focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-xs font-medium text-ink-muted block mb-1">Address *</label>
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-600 block mb-1">Address *</label>
                 <input
                   required
                   type="text"
                   placeholder="Street Address, Area"
                   value={form.address_line1}
                   onChange={updateField('address_line1')}
-                  className="input w-full"
+                  className="w-full rounded-xl border border-[#D5E3F7] bg-white px-3.5 py-2 text-sm font-medium text-[#0B1B45] shadow-xs outline-none transition focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15"
                 />
               </div>
 
               <div className="grid grid-cols-3 gap-2">
                 <div>
-                  <label className="text-xs font-medium text-ink-muted block mb-1">City *</label>
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-600 block mb-1">City *</label>
                   <input
                     required
                     type="text"
                     placeholder="City"
                     value={form.city}
                     onChange={updateField('city')}
-                    className="input w-full"
+                    className="w-full rounded-xl border border-[#D5E3F7] bg-white px-2.5 py-2 text-sm font-medium text-[#0B1B45] shadow-xs outline-none transition focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-ink-muted block mb-1">State *</label>
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-600 block mb-1">State *</label>
                   <input
                     required
                     type="text"
                     placeholder="State"
                     value={form.state}
                     onChange={updateField('state')}
-                    className="input w-full"
+                    className="w-full rounded-xl border border-[#D5E3F7] bg-white px-2.5 py-2 text-sm font-medium text-[#0B1B45] shadow-xs outline-none transition focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-ink-muted block mb-1">Pincode</label>
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-600 block mb-1">Pincode</label>
                   <input
                     type="text"
                     placeholder="600001"
                     value={form.pincode}
                     onChange={updateField('pincode')}
-                    className="input w-full"
+                    className="w-full rounded-xl border border-[#D5E3F7] bg-white px-2.5 py-2 text-sm font-medium text-[#0B1B45] shadow-xs outline-none transition focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-xs font-medium text-ink-muted block mb-1.5">Status</label>
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-600 block mb-1.5">Status</label>
                 <div className="flex items-center gap-4">
-                  <label className="inline-flex items-center gap-2 cursor-pointer text-xs text-ink">
+                  <label className="inline-flex items-center gap-2 cursor-pointer text-sm font-semibold text-[#0B1B45]">
                     <input
                       type="radio"
                       name="branchStatus"
                       checked={form.status === 'active'}
                       onChange={() => setForm((prev) => ({ ...prev, status: 'active' }))}
-                      className="form-radio text-emerald-500 focus:ring-emerald-500/20"
+                      className="form-radio text-[#2449C6] focus:ring-[#2449C6]/20"
                     />
                     <span className="flex items-center gap-1.5">
                       <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
                       Active
                     </span>
                   </label>
-                  <label className="inline-flex items-center gap-2 cursor-pointer text-xs text-ink">
+                  <label className="inline-flex items-center gap-2 cursor-pointer text-sm font-semibold text-slate-500">
                     <input
                       type="radio"
                       name="branchStatus"
                       checked={form.status === 'inactive'}
                       onChange={() => setForm((prev) => ({ ...prev, status: 'inactive' }))}
-                      className="form-radio text-gray-500 focus:ring-gray-500/20"
+                      className="form-radio text-slate-400 focus:ring-slate-400/20"
                     />
                     <span className="flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-gray-500 inline-block"></span>
+                      <span className="w-2 h-2 rounded-full bg-slate-400 inline-block"></span>
                       Inactive
                     </span>
                   </label>
@@ -314,98 +318,110 @@ export function Branches({ hideHeader = false }) {
 
         {/* Right Column: Directory Data Table */}
         <div className="lg:col-span-8 space-y-4">
-          <div className="card p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="rounded-2xl border border-[#D5E3F7] bg-white p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs">
             <div className="relative w-full sm:w-72">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
                 placeholder="Search branches..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="input pl-9 w-full text-xs"
+                className="w-full rounded-xl border border-[#D5E3F7] bg-white pl-9 pr-3 py-2 text-sm font-medium text-[#0B1B45] outline-none transition focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15"
               />
             </div>
-            <div className="flex items-center gap-2 text-xs">
-              <span className="text-ink-muted">Filter:</span>
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-slate-500 font-bold uppercase tracking-wider text-xs">Filter:</span>
               <button
                 onClick={() => setStatusFilter('all')}
-                className={`px-2.5 py-1 rounded-md transition ${statusFilter === 'all' ? 'bg-indigo-500/20 text-indigo-300 font-medium' : 'text-ink-muted hover:text-ink'}`}
+                className={`px-3.5 py-1.5 rounded-xl font-bold transition text-sm ${
+                  statusFilter === 'all'
+                    ? 'bg-gradient-to-r from-[#0B1B45] to-[#2449C6] text-white shadow-xs'
+                    : 'bg-[#F8FAFD] text-slate-600 hover:bg-[#EDF5FF]'
+                }`}
               >
                 All ({branches.length})
               </button>
               <button
                 onClick={() => setStatusFilter('active')}
-                className={`px-2.5 py-1 rounded-md transition ${statusFilter === 'active' ? 'bg-emerald-500/20 text-emerald-300 font-medium' : 'text-ink-muted hover:text-ink'}`}
+                className={`px-3.5 py-1.5 rounded-xl font-bold transition text-sm ${
+                  statusFilter === 'active'
+                    ? 'bg-gradient-to-r from-[#0B1B45] to-[#2449C6] text-white shadow-xs'
+                    : 'bg-[#F8FAFD] text-slate-600 hover:bg-[#EDF5FF]'
+                }`}
               >
                 Active ({branches.filter((b) => b.status === 'active' || b.status !== 'inactive').length})
               </button>
               <button
                 onClick={() => setStatusFilter('inactive')}
-                className={`px-2.5 py-1 rounded-md transition ${statusFilter === 'inactive' ? 'bg-gray-500/20 text-gray-300 font-medium' : 'text-ink-muted hover:text-ink'}`}
+                className={`px-3.5 py-1.5 rounded-xl font-bold transition text-sm ${
+                  statusFilter === 'inactive'
+                    ? 'bg-gradient-to-r from-[#0B1B45] to-[#2449C6] text-white shadow-xs'
+                    : 'bg-[#F8FAFD] text-slate-600 hover:bg-[#EDF5FF]'
+                }`}
               >
                 Inactive ({branches.filter((b) => b.status === 'inactive').length})
               </button>
             </div>
           </div>
 
-          <div className="card overflow-hidden">
-            <div className="px-5 py-4 border-b border-border-soft flex items-center justify-between">
-              <h3 className="font-semibold text-ink text-sm">Branches Directory</h3>
-              <span className="text-xs text-ink-muted">{filteredBranches.length} record(s)</span>
+          <div className="overflow-hidden rounded-2xl border border-[#D5E3F7] bg-white shadow-xs">
+            <div className="px-5 py-4 border-b border-[#EAF1FA] bg-gradient-to-r from-[#F8FAFD] to-white flex items-center justify-between">
+              <h3 className="font-bold text-[#0B1B45] text-sm">Branches Directory</h3>
+              <span className="text-xs font-semibold text-slate-400">{filteredBranches.length} record(s)</span>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
+              <table className="w-full text-left text-sm">
                 <thead>
-                  <tr className="border-b border-border-soft bg-surface-subtle/30 text-ink-muted font-medium">
-                    <th className="px-4 py-3">Branch Name</th>
-                    <th className="px-4 py-3">Print Title</th>
-                    <th className="px-4 py-3">City / Address</th>
-                    <th className="px-4 py-3">GSTIN / Phone</th>
-                    <th className="px-4 py-3">Main</th>
-                    <th className="px-4 py-3">Status</th>
-                    <th className="px-4 py-3 text-right">Actions</th>
+                  <tr className="border-b border-[#EAF1FA] bg-[#F8FAFD] text-xs font-bold uppercase tracking-wider text-slate-600">
+                    <th className="px-3.5 py-2.5">Branch Name</th>
+                    <th className="px-3.5 py-2.5">Print Title</th>
+                    <th className="px-3.5 py-2.5">City / Address</th>
+                    <th className="px-3.5 py-2.5">GSTIN / Phone</th>
+                    <th className="px-3.5 py-2.5">Main</th>
+                    <th className="px-3.5 py-2.5">Status</th>
+                    <th className="px-3.5 py-2.5 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border-soft/60">
+                <tbody className="divide-y divide-[#EAF1FA]">
                   {filteredBranches.map((b) => {
                     const isActive = b.status !== 'inactive';
                     return (
-                      <tr key={b.id} className="hover:bg-surface-subtle/20 transition">
-                        <td className="px-4 py-3 font-medium text-ink">{b.branch_name}</td>
-                        <td className="px-4 py-3 text-ink-muted">{b.print_name || '-'}</td>
-                        <td className="px-4 py-3 text-ink-muted">
+                      <tr key={b.id} className="hover:bg-[#F8FAFD]/70 transition">
+                        <td className="px-3.5 py-2.5 font-bold text-[#0B1B45]">{b.branch_name}</td>
+                        <td className="px-3.5 py-2.5 font-medium text-slate-600">{b.print_name || '-'}</td>
+                        <td className="px-3.5 py-2.5 font-medium text-slate-600">
                           {b.city ? `${b.city}, ${b.state || ''}` : b.address_line1 || '-'}
                         </td>
-                        <td className="px-4 py-3 text-ink-muted">
+                        <td className="px-3.5 py-2.5 font-medium text-slate-600">
                           {b.gstin || b.phone || '-'}
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="px-3.5 py-2.5">
                           {b.is_main_branch ? (
-                            <span className="px-2 py-0.5 rounded text-[10px] bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#EDF5FF] text-[#2449C6] border border-[#D5E3F7]">
                               Main Branch
                             </span>
                           ) : (
-                            <span className="text-ink-muted">-</span>
+                            <span className="text-slate-400">-</span>
                           )}
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="px-3.5 py-2.5">
                           {isActive ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                               Active
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-500/10 text-gray-400 border border-gray-500/20">
-                              <span className="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 border border-slate-200">
+                              <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
                               Inactive
                             </span>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-right space-x-1">
+                        <td className="px-3.5 py-2.5 text-right space-x-1">
                           {canManage && (
                             <button
                               onClick={() => handleEdit(b)}
-                              className="p-1 rounded hover:bg-surface-subtle text-ink-muted hover:text-cyan-400 transition"
+                              className="p-1.5 rounded-lg hover:bg-blue-50 text-slate-400 hover:text-[#2449C6] transition"
                               title="Edit Branch"
                             >
                               <Edit2 className="w-3.5 h-3.5" />
@@ -417,7 +433,7 @@ export function Branches({ hideHeader = false }) {
                   })}
                   {filteredBranches.length === 0 && (
                     <tr>
-                      <td colSpan={7} className="px-4 py-8 text-center text-ink-muted text-xs">
+                      <td colSpan={7} className="px-3.5 py-8 text-center text-slate-400 text-sm font-medium">
                         No branches match your search criteria.
                       </td>
                     </tr>

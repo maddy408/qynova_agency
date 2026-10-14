@@ -66,33 +66,6 @@ class PreviousWeekPriceService
         return $defaults;
     }
 
-    /**
-     * Calculate price difference strictly using BCMath / decimal strings.
-     */
-    public function calculateDifference(string $currentPrice, string $prevPrice): array
-    {
-        $diff = bcsub($currentPrice, $prevPrice, 2);
-        $cmp = bccomp($diff, '0.00', 2);
-
-        $direction = match (true) {
-            $cmp > 0 => 'up',
-            $cmp < 0 => 'down',
-            default => 'no_change',
-        };
-
-        $percent = '0.00';
-        if (bccomp($prevPrice, '0.00', 2) > 0) {
-            $rawPercent = bcdiv(bcmul(bcsub($currentPrice, $prevPrice, 4), '100', 4), $prevPrice, 4);
-            $percent = number_format((float) $rawPercent, 2, '.', '');
-        }
-
-        return [
-            'amount' => $diff,
-            'percent' => $percent,
-            'direction' => $direction,
-            'comparable' => true,
-        ];
-    }
 
     /**
      * Resolve product previous week selling price.
@@ -214,6 +187,44 @@ class PreviousWeekPriceService
             ];
         }
 
+        // Query most recent completed sale (strictly unit selling price, no purchase/cost fields)
+        $asOfLimit = ($asOf ?? new DateTimeImmutable('now', $this->tz))->format('Y-m-d H:i:s');
+        $lastSaleStmt = $this->pdo->prepare(
+            'SELECT 
+                ii.rate,
+                ii.qty,
+                inv.created_at AS sold_on
+             FROM invoice_items ii
+             INNER JOIN invoices inv ON inv.id = ii.invoice_id
+             WHERE inv.branch_id = :branch_id
+               AND inv.status = "completed"
+               AND inv.deleted_at IS NULL
+               AND inv.price_type = :tier
+               AND ii.item_id = :item_id
+               AND ii.unit_id = :unit_id
+               AND inv.created_at <= :as_of_limit
+             ORDER BY inv.created_at DESC, inv.id DESC, ii.id DESC
+             LIMIT 1'
+        );
+        $lastSaleStmt->execute([
+            'branch_id' => $branchId,
+            'tier' => $tier,
+            'item_id' => $productId,
+            'unit_id' => $effectiveUnitId,
+            'as_of_limit' => $asOfLimit,
+        ]);
+        $lastSaleRow = $lastSaleStmt->fetch(PDO::FETCH_ASSOC);
+
+        $lastSale = null;
+        if ($lastSaleRow) {
+            $lastSale = [
+                'price' => number_format((float) $lastSaleRow['rate'], 2, '.', ''),
+                'sold_on' => (string) $lastSaleRow['sold_on'],
+                'quantity' => number_format((float) $lastSaleRow['qty'], 3, '.', ''),
+                'unit' => $unitCode,
+            ];
+        }
+
         // Query 1-year selling price history on invoice_items + invoices ONLY
         $oneYearAgo = ($asOf ?? new DateTimeImmutable('now', $this->tz))->sub(new \DateInterval('P1Y'))->format('Y-m-d H:i:s');
         $yearStmt = $this->pdo->prepare(
@@ -227,6 +238,7 @@ class PreviousWeekPriceService
              INNER JOIN invoices inv ON inv.id = ii.invoice_id
              WHERE inv.branch_id = :branch_id
                AND inv.status = "completed"
+               AND inv.deleted_at IS NULL
                AND inv.price_type = :tier
                AND ii.item_id = :item_id
                AND ii.unit_id = :unit_id
@@ -249,38 +261,33 @@ class PreviousWeekPriceService
                 'price' => number_format((float) $yr['rate'], 2, '.', ''),
                 'quantity' => number_format((float) $yr['total_qty'], 3, '.', ''),
                 'bills' => (int) $yr['bill_count'],
-                'first_sold_date' => substr($yr['first_sale_time'], 0, 10),
-                'last_sold_date' => substr($yr['latest_sale_time'], 0, 10),
+                'first_sold_date' => substr((string) $yr['first_sale_time'], 0, 10),
+                'last_sold_date' => substr((string) $yr['latest_sale_time'], 0, 10),
             ];
         }
 
         $hasData = count($prices) > 0;
         $singlePrice = null;
-        $diff = null;
         $message = null;
 
         if (!$hasData) {
             $message = "No previous week's selling price available.";
         } elseif (count($prices) === 1) {
             $singlePrice = $prices[0]['price'];
-            $diff = $this->calculateDifference($currentPrice, $singlePrice);
         } else {
             // Multiple distinct selling prices in the previous week
             switch (strtoupper($rule)) {
                 case 'LATEST':
                     $singlePrice = $latestPrice;
-                    $diff = $this->calculateDifference($currentPrice, $singlePrice);
                     $message = "Multiple prices last week. Using latest sale price.";
                     break;
                 case 'AVERAGE':
                     if (bccomp($totalQtySum, '0.000', 3) > 0) {
                         $avg = bcdiv($weightedAmountSum, $totalQtySum, 2);
                         $singlePrice = number_format((float) $avg, 2, '.', '');
-                        $diff = $this->calculateDifference($currentPrice, $singlePrice);
                         $message = "Multiple prices last week. Using quantity-weighted average.";
                     } else {
                         $singlePrice = $latestPrice;
-                        $diff = $this->calculateDifference($currentPrice, $singlePrice);
                     }
                     break;
                 case 'MOST_USED':
@@ -292,18 +299,11 @@ class PreviousWeekPriceService
                         }
                     }
                     $singlePrice = $mostUsed['price'];
-                    $diff = $this->calculateDifference($currentPrice, $singlePrice);
                     $message = "Multiple prices last week. Using most sold price.";
                     break;
                 case 'AUTO':
                 default:
                     $singlePrice = null;
-                    $diff = [
-                        'amount' => null,
-                        'percent' => null,
-                        'direction' => 'mixed',
-                        'comparable' => false,
-                    ];
                     $message = sprintf('Rs %s to Rs %s (%d different prices)', $lowest, $highest, count($prices));
                     break;
             }
@@ -332,11 +332,12 @@ class PreviousWeekPriceService
                 'latest_price' => $latestPrice,
                 'sales_count' => $totalBills,
             ],
+            'last_sale' => $lastSale,
             'yearly_prices' => $yearlyPrices,
-            'difference' => $diff,
             'rule_used' => $rule,
             'popup_enabled' => (bool) ($settings['pos_prev_week_popup_enabled'] ?? true),
             'message' => $message,
         ];
     }
 }
+

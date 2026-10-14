@@ -29,18 +29,20 @@ export function ImageSearchModal({ onClose, onAdd }) {
   const result = searchMutation.data;
 
   return (
-    <div className="fixed inset-0 z-30 flex items-center justify-center bg-black/30 p-4">
-      <div className="w-full max-w-md card p-5">
-        <div className="mb-3 flex items-center justify-between">
-          <div className="text-lg font-semibold text-ink">Find Item From Photo</div>
-          <button onClick={onClose} className="rounded p-1 text-ink-muted hover:bg-page"><X size={18} /></button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+      <div className="w-full max-w-md overflow-hidden rounded-3xl border border-[#D5E3F7] bg-white p-6 shadow-2xl">
+        <div className="mb-4 flex items-center justify-between border-b border-[#EAF1FA] pb-3">
+          <div className="text-base font-bold text-[#0B1B45] tracking-tight">Find Item From Photo</div>
+          <button onClick={onClose} className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition"><X size={18} /></button>
         </div>
 
         {!preview ? (
-          <div className="flex flex-col items-center gap-3 rounded-lg border-2 border-dashed border-border-soft py-10">
-            <Camera size={32} className="text-ink-muted/50" />
-            <p className="px-6 text-center text-sm text-ink-muted">Upload or capture a photo of the product's label or pack.</p>
-            <div className="flex gap-2">
+          <div className="flex flex-col items-center gap-3.5 rounded-2xl border-2 border-dashed border-[#D5E3F7] bg-[#F8FAFD] py-10 px-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-xs border border-[#EAF1FA] text-[#2449C6]">
+              <Camera size={26} />
+            </div>
+            <p className="px-6 text-center text-xs font-semibold text-slate-500">Upload or capture a photo of the product's label or pack.</p>
+            <div className="flex gap-2.5 pt-1">
               <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/webp" onChange={handlePick} className="hidden" />
               <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" onChange={handlePick} className="hidden" />
               <Button variant="secondary" size="sm" icon={<Upload size={14} />} onClick={() => fileInputRef.current?.click()}>Upload</Button>
@@ -49,44 +51,49 @@ export function ImageSearchModal({ onClose, onAdd }) {
           </div>
         ) : (
           <>
-            <div className="mb-3 flex h-40 items-center justify-center overflow-hidden rounded-lg bg-page">
+            <div className="mb-3 flex h-40 items-center justify-center overflow-hidden rounded-2xl border border-[#D5E3F7] bg-[#F8FAFD]">
               <img src={preview} alt="" className="h-full w-full object-contain" />
             </div>
 
-            {searchMutation.isPending && <p className="text-sm text-ink-muted">Scanning image…</p>}
+            {searchMutation.isPending && (
+              <div className="flex items-center gap-2 py-2 text-xs font-bold text-[#2449C6]">
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#2449C6] border-t-transparent" />
+                <span>Scanning image…</span>
+              </div>
+            )}
 
             {searchMutation.isError && (
-              <p className="text-sm text-danger">Could not process this image. Please try again or search manually.</p>
+              <p className="text-xs font-semibold text-rose-600">Could not process this image. Please try again or search manually.</p>
             )}
 
             {result && result.engine_available === false && (
-              <div className="flex items-start gap-2 rounded-lg bg-warning-bg px-3 py-2 text-sm text-warning">
-                <ImageOff size={16} className="mt-0.5 shrink-0" />
+              <div className="flex items-start gap-2.5 rounded-2xl bg-amber-50 p-3 text-xs font-semibold text-amber-800 border border-amber-200">
+                <ImageOff size={16} className="mt-0.5 shrink-0 text-amber-600" />
                 <span>{result.message}</span>
               </div>
             )}
 
             {result && result.engine_available && result.matches.length === 0 && (
-              <p className="text-sm text-ink-muted">No catalog items matched the text found in this image. Try a clearer photo of the label, or search manually.</p>
+              <p className="text-xs font-medium text-slate-500">No catalog items matched the text found in this image. Try a clearer photo of the label, or search manually.</p>
             )}
 
             {result && result.engine_available && result.matches.length > 0 && (
               <div className="flex flex-col gap-2">
-                <div className="text-xs font-medium text-ink-muted">Matching products</div>
+                <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Matching products</div>
                 {result.matches.map((item) => (
                   <button
                     key={item.id}
                     onClick={() => onAdd(item)}
-                    className="flex items-center gap-3 rounded-lg border border-border-soft p-2 text-left hover:bg-page"
+                    className="flex items-center gap-3 rounded-2xl border border-[#D5E3F7] p-2.5 text-left transition hover:bg-[#F5F8FF] hover:border-[#2449C6]/30"
                   >
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded bg-page">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-[#EAF1FA] bg-[#F8FAFD]">
                       {item.image ? <img src={resolveImageUrl(item.image)} alt="" className="h-full w-full object-cover" /> : null}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="truncate text-sm font-medium text-ink">{item.item_name}</div>
-                      <div className="text-xs text-ink-muted">{item.item_code} · Rs. {item.retail_price}</div>
+                      <div className="truncate text-xs font-bold text-[#0B1B45]">{item.item_name}</div>
+                      <div className="text-[11px] font-medium text-slate-500">{item.item_code} · <span className="font-bold text-[#0B1B45]">Rs. {item.retail_price}</span></div>
                     </div>
-                    <span className="shrink-0 text-xs font-semibold text-gold">Add</span>
+                    <span className="shrink-0 rounded-lg bg-gradient-to-r from-[#0B1B45] to-[#2449C6] px-2.5 py-1 text-[11px] font-bold text-white shadow-2xs">Add</span>
                   </button>
                 ))}
               </div>
@@ -94,7 +101,7 @@ export function ImageSearchModal({ onClose, onAdd }) {
 
             <button
               onClick={() => { setPreview(null); searchMutation.reset(); }}
-              className="mt-3 text-xs font-medium text-gold hover:underline"
+              className="mt-3 text-xs font-bold text-[#2449C6] hover:underline"
             >
               Try another photo
             </button>

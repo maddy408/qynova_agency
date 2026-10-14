@@ -1,10 +1,12 @@
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { DollarSign, Search, Plus, Trash2, CheckCircle2, TrendingUp, TrendingDown, CreditCard } from 'lucide-react';
+import { DollarSign, Search, Plus, Trash2, CheckCircle2, TrendingUp, TrendingDown, CreditCard, Banknote, Receipt } from 'lucide-react';
 import { expenseCategoriesApi, expensesApi, otherIncomeApi } from '../api/postsale';
 import { Tabs } from '../components/Tabs';
 import { usePermission } from '../hooks/usePermission';
 import { Button } from '../components/Button.jsx';
+import { CashHandover } from './CashHandover.jsx';
 
 function ExpensesPanel({ canManage }) {
   const queryClient = useQueryClient();
@@ -86,8 +88,8 @@ function ExpensesPanel({ canManage }) {
   return (
     <div className="space-y-4">
       {successMsg && (
-        <div className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs px-4 py-2.5 rounded-lg flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4" />
+        <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs px-4 py-3 rounded-xl flex items-center gap-2.5 font-medium shadow-xs">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
           {successMsg}
         </div>
       )}
@@ -95,26 +97,33 @@ function ExpensesPanel({ canManage }) {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         {/* Left Column Form */}
         <div className="lg:col-span-4">
-          <div className="card p-5 space-y-4 sticky top-6">
-            <div className="border-b border-border-soft pb-3">
-              <h2 className="font-semibold text-ink text-base flex items-center gap-2">
-                <TrendingDown className="w-4 h-4 text-red-400" />
-                Add Operating Expense
-              </h2>
+          <div className="rounded-2xl border border-[#D5E3F7] bg-white shadow-xs p-6 space-y-5 sticky top-6">
+            <div className="border-b border-[#EAF1FA] pb-4 flex items-center gap-2.5">
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-rose-50 text-rose-600 ring-1 ring-rose-200">
+                <TrendingDown className="w-4 h-4" />
+              </div>
+              <div>
+                <h2 className="font-bold text-[#0B1B45] text-sm">Add Operating Expense</h2>
+                <p className="text-[11px] text-slate-500">Record cash outflow or bill</p>
+              </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-3">
+            <form onSubmit={handleSubmit} className="space-y-4">
               {formError && (
-                <div className="text-xs text-red-400 bg-red-950/40 p-2.5 rounded border border-red-800/40">{formError}</div>
+                <div className="text-xs text-rose-800 bg-rose-50 p-3 rounded-xl border border-rose-200 font-medium">
+                  {formError}
+                </div>
               )}
 
               <div>
-                <label className="text-xs font-medium text-ink-muted block mb-1">Expense Category *</label>
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 block mb-1.5">
+                  Expense Category *
+                </label>
                 <select
                   required
                   value={categoryId}
                   onChange={(e) => setCategoryId(e.target.value)}
-                  className="input w-full"
+                  className="w-full rounded-xl border border-[#D5E3F7] bg-white px-3.5 py-2.5 text-xs text-slate-800 transition focus:border-[#2449C6] focus:outline-none focus:ring-2 focus:ring-[#2449C6]/20"
                 >
                   <option value="">-- Select Category --</option>
                   {categories.map((c) => (
@@ -126,7 +135,9 @@ function ExpensesPanel({ canManage }) {
               </div>
 
               <div>
-                <label className="text-xs font-medium text-ink-muted block mb-1">Amount (₹) *</label>
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 block mb-1.5">
+                  Amount (₹) *
+                </label>
                 <input
                   required
                   type="number"
@@ -135,16 +146,18 @@ function ExpensesPanel({ canManage }) {
                   placeholder="0.00"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  className="input w-full"
+                  className="w-full rounded-xl border border-[#D5E3F7] bg-white px-3.5 py-2 text-sm font-medium text-slate-800 transition focus:border-[#2449C6] focus:outline-none focus:ring-2 focus:ring-[#2449C6]/20"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-medium text-ink-muted block mb-1">Payment Mode</label>
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-600 block mb-1.5">
+                  Payment Mode
+                </label>
                 <select
                   value={paymentMode}
                   onChange={(e) => setPaymentMode(e.target.value)}
-                  className="input w-full capitalize"
+                  className="w-full rounded-xl border border-[#D5E3F7] bg-white px-3.5 py-2 text-sm text-slate-800 capitalize transition focus:border-[#2449C6] focus:outline-none focus:ring-2 focus:ring-[#2449C6]/20"
                 >
                   <option value="cash">Cash</option>
                   <option value="upi">UPI</option>
@@ -154,19 +167,21 @@ function ExpensesPanel({ canManage }) {
               </div>
 
               <div>
-                <label className="text-xs font-medium text-ink-muted block mb-1">Description / Notes</label>
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-600 block mb-1.5">
+                  Description / Notes
+                </label>
                 <textarea
                   rows="2"
                   placeholder="Vendor name, bill # or purpose..."
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="input w-full"
+                  className="w-full rounded-xl border border-[#D5E3F7] bg-white px-3.5 py-2 text-sm text-slate-800 transition focus:border-[#2449C6] focus:outline-none focus:ring-2 focus:ring-[#2449C6]/20"
                 />
               </div>
 
               {canManage && (
                 <div className="pt-2">
-                  <Button type="submit" variant="primary" loading={createMutation.isPending} className="w-full">
+                  <Button type="submit" variant="primary" loading={createMutation.isPending} className="w-full shadow-md shadow-[#2449C6]/20">
                     Record Expense
                   </Button>
                 </div>
@@ -177,57 +192,59 @@ function ExpensesPanel({ canManage }) {
 
         {/* Right Column Table */}
         <div className="lg:col-span-8 space-y-4">
-          <div className="card p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="rounded-2xl border border-[#D5E3F7] bg-white p-4 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
             <div className="relative w-full sm:w-72">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />
+              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
                 placeholder="Search expenses..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="input pl-9 w-full text-xs"
+                className="w-full rounded-xl border border-[#D5E3F7] bg-[#F8FAFD] pl-9.5 pr-3.5 py-2 text-xs text-slate-800 transition focus:border-[#2449C6] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2449C6]/20"
               />
             </div>
-            <span className="text-xs text-ink-muted">{filteredExpenses.length} expense record(s)</span>
+            <span className="text-xs font-semibold text-slate-500 bg-[#F5F8FF] px-3 py-1.5 rounded-xl border border-[#D5E3F7]">
+              {filteredExpenses.length} expense record(s)
+            </span>
           </div>
 
-          <div className="card overflow-hidden">
-            <div className="px-5 py-4 border-b border-border-soft flex items-center justify-between">
-              <h3 className="font-semibold text-ink text-sm">Expenses History</h3>
+          <div className="rounded-2xl border border-[#D5E3F7] bg-white shadow-xs overflow-hidden">
+            <div className="px-5 py-4 border-b border-[#EAF1FA] bg-[#F8FAFD]/50 flex items-center justify-between">
+              <h3 className="font-bold text-[#0B1B45] text-sm">Expenses History</h3>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
+              <table className="w-full text-left text-sm">
                 <thead>
-                  <tr className="border-b border-border-soft bg-surface-subtle/30 text-ink-muted font-medium">
-                    <th className="px-4 py-3">Expense #</th>
-                    <th className="px-4 py-3">Category</th>
-                    <th className="px-4 py-3">Amount</th>
-                    <th className="px-4 py-3">Payment Mode</th>
-                    <th className="px-4 py-3">Description</th>
-                    <th className="px-4 py-3">Date</th>
-                    <th className="px-4 py-3 text-right">Actions</th>
+                  <tr className="border-b border-[#D5E3F7] bg-[#F5F8FF] text-xs font-bold uppercase tracking-wider text-slate-600">
+                    <th className="px-3.5 py-2.5">Expense #</th>
+                    <th className="px-3.5 py-2.5">Category</th>
+                    <th className="px-3.5 py-2.5 text-right">Amount</th>
+                    <th className="px-3.5 py-2.5">Payment Mode</th>
+                    <th className="px-3.5 py-2.5">Description</th>
+                    <th className="px-3.5 py-2.5">Date</th>
+                    <th className="px-3.5 py-2.5 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border-soft/60">
+                <tbody className="divide-y divide-[#EAF1FA]">
                   {filteredExpenses.map((item) => {
                     const catName = categories.find((c) => c.id === item.category_id)?.name || '-';
                     return (
-                      <tr key={item.id} className="hover:bg-surface-subtle/20 transition">
-                        <td className="px-4 py-3 font-mono font-medium text-ink">{item.expense_no || `#${item.id}`}</td>
-                        <td className="px-4 py-3 font-medium text-ink">{catName}</td>
-                        <td className="px-4 py-3 font-semibold text-red-400">₹{Number(item.amount).toFixed(2)}</td>
-                        <td className="px-4 py-3">
-                          <span className="px-2 py-0.5 rounded text-[10px] uppercase font-medium bg-slate-800 text-slate-300 border border-slate-700">
+                      <tr key={item.id} className="hover:bg-[#F5F8FF]/60 transition">
+                        <td className="px-3.5 py-2.5 font-mono font-semibold text-[#0B1B45]">{item.expense_no || `#${item.id}`}</td>
+                        <td className="px-3.5 py-2.5 font-semibold text-slate-700">{catName}</td>
+                        <td className="px-3.5 py-2.5 text-right font-bold text-rose-600 whitespace-nowrap">₹{Number(item.amount).toFixed(2)}</td>
+                        <td className="px-3.5 py-2.5">
+                          <span className="px-2.5 py-0.5 rounded-full text-xs uppercase font-bold tracking-wider bg-[#F5F8FF] text-[#2449C6] border border-[#D5E3F7]">
                             {item.payment_mode || 'cash'}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-ink-muted">{item.description || '-'}</td>
-                        <td className="px-4 py-3 text-ink-muted">{item.expense_date || item.created_at || '-'}</td>
-                        <td className="px-4 py-3 text-right">
+                        <td className="px-3.5 py-2.5 text-slate-600">{item.description || '-'}</td>
+                        <td className="px-3.5 py-2.5 text-slate-500 text-xs">{item.expense_date || item.created_at || '-'}</td>
+                        <td className="px-3.5 py-2.5 text-right">
                           {canManage && (
                             <button
                               onClick={() => removeMutation.mutate(item.id)}
-                              className="p-1 rounded hover:bg-surface-subtle text-ink-muted hover:text-red-400 transition"
+                              className="p-1.5 rounded-lg border border-transparent hover:border-rose-200 hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition"
                               title="Delete Expense"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
@@ -239,7 +256,7 @@ function ExpensesPanel({ canManage }) {
                   })}
                   {filteredExpenses.length === 0 && (
                     <tr>
-                      <td colSpan={7} className="px-4 py-8 text-center text-ink-muted text-xs">
+                      <td colSpan={7} className="px-4 py-10 text-center text-slate-400 text-xs">
                         No expenses found.
                       </td>
                     </tr>
@@ -326,8 +343,8 @@ function OtherIncomePanel({ canManage }) {
   return (
     <div className="space-y-4">
       {successMsg && (
-        <div className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs px-4 py-2.5 rounded-lg flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4" />
+        <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs px-4 py-3 rounded-xl flex items-center gap-2.5 font-medium shadow-xs">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
           {successMsg}
         </div>
       )}
@@ -335,21 +352,28 @@ function OtherIncomePanel({ canManage }) {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         {/* Left Column Form */}
         <div className="lg:col-span-4">
-          <div className="card p-5 space-y-4 sticky top-6">
-            <div className="border-b border-border-soft pb-3">
-              <h2 className="font-semibold text-ink text-base flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-emerald-400" />
-                Add Extra Income
-              </h2>
+          <div className="rounded-2xl border border-[#D5E3F7] bg-white shadow-xs p-6 space-y-5 sticky top-6">
+            <div className="border-b border-[#EAF1FA] pb-4 flex items-center gap-2.5">
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200">
+                <TrendingUp className="w-4 h-4" />
+              </div>
+              <div>
+                <h2 className="font-bold text-[#0B1B45] text-sm">Add Extra Income</h2>
+                <p className="text-[11px] text-slate-500">Record scrap, commission, etc.</p>
+              </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-3">
+            <form onSubmit={handleSubmit} className="space-y-4">
               {formError && (
-                <div className="text-xs text-red-400 bg-red-950/40 p-2.5 rounded border border-red-800/40">{formError}</div>
+                <div className="text-xs text-rose-800 bg-rose-50 p-3 rounded-xl border border-rose-200 font-medium">
+                  {formError}
+                </div>
               )}
 
               <div>
-                <label className="text-xs font-medium text-ink-muted block mb-1">Amount (₹) *</label>
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 block mb-1.5">
+                  Amount (₹) *
+                </label>
                 <input
                   required
                   type="number"
@@ -358,16 +382,18 @@ function OtherIncomePanel({ canManage }) {
                   placeholder="0.00"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  className="input w-full"
+                  className="w-full rounded-xl border border-[#D5E3F7] bg-white px-3.5 py-2 text-sm font-medium text-slate-800 transition focus:border-[#2449C6] focus:outline-none focus:ring-2 focus:ring-[#2449C6]/20"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-medium text-ink-muted block mb-1">Payment Mode</label>
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-600 block mb-1.5">
+                  Payment Mode
+                </label>
                 <select
                   value={paymentMode}
                   onChange={(e) => setPaymentMode(e.target.value)}
-                  className="input w-full capitalize"
+                  className="w-full rounded-xl border border-[#D5E3F7] bg-white px-3.5 py-2 text-sm text-slate-800 capitalize transition focus:border-[#2449C6] focus:outline-none focus:ring-2 focus:ring-[#2449C6]/20"
                 >
                   <option value="cash">Cash</option>
                   <option value="upi">UPI</option>
@@ -377,20 +403,22 @@ function OtherIncomePanel({ canManage }) {
               </div>
 
               <div>
-                <label className="text-xs font-medium text-ink-muted block mb-1">Description / Source *</label>
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-600 block mb-1.5">
+                  Description / Source *
+                </label>
                 <textarea
                   required
                   rows="3"
                   placeholder="Scrap sale, commission, rent received..."
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="input w-full"
+                  className="w-full rounded-xl border border-[#D5E3F7] bg-white px-3.5 py-2 text-sm text-slate-800 transition focus:border-[#2449C6] focus:outline-none focus:ring-2 focus:ring-[#2449C6]/20"
                 />
               </div>
 
               {canManage && (
                 <div className="pt-2">
-                  <Button type="submit" variant="primary" loading={createMutation.isPending} className="w-full">
+                  <Button type="submit" variant="primary" loading={createMutation.isPending} className="w-full shadow-md shadow-[#2449C6]/20">
                     Record Income
                   </Button>
                 </div>
@@ -401,53 +429,55 @@ function OtherIncomePanel({ canManage }) {
 
         {/* Right Column Table */}
         <div className="lg:col-span-8 space-y-4">
-          <div className="card p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="rounded-2xl border border-[#D5E3F7] bg-white p-4 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
             <div className="relative w-full sm:w-72">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />
+              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
                 placeholder="Search receipts..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="input pl-9 w-full text-xs"
+                className="w-full rounded-xl border border-[#D5E3F7] bg-[#F8FAFD] pl-9.5 pr-3.5 py-2 text-xs text-slate-800 transition focus:border-[#2449C6] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2449C6]/20"
               />
             </div>
-            <span className="text-xs text-ink-muted">{filteredIncomes.length} receipt record(s)</span>
+            <span className="text-xs font-semibold text-slate-500 bg-[#F5F8FF] px-3 py-1.5 rounded-xl border border-[#D5E3F7]">
+              {filteredIncomes.length} receipt record(s)
+            </span>
           </div>
 
-          <div className="card overflow-hidden">
-            <div className="px-5 py-4 border-b border-border-soft flex items-center justify-between">
-              <h3 className="font-semibold text-ink text-sm">Income Receipts History</h3>
+          <div className="rounded-2xl border border-[#D5E3F7] bg-white shadow-xs overflow-hidden">
+            <div className="px-5 py-4 border-b border-[#EAF1FA] bg-[#F8FAFD]/50 flex items-center justify-between">
+              <h3 className="font-bold text-[#0B1B45] text-sm">Income Receipts History</h3>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
+              <table className="w-full text-left text-sm">
                 <thead>
-                  <tr className="border-b border-border-soft bg-surface-subtle/30 text-ink-muted font-medium">
-                    <th className="px-4 py-3">Receipt #</th>
-                    <th className="px-4 py-3">Amount</th>
-                    <th className="px-4 py-3">Payment Mode</th>
-                    <th className="px-4 py-3">Description</th>
-                    <th className="px-4 py-3">Date</th>
-                    <th className="px-4 py-3 text-right">Actions</th>
+                  <tr className="border-b border-[#D5E3F7] bg-[#F5F8FF] text-xs font-bold uppercase tracking-wider text-slate-600">
+                    <th className="px-3.5 py-2.5">Receipt #</th>
+                    <th className="px-3.5 py-2.5 text-right">Amount</th>
+                    <th className="px-3.5 py-2.5">Payment Mode</th>
+                    <th className="px-3.5 py-2.5">Description</th>
+                    <th className="px-3.5 py-2.5">Date</th>
+                    <th className="px-3.5 py-2.5 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border-soft/60">
+                <tbody className="divide-y divide-[#EAF1FA]">
                   {filteredIncomes.map((item) => (
-                    <tr key={item.id} className="hover:bg-surface-subtle/20 transition">
-                      <td className="px-4 py-3 font-mono font-medium text-ink">{item.receipt_no || `#${item.id}`}</td>
-                      <td className="px-4 py-3 font-semibold text-emerald-400">₹{Number(item.amount).toFixed(2)}</td>
-                      <td className="px-4 py-3">
-                        <span className="px-2 py-0.5 rounded text-[10px] uppercase font-medium bg-slate-800 text-slate-300 border border-slate-700">
+                    <tr key={item.id} className="hover:bg-[#F5F8FF]/60 transition">
+                      <td className="px-3.5 py-2.5 font-mono font-semibold text-[#0B1B45]">{item.receipt_no || `#${item.id}`}</td>
+                      <td className="px-3.5 py-2.5 text-right font-bold text-emerald-600 whitespace-nowrap">₹{Number(item.amount).toFixed(2)}</td>
+                      <td className="px-3.5 py-2.5">
+                        <span className="px-2.5 py-0.5 rounded-full text-xs uppercase font-bold tracking-wider bg-[#F5F8FF] text-[#2449C6] border border-[#D5E3F7]">
                           {item.payment_mode || 'cash'}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-ink-muted">{item.description || '-'}</td>
-                      <td className="px-4 py-3 text-ink-muted">{item.income_date || item.created_at || '-'}</td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-3.5 py-2.5 text-slate-600">{item.description || '-'}</td>
+                      <td className="px-3.5 py-2.5 text-slate-500 text-xs">{item.income_date || item.created_at || '-'}</td>
+                      <td className="px-3.5 py-2.5 text-right">
                         {canManage && (
                           <button
                             onClick={() => removeMutation.mutate(item.id)}
-                            className="p-1 rounded hover:bg-surface-subtle text-ink-muted hover:text-red-400 transition"
+                            className="p-1.5 rounded-lg border border-transparent hover:border-rose-200 hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition"
                             title="Delete Receipt"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -458,7 +488,7 @@ function OtherIncomePanel({ canManage }) {
                   ))}
                   {filteredIncomes.length === 0 && (
                     <tr>
-                      <td colSpan={6} className="px-4 py-8 text-center text-ink-muted text-xs">
+                      <td colSpan={6} className="px-4 py-10 text-center text-slate-400 text-xs">
                         No extra income receipts found.
                       </td>
                     </tr>
@@ -473,25 +503,63 @@ function OtherIncomePanel({ canManage }) {
   );
 }
 
-export function Expenses() {
+export function Expenses({ defaultTab }) {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const validTabs = ['expenses', 'handover'];
+  const tabFromUrl = searchParams.get('tab');
+  
+  let initialTab = tabFromUrl;
+  if (initialTab === 'income') initialTab = 'expenses';
+  if (initialTab === 'cash-handover') initialTab = 'handover';
+  if (!initialTab && defaultTab) initialTab = defaultTab;
+
+  const activeTab = validTabs.includes(initialTab) ? initialTab : 'expenses';
+
   const canManage = usePermission('expenses.manage');
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border-soft/40 pb-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-ink flex items-center gap-2.5">
-            <DollarSign className="w-7 h-7 text-emerald-400" />
-            Expenses &amp; Income
-          </h1>
-          <p className="text-xs text-ink-muted mt-1">Manage store operational expenses, extra receipts, and cash flows</p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#D5E3F7] pb-5">
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-[#0B1B45] to-[#2449C6] text-white shadow-md shadow-[#0B1B45]/20 ring-1 ring-white/20">
+            <Receipt className="w-5 h-5 text-[#E8C985]" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-black tracking-tight text-[#0B1B45]">
+              Expenses &amp; Handover
+            </h1>
+            <p className="text-xs font-medium text-slate-500 mt-0.5">
+              Manage store operational expenses, extra receipts, and daily cash handovers
+            </p>
+          </div>
         </div>
       </div>
 
       <Tabs
+        activeKey={activeTab}
+        onTabChange={(k) => setSearchParams({ tab: k })}
         tabs={[
-          { key: 'expenses', label: 'Operating Expenses', content: <ExpensesPanel canManage={canManage} /> },
-          { key: 'income', label: 'Extra Income & Receipts', content: <OtherIncomePanel canManage={canManage} /> },
+          {
+            key: 'expenses',
+            label: 'Expenses',
+            icon: Receipt,
+            content: (
+              <div className="space-y-4">
+                <Tabs
+                  tabs={[
+                    { key: 'expenses', label: 'Operating Expenses', content: <ExpensesPanel canManage={canManage} /> },
+                    { key: 'income', label: 'Extra Income & Receipts', content: <OtherIncomePanel canManage={canManage} /> },
+                  ]}
+                />
+              </div>
+            ),
+          },
+          {
+            key: 'handover',
+            label: 'Handover',
+            icon: Banknote,
+            content: <CashHandover hideHeader />,
+          },
         ]}
       />
     </div>

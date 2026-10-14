@@ -6,7 +6,7 @@ import { branchesApi } from '../api/branches';
 import { usePermission } from '../hooks/usePermission';
 import { Button } from '../components/Button.jsx';
 
-export function StaffPermissions() {
+export function StaffPermissions({ hideHeader = false }) {
   const canManageAccounts = usePermission('staff.manage_accounts');
   const canManagePermissions = usePermission('staff.manage_permissions');
 
@@ -124,19 +124,25 @@ export function StaffPermissions() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border-soft/40 pb-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-ink flex items-center gap-2.5">
-            <ShieldCheck className="w-7 h-7 text-indigo-400" />
-            Staff &amp; Permissions
-          </h1>
-          <p className="text-xs text-ink-muted mt-1">Manage user credentials, branch assignments, roles, and granular security overrides</p>
+      {!hideHeader && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#D5E3F7] pb-5">
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[#0B1B45] to-[#2449C6] text-[#E8C985] shadow-md">
+              <ShieldCheck className="w-6 h-6" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight text-[#0B1B45]">
+                Staff &amp; Permissions
+              </h1>
+              <p className="text-xs font-medium text-slate-500 mt-0.5">Manage user credentials, branch assignments, roles, and granular security overrides</p>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
 
       {successMsg && (
-        <div className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs px-4 py-2.5 rounded-lg flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4" />
+        <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold px-4 py-3 rounded-2xl flex items-center gap-2 shadow-xs">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600" />
           {successMsg}
         </div>
       )}
@@ -144,36 +150,36 @@ export function StaffPermissions() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         {/* Left Column Form */}
         <div className="lg:col-span-4">
-          <div className="card p-5 space-y-4 sticky top-6">
-            <div className="flex items-center justify-between border-b border-border-soft pb-3">
-              <h2 className="font-semibold text-ink text-base flex items-center gap-2">
-                {editingId ? <Edit2 className="w-4 h-4 text-cyan-400" /> : <Plus className="w-4 h-4 text-emerald-400" />}
+          <div className="overflow-hidden rounded-2xl border border-[#D5E3F7] bg-white shadow-xs p-5 space-y-4 sticky top-6">
+            <div className="flex items-center justify-between border-b border-[#EAF1FA] pb-3.5">
+              <h2 className="font-bold text-[#0B1B45] text-sm flex items-center gap-2">
+                {editingId ? <Edit2 className="w-4 h-4 text-[#2449C6]" /> : <Plus className="w-4 h-4 text-[#2449C6]" />}
                 {editingId ? 'Edit Staff Account' : 'Create Staff Account'}
               </h2>
               {editingId && (
-                <button onClick={resetForm} className="text-xs text-ink-muted hover:text-ink underline">
+                <button onClick={resetForm} className="text-xs font-bold text-[#2449C6] hover:underline">
                   Cancel Edit
                 </button>
               )}
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-3">
-              {error && <div className="text-xs text-red-400 bg-red-950/40 p-2.5 rounded border border-red-800/40">{error}</div>}
+            <form onSubmit={handleSubmit} className="space-y-3.5">
+              {error && <div className="text-xs font-semibold text-rose-600 bg-rose-50 p-3 rounded-xl border border-rose-200">{error}</div>}
 
               <div>
-                <label className="text-xs font-medium text-ink-muted block mb-1">Full Name *</label>
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-600 block mb-1">Full Name *</label>
                 <input
                   required
                   type="text"
                   placeholder="John Doe"
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  className="input w-full"
+                  className="w-full rounded-xl border border-[#D5E3F7] bg-white px-3.5 py-2 text-sm font-medium text-[#0B1B45] shadow-xs outline-none transition focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-medium text-ink-muted block mb-1">Email Address *</label>
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-600 block mb-1">Email Address *</label>
                 <input
                   required
                   disabled={Boolean(editingId)}
@@ -181,12 +187,12 @@ export function StaffPermissions() {
                   placeholder="john@store.com"
                   value={form.email}
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  className="input w-full disabled:opacity-50"
+                  className="w-full rounded-xl border border-[#D5E3F7] bg-white px-3.5 py-2 text-sm font-medium text-[#0B1B45] shadow-xs outline-none transition focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15 disabled:bg-[#F8FAFD] disabled:text-slate-400"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-medium text-ink-muted block mb-1">
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-600 block mb-1">
                   {editingId ? 'New Password (leave empty to keep current)' : 'Password *'}
                 </label>
                 <input
@@ -194,18 +200,18 @@ export function StaffPermissions() {
                   placeholder="••••••••"
                   value={form.password}
                   onChange={(e) => setForm({ ...form, password: e.target.value })}
-                  className="input w-full"
+                  className="w-full rounded-xl border border-[#D5E3F7] bg-white px-3.5 py-2 text-sm font-medium text-[#0B1B45] shadow-xs outline-none transition focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-2.5">
                 <div>
-                  <label className="text-xs font-medium text-ink-muted block mb-1">Role *</label>
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-600 block mb-1">Role *</label>
                   <select
                     required
                     value={form.role_id}
                     onChange={(e) => setForm({ ...form, role_id: e.target.value })}
-                    className="input w-full"
+                    className="w-full rounded-xl border border-[#D5E3F7] bg-white px-3 py-2 text-sm font-medium text-[#0B1B45] shadow-xs outline-none transition focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15"
                   >
                     <option value="">Select Role</option>
                     {roles.map((r) => (
@@ -216,11 +222,11 @@ export function StaffPermissions() {
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-ink-muted block mb-1">Branch</label>
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-600 block mb-1">Branch</label>
                   <select
                     value={form.branch_id}
                     onChange={(e) => setForm({ ...form, branch_id: e.target.value })}
-                    className="input w-full"
+                    className="w-full rounded-xl border border-[#D5E3F7] bg-white px-3 py-2 text-sm font-medium text-[#0B1B45] shadow-xs outline-none transition focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15"
                   >
                     <option value="">All / No Home Branch</option>
                     {branches.map((b) => (
@@ -233,42 +239,42 @@ export function StaffPermissions() {
               </div>
 
               <div>
-                <label className="text-xs font-medium text-ink-muted block mb-1">Phone Number</label>
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-600 block mb-1">Phone Number</label>
                 <input
                   type="text"
                   placeholder="+91 9876543210"
                   value={form.phone}
                   onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                  className="input w-full"
+                  className="w-full rounded-xl border border-[#D5E3F7] bg-white px-3.5 py-2 text-sm font-medium text-[#0B1B45] shadow-xs outline-none transition focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-medium text-ink-muted block mb-1.5">Status</label>
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-600 block mb-1.5">Status</label>
                 <div className="flex items-center gap-4">
-                  <label className="inline-flex items-center gap-2 cursor-pointer text-xs text-ink">
+                  <label className="inline-flex items-center gap-2 cursor-pointer text-sm font-semibold text-[#0B1B45]">
                     <input
                       type="radio"
                       name="staffStatus"
                       checked={form.status === 'active'}
                       onChange={() => setForm((prev) => ({ ...prev, status: 'active' }))}
-                      className="form-radio text-emerald-500 focus:ring-emerald-500/20"
+                      className="form-radio text-[#2449C6] focus:ring-[#2449C6]/20"
                     />
                     <span className="flex items-center gap-1.5">
                       <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
                       Active
                     </span>
                   </label>
-                  <label className="inline-flex items-center gap-2 cursor-pointer text-xs text-ink">
+                  <label className="inline-flex items-center gap-2 cursor-pointer text-sm font-semibold text-slate-500">
                     <input
                       type="radio"
                       name="staffStatus"
                       checked={form.status === 'inactive'}
                       onChange={() => setForm((prev) => ({ ...prev, status: 'inactive' }))}
-                      className="form-radio text-gray-500 focus:ring-gray-500/20"
+                      className="form-radio text-slate-400 focus:ring-slate-400/20"
                     />
                     <span className="flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-gray-500 inline-block"></span>
+                      <span className="w-2 h-2 rounded-full bg-slate-400 inline-block"></span>
                       Inactive
                     </span>
                   </label>
@@ -293,63 +299,75 @@ export function StaffPermissions() {
 
         {/* Right Column Table */}
         <div className="lg:col-span-8 space-y-4">
-          <div className="card p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="rounded-2xl border border-[#D5E3F7] bg-white p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs">
             <div className="relative w-full sm:w-72">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted" />
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
                 placeholder="Search staff by name, email, role..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="input pl-9 w-full text-xs"
+                className="w-full rounded-xl border border-[#D5E3F7] bg-white pl-9 pr-3 py-2 text-sm font-medium text-[#0B1B45] outline-none transition focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15"
               />
             </div>
-            <div className="flex items-center gap-2 text-xs">
-              <span className="text-ink-muted">Filter:</span>
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-slate-500 font-bold uppercase tracking-wider text-xs">Filter:</span>
               <button
                 onClick={() => setStatusFilter('all')}
-                className={`px-2.5 py-1 rounded-md transition ${statusFilter === 'all' ? 'bg-indigo-500/20 text-indigo-300 font-medium' : 'text-ink-muted hover:text-ink'}`}
+                className={`px-3.5 py-1.5 rounded-xl font-bold transition text-sm ${
+                  statusFilter === 'all'
+                    ? 'bg-gradient-to-r from-[#0B1B45] to-[#2449C6] text-white shadow-xs'
+                    : 'bg-[#F8FAFD] text-slate-600 hover:bg-[#EDF5FF]'
+                }`}
               >
                 All ({staff.length})
               </button>
               <button
                 onClick={() => setStatusFilter('active')}
-                className={`px-2.5 py-1 rounded-md transition ${statusFilter === 'active' ? 'bg-emerald-500/20 text-emerald-300 font-medium' : 'text-ink-muted hover:text-ink'}`}
+                className={`px-3.5 py-1.5 rounded-xl font-bold transition text-sm ${
+                  statusFilter === 'active'
+                    ? 'bg-gradient-to-r from-[#0B1B45] to-[#2449C6] text-white shadow-xs'
+                    : 'bg-[#F8FAFD] text-slate-600 hover:bg-[#EDF5FF]'
+                }`}
               >
                 Active ({staff.filter((s) => s.status === 'active' || s.status !== 'inactive').length})
               </button>
               <button
                 onClick={() => setStatusFilter('inactive')}
-                className={`px-2.5 py-1 rounded-md transition ${statusFilter === 'inactive' ? 'bg-gray-500/20 text-gray-300 font-medium' : 'text-ink-muted hover:text-ink'}`}
+                className={`px-3.5 py-1.5 rounded-xl font-bold transition text-sm ${
+                  statusFilter === 'inactive'
+                    ? 'bg-gradient-to-r from-[#0B1B45] to-[#2449C6] text-white shadow-xs'
+                    : 'bg-[#F8FAFD] text-slate-600 hover:bg-[#EDF5FF]'
+                }`}
               >
                 Inactive ({staff.filter((s) => s.status === 'inactive').length})
               </button>
             </div>
           </div>
 
-          <div className="card overflow-hidden">
-            <div className="px-5 py-4 border-b border-border-soft flex items-center justify-between">
-              <h3 className="font-semibold text-ink text-sm">Staff Directory</h3>
-              <span className="text-xs text-ink-muted">{filteredStaff.length} member(s)</span>
+          <div className="overflow-hidden rounded-2xl border border-[#D5E3F7] bg-white shadow-xs">
+            <div className="px-5 py-4 border-b border-[#EAF1FA] bg-gradient-to-r from-[#F8FAFD] to-white flex items-center justify-between">
+              <h3 className="font-bold text-[#0B1B45] text-sm">Staff Directory</h3>
+              <span className="text-xs font-semibold text-slate-400">{filteredStaff.length} member(s)</span>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
+              <table className="w-full text-left text-sm">
                 <thead>
-                  <tr className="border-b border-border-soft bg-surface-subtle/30 text-ink-muted font-medium">
-                    <th className="px-4 py-3">Staff Member</th>
-                    <th className="px-4 py-3">Email / Phone</th>
-                    <th className="px-4 py-3">Role</th>
-                    <th className="px-4 py-3">Branch</th>
-                    <th className="px-4 py-3">Status</th>
-                    <th className="px-4 py-3 text-right">Actions</th>
+                  <tr className="border-b border-[#EAF1FA] bg-[#F8FAFD] text-xs font-bold uppercase tracking-wider text-slate-600">
+                    <th className="px-3.5 py-2.5">Staff Member</th>
+                    <th className="px-3.5 py-2.5">Email / Phone</th>
+                    <th className="px-3.5 py-2.5">Role</th>
+                    <th className="px-3.5 py-2.5">Branch</th>
+                    <th className="px-3.5 py-2.5">Status</th>
+                    <th className="px-3.5 py-2.5 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border-soft/60">
+                <tbody className="divide-y divide-[#EAF1FA]">
                   {staffQuery.isLoading && (
                     <tr>
-                      <td colSpan={6} className="px-4 py-10 text-center text-ink-muted text-xs">
+                      <td colSpan={6} className="px-3.5 py-10 text-center text-slate-400 text-sm">
                         <div className="flex items-center justify-center gap-2">
-                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <Loader2 className="w-4 h-4 animate-spin text-[#2449C6]" />
                           Loading staff…
                         </div>
                       </td>
@@ -357,14 +375,14 @@ export function StaffPermissions() {
                   )}
                   {!staffQuery.isLoading && staffQuery.isError && (
                     <tr>
-                      <td colSpan={6} className="px-4 py-10 text-center text-xs">
-                        <div className="flex flex-col items-center gap-2 text-red-400">
-                          <AlertTriangle className="w-5 h-5" />
+                      <td colSpan={6} className="px-3.5 py-10 text-center text-sm">
+                        <div className="flex flex-col items-center gap-2 text-rose-600 font-semibold">
+                          <AlertTriangle className="w-5 h-5 text-rose-500" />
                           Unable to load staff users. Please try again.
                           <button
                             type="button"
                             onClick={() => staffQuery.refetch()}
-                            className="mt-1 px-3 py-1 rounded bg-red-500/10 border border-red-500/30 text-red-300 font-medium hover:bg-red-500/20 transition"
+                            className="mt-1 px-3 py-1 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 font-bold hover:bg-rose-100 transition"
                           >
                             Retry
                           </button>
@@ -374,9 +392,9 @@ export function StaffPermissions() {
                   )}
                   {!staffQuery.isLoading && !staffQuery.isError && staff.length === 0 && (
                     <tr>
-                      <td colSpan={6} className="px-4 py-10 text-center text-ink-muted text-xs">
+                      <td colSpan={6} className="px-3.5 py-10 text-center text-slate-400 text-sm">
                         <div className="flex flex-col items-center gap-2">
-                          <Users className="w-5 h-5" />
+                          <Users className="w-6 h-6 text-slate-400" />
                           No staff accounts yet — create the first one on the left.
                         </div>
                       </td>
@@ -385,36 +403,36 @@ export function StaffPermissions() {
                   {!staffQuery.isLoading && !staffQuery.isError && staff.length > 0 && filteredStaff.map((u) => {
                     const isActive = u.status !== 'inactive';
                     return (
-                      <tr key={u.id} className="hover:bg-surface-subtle/20 transition">
-                        <td className="px-4 py-3 font-medium text-ink">{u.name}</td>
-                        <td className="px-4 py-3 text-ink-muted">
+                      <tr key={u.id} className="hover:bg-[#F8FAFD]/70 transition">
+                        <td className="px-3.5 py-2.5 font-bold text-[#0B1B45]">{u.name}</td>
+                        <td className="px-3.5 py-2.5 text-slate-600 font-medium">
                           <div>{u.email}</div>
-                          {u.phone && <div className="text-[10px] text-ink-muted/70">{u.phone}</div>}
+                          {u.phone && <div className="text-xs text-slate-400">{u.phone}</div>}
                         </td>
-                        <td className="px-4 py-3">
-                          <span className="px-2 py-0.5 rounded text-[10px] bg-indigo-500/15 text-indigo-300 font-medium border border-indigo-500/20">
+                        <td className="px-3.5 py-2.5">
+                          <span className="px-2.5 py-0.5 rounded-full text-xs bg-[#EDF5FF] text-[#2449C6] font-bold border border-[#D5E3F7]">
                             {u.role_name}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-ink-muted">{u.branch_name || 'All Branches'}</td>
-                        <td className="px-4 py-3">
+                        <td className="px-3.5 py-2.5 text-slate-600 font-medium">{u.branch_name || 'All Branches'}</td>
+                        <td className="px-3.5 py-2.5">
                           {isActive ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/80">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                               Active
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-500/10 text-gray-400 border border-gray-500/20">
-                              <span className="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-600 border border-slate-200">
+                              <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
                               Inactive
                             </span>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-right space-x-2">
+                        <td className="px-3.5 py-2.5 text-right space-x-1.5">
                           {canManageAccounts && (
                             <button
                               onClick={() => handleEdit(u)}
-                              className="p-1 rounded hover:bg-surface-subtle text-ink-muted hover:text-cyan-400 transition"
+                              className="p-1.5 rounded-lg hover:bg-blue-50 text-slate-400 hover:text-[#2449C6] transition"
                               title="Edit Staff"
                             >
                               <Edit2 className="w-3.5 h-3.5" />
@@ -423,7 +441,7 @@ export function StaffPermissions() {
                           {canManagePermissions && (
                             <button
                               onClick={() => setSelectedUserForPerms(u)}
-                              className="px-2 py-1 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[10px] font-medium hover:bg-amber-500/20 transition"
+                              className="px-2.5 py-1 rounded-xl bg-amber-50 text-amber-800 border border-amber-200/80 text-xs font-bold hover:bg-amber-100 transition"
                             >
                               Permissions
                             </button>
@@ -434,7 +452,7 @@ export function StaffPermissions() {
                   })}
                   {!staffQuery.isLoading && !staffQuery.isError && staff.length > 0 && filteredStaff.length === 0 && (
                     <tr>
-                      <td colSpan={6} className="px-4 py-8 text-center text-ink-muted text-xs">
+                      <td colSpan={6} className="px-4 py-8 text-center text-slate-400 text-xs font-medium">
                         No staff members found matching search.
                       </td>
                     </tr>
@@ -491,48 +509,51 @@ function PermissionsPanel({ user, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="max-h-[85vh] w-full max-w-2xl overflow-hidden card flex flex-col space-y-0">
-        <div className="p-5 border-b border-border-soft flex items-center justify-between">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+      <div className="max-h-[85vh] w-full max-w-2xl overflow-hidden rounded-3xl border border-[#D5E3F7] bg-white shadow-2xl flex flex-col space-y-0">
+        <div className="p-5 border-b border-[#EAF1FA] bg-gradient-to-r from-[#F8FAFD] to-white flex items-center justify-between">
           <div>
-            <h3 className="text-base font-semibold text-ink flex items-center gap-2">
-              <Lock className="w-4 h-4 text-amber-400" />
+            <h3 className="text-base font-bold text-[#0B1B45] flex items-center gap-2">
+              <Lock className="w-4 h-4 text-amber-500" />
               Granular Permissions — {user.name}
             </h3>
-            <p className="text-xs text-ink-muted mt-0.5">
-              Click badge to cycle: <span className="text-ink">Role default</span> → <span className="text-emerald-400">Force allow</span> → <span className="text-red-400">Force deny</span>
+            <p className="text-xs text-slate-500 font-medium mt-0.5">
+              Click badge to cycle: <span className="font-semibold text-slate-700">Role default</span> → <span className="font-bold text-emerald-600">Force allow</span> → <span className="font-bold text-rose-600">Force deny</span>
             </p>
           </div>
-          <button onClick={onClose} className="text-ink-muted hover:text-ink text-sm font-semibold">✕</button>
+          <button onClick={onClose} className="rounded-xl p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition font-bold text-sm">✕</button>
         </div>
 
-        <div className="p-5 overflow-y-auto space-y-4 flex-1">
+        <div className="p-6 overflow-y-auto space-y-5 flex-1">
           {Object.entries(grouped).map(([module, perms]) => (
-            <div key={module} className="space-y-2">
-              <div className="text-xs font-bold uppercase tracking-wider text-indigo-400">{module}</div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div key={module} className="space-y-2.5">
+              <div className="text-[11px] font-bold uppercase tracking-wider text-[#2449C6] flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-[#2449C6]" />
+                {module}
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 {perms.map((row) => {
                   const override = currentOverride(row);
                   const effective = override === null ? row.role_grants : override;
                   let badgeLabel = 'Role Default';
-                  let badgeClass = 'bg-surface-subtle text-ink-muted border-border-soft';
+                  let badgeClass = 'bg-[#EDF5FF] text-slate-600 border-[#D5E3F7]';
                   if (override === true) {
                     badgeLabel = 'Force Allow';
-                    badgeClass = 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40';
+                    badgeClass = 'bg-emerald-50 text-emerald-700 border-emerald-300';
                   }
                   if (override === false) {
                     badgeLabel = 'Force Deny';
-                    badgeClass = 'bg-red-500/20 text-red-300 border-red-500/40';
+                    badgeClass = 'bg-rose-50 text-rose-700 border-rose-300';
                   }
 
                   return (
                     <div
                       key={row.id}
                       onClick={() => cycle(row)}
-                      className="p-2.5 rounded-lg border border-border-soft/60 hover:border-indigo-500/30 bg-surface-subtle/20 cursor-pointer flex items-center justify-between gap-2 transition"
+                      className="p-3 rounded-2xl border border-[#D5E3F7] hover:border-[#2449C6]/40 bg-white hover:bg-[#F5F8FF] cursor-pointer flex items-center justify-between gap-2.5 transition shadow-2xs"
                     >
-                      <span className={`text-xs ${effective ? 'text-ink font-medium' : 'text-ink-muted'}`}>{row.label}</span>
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-semibold border ${badgeClass}`}>
+                      <span className={`text-xs ${effective ? 'text-[#0B1B45] font-bold' : 'text-slate-400 font-medium'}`}>{row.label}</span>
+                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${badgeClass} shrink-0`}>
                         {badgeLabel}
                       </span>
                     </div>
@@ -543,7 +564,7 @@ function PermissionsPanel({ user, onClose }) {
           ))}
         </div>
 
-        <div className="p-4 border-t border-border-soft flex justify-end gap-2 bg-surface-subtle/30">
+        <div className="p-4 border-t border-[#EAF1FA] flex justify-end gap-2 bg-[#F8FAFD]">
           <Button type="button" variant="secondary" onClick={onClose}>
             Close
           </Button>

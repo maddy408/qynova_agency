@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Image as ImageIcon, Pencil, Trash2, Upload, X, Plus, RotateCcw } from 'lucide-react';
+import { Image as ImageIcon, Pencil, Trash2, Upload, X, Plus, RotateCcw, Search } from 'lucide-react';
 import { categoriesApi, brandsApi, productLinesApi, taxCodesApi, stockUnitsApi, itemsApi, categoryBrandsApi } from '../api/catalog';
 import { suppliersApi } from '../api/parties';
 import { branchesApi } from '../api/branches';
@@ -195,33 +195,38 @@ function ItemFormModal({ item, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-30 flex items-center justify-center bg-black/30 p-4">
-      <form onSubmit={submit} className="card max-h-[90vh] w-full max-w-3xl overflow-y-auto p-5">
-        <div className="mb-4 flex items-center justify-between">
-          <div className="text-lg font-semibold text-ink">{isEdit ? 'Edit Item' : 'New Item'}</div>
-          <button type="button" onClick={onClose} className="rounded p-1 text-ink-muted hover:bg-page">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+      <form onSubmit={submit} className="w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-3xl bg-white border border-[#D8E6F7] shadow-2xl p-6 space-y-5 text-[#0F1E4A]">
+        <div className="flex items-center justify-between border-b border-[#D8E6F7] pb-3.5">
+          <div className="text-lg font-black text-[#0F1E4A] tracking-tight">{isEdit ? 'Edit Item' : 'New Item'}</div>
+          <button type="button" onClick={onClose} className="rounded-xl p-1.5 text-[#64789D] hover:bg-[#EDF5FF] hover:text-[#0F1E4A] transition-colors">
             <X size={18} />
           </button>
         </div>
 
-        <div className="mb-4 flex items-center gap-4">
-          <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-lg border border-border-soft bg-page">
-            {imagePreview ? <img src={imagePreview} alt="" className="h-full w-full object-cover" /> : <ImageIcon size={28} className="text-ink-muted" />}
+        <div className="flex items-center gap-4 bg-[#F8FAFD] p-3.5 rounded-2xl border border-[#D8E6F7]">
+          <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed border-[#B8D5FF] bg-[#F5F8FF] shadow-2xs">
+            {imagePreview ? <img src={imagePreview} alt="" className="h-full w-full object-cover" /> : <ImageIcon size={28} className="text-[#9BB4D8]" />}
           </div>
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1.5">
             <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/webp" onChange={handleImagePick} className="hidden" />
-            <Button type="button" variant="secondary" size="sm" icon={<Upload size={14} />} onClick={() => fileInputRef.current?.click()}>
-              {imagePreview ? 'Change Image' : 'Upload Image'}
-            </Button>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-[#D5E3F7] bg-white px-3.5 py-1.5 text-xs font-bold text-[#0F1E4A] hover:bg-[#EDF5FF] shadow-2xs transition-all active:scale-95"
+            >
+              <Upload size={14} className="text-[#315BFF]" />
+              <span>{imagePreview ? 'Change Image' : 'Upload Image'}</span>
+            </button>
             {imagePreview && (
-              <button type="button" onClick={handleRemoveImage} className="text-xs font-medium text-danger hover:underline">
+              <button type="button" onClick={handleRemoveImage} className="text-left text-xs font-bold text-[#E11D48] hover:underline">
                 Remove image
               </button>
             )}
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-3">
           <Field label="Item name *"><input required value={form.item_name} onChange={(e) => update('item_name', e.target.value)} className="input" /></Field>
           <Field label="Category">
             <select value={form.category_id} onChange={(e) => update('category_id', e.target.value)} className="input">
@@ -274,30 +279,31 @@ function ItemFormModal({ item, onClose }) {
           </Field>
         </div>
 
-        <div className="mt-4">
-          <div className="mb-1 text-xs font-medium text-ink-muted">Units — check every unit this item can be billed/purchased in *</div>
-          <div className="flex flex-wrap gap-3 rounded-lg border border-border-soft p-3">
+        <div className="space-y-2">
+          <div className="text-xs font-bold uppercase tracking-wider text-[#5A6E8C]">Units — check every unit this item can be billed/purchased in *</div>
+          <div className="flex flex-wrap gap-2.5 rounded-2xl border border-[#D8E6F7] bg-[#F8FAFD] p-3.5">
             {stockUnits.map((u) => (
-              <label key={u.id} className="flex items-center gap-1.5 text-sm">
-                <input type="checkbox" checked={checkedUnitIds.has(u.id)} onChange={() => toggleUnit(u.id)} />
-                {u.name} ({u.short_code})
+              <label key={u.id} className="inline-flex items-center gap-1.5 rounded-xl border border-[#D5E3F7] bg-white px-3 py-1.5 text-xs font-bold text-[#0F1E4A] shadow-2xs cursor-pointer hover:border-[#315BFF] transition-all">
+                <input type="checkbox" checked={checkedUnitIds.has(u.id)} onChange={() => toggleUnit(u.id)} className="accent-[#315BFF] rounded" />
+                <span>{u.name}</span>
+                <span className="text-[#64789D]">({u.short_code})</span>
               </label>
             ))}
           </div>
           {checkedUnitIds.size > 0 && (
-            <div className="mt-2 flex flex-wrap items-center gap-4 text-sm">
-              <label className="flex items-center gap-1.5">
+            <div className="mt-2 flex flex-wrap items-center gap-4 text-xs font-bold text-[#0F1E4A]">
+              <label className="flex items-center gap-2">
                 Primary:
-                <select required value={form.base_unit_id} onChange={(e) => update('base_unit_id', Number(e.target.value))} className="input w-32">
+                <select required value={form.base_unit_id} onChange={(e) => update('base_unit_id', Number(e.target.value))} className="input w-36 py-1.5 text-xs">
                   <option value="">--</option>
                   {[...checkedUnitIds].map((id) => (
                     <option key={id} value={id}>{stockUnits.find((u) => u.id === id)?.short_code}</option>
                   ))}
                 </select>
               </label>
-              <label className="flex items-center gap-1.5">
+              <label className="flex items-center gap-2">
                 Secondary:
-                <select value={form.secondary_unit_id} onChange={(e) => update('secondary_unit_id', e.target.value ? Number(e.target.value) : '')} className="input w-32">
+                <select value={form.secondary_unit_id} onChange={(e) => update('secondary_unit_id', e.target.value ? Number(e.target.value) : '')} className="input w-36 py-1.5 text-xs">
                   <option value="">None</option>
                   {[...checkedUnitIds].filter((id) => id !== form.base_unit_id).map((id) => (
                     <option key={id} value={id}>{stockUnits.find((u) => u.id === id)?.short_code}</option>
@@ -307,14 +313,14 @@ function ItemFormModal({ item, onClose }) {
             </div>
           )}
           {otherCheckedUnits.length > 0 && (
-            <div className="mt-2 flex flex-col gap-1">
-              <span className="text-xs text-ink-muted">Conversion to base unit, for each extra unit:</span>
+            <div className="mt-2 flex flex-col gap-1.5 rounded-2xl border border-[#D8E6F7] bg-[#F8FAFD] p-3">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-[#5A6E8C]">Conversion to base unit, for each extra unit:</span>
               {otherCheckedUnits.map((unitId) => {
                 const existing = extraUnits.find((u) => u.unit_id === unitId) || { conversion_to_base: 1 };
                 return (
-                  <div key={unitId} className="flex items-center gap-2 text-sm">
-                    <span className="w-20">{stockUnits.find((u) => u.id === unitId)?.short_code}</span>
-                    <span className="text-ink-muted">1 {stockUnits.find((u) => u.id === unitId)?.short_code} =</span>
+                  <div key={unitId} className="flex items-center gap-2 text-xs font-semibold text-[#0F1E4A]">
+                    <span className="w-20 font-bold">{stockUnits.find((u) => u.id === unitId)?.short_code}</span>
+                    <span className="text-[#64789D]">1 {stockUnits.find((u) => u.id === unitId)?.short_code} =</span>
                     <input
                       type="number" step="any" value={existing.conversion_to_base}
                       onChange={(e) => {
@@ -324,9 +330,9 @@ function ItemFormModal({ item, onClose }) {
                           return [...others, { ...existing, unit_id: unitId, conversion_to_base: val }];
                         });
                       }}
-                      className="input w-20"
+                      className="input w-24 py-1 text-xs"
                     />
-                    <span className="text-ink-muted">base units</span>
+                    <span className="text-[#64789D]">base units</span>
                   </div>
                 );
               })}
@@ -335,12 +341,12 @@ function ItemFormModal({ item, onClose }) {
         </div>
 
         {form.secondary_unit_id && (
-          <div className="mt-4">
-            <div className="mb-1 text-xs font-medium text-ink-muted">
+          <div className="rounded-2xl border border-[#CDE1F8] bg-gradient-to-br from-[#F5F9FF] to-[#EBF4FF] p-4">
+            <div className="mb-2 text-xs font-bold text-[#0F1E4A]">
               Secondary unit pricing ({stockUnits.find((u) => u.id === Number(form.secondary_unit_id))?.short_code || 'S-UNIT'}) —
               used automatically when a sale/purchase line is in this unit instead of the primary unit
             </div>
-            <div className="grid grid-cols-2 gap-3 rounded-lg border border-border-soft p-3 sm:grid-cols-3">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               <Field label="S-MRP"><input type="number" step="any" value={form.secondary_mrp} onChange={(e) => update('secondary_mrp', e.target.value)} className="input" placeholder={form.mrp || '0.00'} /></Field>
               <Field label="S-NET_SRATE"><input type="number" step="any" value={form.secondary_net_srate} onChange={(e) => update('secondary_net_srate', e.target.value)} className="input" placeholder={form.net_srate || '0.00'} /></Field>
               <Field label="S-NET_PURRATE"><input type="number" step="any" value={form.secondary_net_purrate} onChange={(e) => update('secondary_net_purrate', e.target.value)} className="input" placeholder={form.net_purrate || '0.00'} /></Field>
@@ -348,23 +354,34 @@ function ItemFormModal({ item, onClose }) {
           </div>
         )}
 
-        <div className="mt-4">
-          <div className="mb-1 text-xs font-medium text-ink-muted">Available at branches</div>
-          <div className="flex flex-wrap gap-3 rounded-lg border border-border-soft p-3">
+        <div className="space-y-2">
+          <div className="text-xs font-bold uppercase tracking-wider text-[#5A6E8C]">Available at branches</div>
+          <div className="flex flex-wrap gap-2.5 rounded-2xl border border-[#D8E6F7] bg-[#F8FAFD] p-3.5">
             {branches.map((b) => (
-              <label key={b.id} className="flex items-center gap-1.5 text-sm">
-                <input type="checkbox" checked={selectedBranches.includes(b.id)} onChange={() => toggleBranch(b.id)} />
-                {b.branch_name}
+              <label key={b.id} className="inline-flex items-center gap-1.5 rounded-xl border border-[#D5E3F7] bg-white px-3 py-1.5 text-xs font-bold text-[#0F1E4A] shadow-2xs cursor-pointer hover:border-[#315BFF] transition-all">
+                <input type="checkbox" checked={selectedBranches.includes(b.id)} onChange={() => toggleBranch(b.id)} className="accent-[#315BFF] rounded" />
+                <span>{b.branch_name}</span>
               </label>
             ))}
           </div>
         </div>
 
-        {error && <p className="mt-3 text-sm text-danger">{error}</p>}
+        {error && <p className="rounded-xl bg-[#FEF2F2] p-3 text-xs font-bold text-[#E11D48] border border-[#FECDD3]">{error}</p>}
 
-        <div className="mt-4 flex justify-end gap-2">
-          <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button type="submit">{isEdit ? 'Save Changes' : 'Create Item'}</Button>
+        <div className="flex justify-end gap-2.5 pt-2 border-t border-[#D8E6F7]">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-xl border border-[#D5E3F7] bg-white px-4 py-2 text-xs font-bold text-[#5A6E8C] hover:bg-[#EDF5FF] transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className="rounded-xl bg-gradient-to-r from-[#0B1B45] via-[#142B5C] to-[#2449C6] px-5 py-2 text-xs font-bold text-white shadow-xs hover:brightness-110 active:scale-95 transition-all"
+          >
+            {isEdit ? 'Save Changes' : 'Create Item'}
+          </button>
         </div>
       </form>
     </div>
@@ -448,13 +465,18 @@ export function ItemsPanel({ canManage }) {
   const pagedItems = items.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 font-sans">
       <Toast message={importSuccessMsg} onClose={() => setImportSuccessMsg('')} />
-      <div className="card">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border-soft px-4 py-3">
-          <span className="font-semibold text-ink">Items</span>
+      <div className="card rounded-2xl border border-[#D8E6F7] bg-white shadow-[0_2px_12px_rgba(15,30,65,0.04)] overflow-hidden">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#D8E6F7] px-5 py-3.5 bg-white">
           <div className="flex items-center gap-2">
-            <div className="flex overflow-hidden rounded-lg border border-border-soft text-xs">
+            <span className="font-black text-[#0F1E4A] tracking-tight">Items Directory</span>
+            <span className="rounded-full bg-[#EEF5FF] text-[#315BFF] border border-[#D5E5FC] px-2.5 py-0.5 text-xs font-bold">
+              {items.length} Total
+            </span>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex overflow-hidden rounded-xl border border-[#D5E3F7] p-0.5 bg-[#F8FAFD] text-xs">
               {[
                 ['active', 'Active'],
                 ['inactive', 'Deactivated'],
@@ -464,129 +486,166 @@ export function ItemsPanel({ canManage }) {
                   key={value}
                   type="button"
                   onClick={() => handleStatusFilterChange(value)}
-                  className={`px-3 py-1.5 font-medium ${
-                    statusFilter === value ? 'bg-navbar text-gold' : 'bg-white text-ink-muted hover:bg-page'
+                  className={`rounded-lg px-3 py-1 font-bold transition-all ${
+                    statusFilter === value
+                      ? 'bg-gradient-to-r from-[#0B1B45] to-[#1C3675] text-[#E8C985] shadow-xs'
+                      : 'text-[#64789D] hover:text-[#0F1E4A]'
                   }`}
                 >
                   {label}
                 </button>
               ))}
             </div>
-            <input
-              type="text"
-              placeholder="Search name / code / barcode"
-              value={search}
-              onChange={(e) => handleSearchChange(e.target.value)}
-              className="input w-56"
-            />
-            <Button variant="secondary" size="sm" onClick={() => itemsApi.downloadExport()}>Export Excel</Button>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7E92B2]" size={14} />
+              <input
+                type="text"
+                placeholder="Search name / code / barcode"
+                value={search}
+                onChange={(e) => handleSearchChange(e.target.value)}
+                className="input pl-8 py-1.5 text-xs w-48 sm:w-60"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => itemsApi.downloadExport()}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-[#D5E3F7] bg-white px-3.5 py-1.5 text-xs font-bold text-[#0F1E4A] hover:bg-[#EDF5FF] shadow-2xs transition-all active:scale-95"
+            >
+              Export Excel
+            </button>
             {canManage && (
-              <Button size="sm" icon={<Plus size={14} />} onClick={() => setModalItem(null)}>Add Item</Button>
+              <button
+                type="button"
+                onClick={() => setModalItem(null)}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#0B1B45] via-[#142B5C] to-[#2449C6] px-4 py-1.5 text-xs font-bold text-white shadow-xs hover:brightness-110 active:scale-95 transition-all"
+              >
+                <Plus size={14} className="text-[#E8C985]" />
+                <span>Add Item</span>
+              </button>
             )}
           </div>
         </div>
 
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border-soft text-left text-xs uppercase text-ink-muted">
-              <th className="px-4 py-2"></th>
-              <th className="px-4 py-2">Code</th>
-              <th className="px-4 py-2">Name</th>
-              <th className="px-4 py-2">Category</th>
-              <th className="px-4 py-2">Unit</th>
-              <th className="px-4 py-2">MRP</th>
-              <th className="px-4 py-2">NET_SRATE</th>
-              <th className="px-4 py-2">NET_PURRATE</th>
-              <th className="px-4 py-2">Opening Stock</th>
-              <th className="px-4 py-2">GST%</th>
-              <th className="px-4 py-2">HSN</th>
-              {statusFilter === 'all' && <th className="px-4 py-2">Status</th>}
-              {canManage && <th className="px-4 py-2 text-right">Actions</th>}
-            </tr>
-          </thead>
-          <tbody>
-            {pagedItems.map((item) => (
-              <tr key={item.id} className="border-b border-border-soft">
-                <td className="px-4 py-2">
-                  <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded bg-page">
-                    {item.image ? (
-                      <img
-                        src={resolveImageUrl(item.image)}
-                        alt=""
-                        className="h-full w-full object-cover"
-                        onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'flex'; }}
-                      />
-                    ) : null}
-                    <ImageIcon size={16} className="text-ink-muted" style={{ display: item.image ? 'none' : 'flex' }} />
-                  </div>
-                </td>
-                <td className="px-4 py-2 text-ink-muted">{item.item_code}</td>
-                <td className="px-4 py-2 font-medium text-ink">{item.item_name}</td>
-                <td className="px-4 py-2 text-ink-muted">{item.category_name || '—'}</td>
-                <td className="px-4 py-2 text-ink-muted">{item.base_unit_code}</td>
-                <td className="px-4 py-2 text-ink-muted">{item.mrp}</td>
-                <td className="px-4 py-2 text-ink-muted">{item.net_srate ?? item.retail_price}</td>
-                <td className="px-4 py-2 text-ink-muted">{item.net_purrate ?? item.purchase_price}</td>
-                <td className="px-4 py-2 font-medium text-ink">{item.opening_stock ?? 0}</td>
-                <td className="px-4 py-2 text-ink-muted">{item.gst_percent ?? '—'}</td>
-                <td className="px-4 py-2 text-ink-muted">{item.hsn_code || '—'}</td>
-                {statusFilter === 'all' && (
-                  <td className="px-4 py-2">
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                      Number(item.is_active) ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-danger'
-                    }`}>
-                      {Number(item.is_active) ? 'Active' : 'Deactivated'}
-                    </span>
-                  </td>
-                )}
-                {canManage && (
-                  <td className="px-4 py-2 text-right">
-                    <div className="flex justify-end gap-1">
-                      <button onClick={() => openEdit(item)} title="Edit" className="rounded p-1.5 text-ink-muted hover:bg-page hover:text-gold">
-                        <Pencil size={15} />
-                      </button>
-                      {Number(item.is_active) ? (
-                        <button onClick={() => handleDelete(item)} title="Deactivate" className="rounded p-1.5 text-ink-muted hover:bg-red-50 hover:text-danger">
-                          <Trash2 size={15} />
-                        </button>
-                      ) : (
-                        <button onClick={() => handleReactivate(item)} title="Reactivate" className="rounded p-1.5 text-ink-muted hover:bg-emerald-50 hover:text-emerald-700">
-                          <RotateCcw size={15} />
-                        </button>
-                      )}
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="border-b border-[#D8E6F7] bg-[#F8FAFD] text-left text-[11px] font-bold uppercase tracking-wider text-[#5A6E8C]">
+                <th className="px-4 py-3"></th>
+                <th className="px-4 py-3">Code</th>
+                <th className="px-4 py-3">Name</th>
+                <th className="px-4 py-3">Category</th>
+                <th className="px-4 py-3">Unit</th>
+                <th className="px-4 py-3">MRP</th>
+                <th className="px-4 py-3">NET_SRATE</th>
+                <th className="px-4 py-3">NET_PURRATE</th>
+                <th className="px-4 py-3">Opening Stock</th>
+                <th className="px-4 py-3">GST%</th>
+                <th className="px-4 py-3">HSN</th>
+                {statusFilter === 'all' && <th className="px-4 py-3">Status</th>}
+                {canManage && <th className="px-4 py-3 text-right">Actions</th>}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#EAF1FA]">
+              {pagedItems.map((item) => (
+                <tr key={item.id} className="hover:bg-[#F8FAFD]/70 transition-colors">
+                  <td className="px-4 py-2.5">
+                    <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl bg-[#F5F8FF] border border-[#D5E5FC] shadow-2xs">
+                      {item.image ? (
+                        <img
+                          src={resolveImageUrl(item.image)}
+                          alt=""
+                          className="h-full w-full object-cover"
+                          onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'flex'; }}
+                        />
+                      ) : null}
+                      <ImageIcon size={16} className="text-[#9BB4D8]" style={{ display: item.image ? 'none' : 'flex' }} />
                     </div>
                   </td>
-                )}
-              </tr>
-            ))}
-            {items.length === 0 && (
-              <tr>
-                <td colSpan={11 + (canManage ? 1 : 0) + (statusFilter === 'all' ? 1 : 0)} className="px-4 py-6 text-center text-ink-muted">No items found.</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+                  <td className="px-4 py-2.5 font-bold text-[#64789D]">{item.item_code}</td>
+                  <td className="px-4 py-2.5 font-bold text-[#0F1E4A]">{item.item_name}</td>
+                  <td className="px-4 py-2.5 font-medium text-[#64789D]">{item.category_name || '—'}</td>
+                  <td className="px-4 py-2.5 font-semibold text-[#0F1E4A]">{item.base_unit_code}</td>
+                  <td className="px-4 py-2.5 font-bold text-[#0F1E4A]">Rs. {item.mrp}</td>
+                  <td className="px-4 py-2.5 font-semibold text-[#2449C6]">Rs. {item.net_srate ?? item.retail_price}</td>
+                  <td className="px-4 py-2.5 font-medium text-[#64789D]">Rs. {item.net_purrate ?? item.purchase_price}</td>
+                  <td className="px-4 py-2.5 font-bold text-[#0F1E4A]">{item.opening_stock ?? 0}</td>
+                  <td className="px-4 py-2.5 font-medium text-[#64789D]">{item.gst_percent ? `${item.gst_percent}%` : '—'}</td>
+                  <td className="px-4 py-2.5 font-medium text-[#64789D]">{item.hsn_code || '—'}</td>
+                  {statusFilter === 'all' && (
+                    <td className="px-4 py-2.5">
+                      <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-bold border ${
+                        Number(item.is_active)
+                          ? 'bg-[#ECFDF5] text-[#059669] border-[#C6F6D5]'
+                          : 'bg-[#FEF2F2] text-[#E11D48] border-[#FECDD3]'
+                      }`}>
+                        <span className={`h-1.5 w-1.5 rounded-full ${Number(item.is_active) ? 'bg-[#059669]' : 'bg-[#E11D48]'}`}></span>
+                        {Number(item.is_active) ? 'Active' : 'Deactivated'}
+                      </span>
+                    </td>
+                  )}
+                  {canManage && (
+                    <td className="px-4 py-2.5 text-right">
+                      <div className="flex justify-end gap-1">
+                        <button
+                          onClick={() => openEdit(item)}
+                          title="Edit"
+                          className="rounded-lg bg-[#F0F4FA] p-1.5 text-[#315BFF] hover:bg-[#EEF5FF] transition-colors"
+                        >
+                          <Pencil size={14} />
+                        </button>
+                        {Number(item.is_active) ? (
+                          <button
+                            onClick={() => handleDelete(item)}
+                            title="Deactivate"
+                            className="rounded-lg bg-[#F0F4FA] p-1.5 text-[#E11D48] hover:bg-[#FEF2F2] transition-colors"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleReactivate(item)}
+                            title="Reactivate"
+                            className="rounded-lg bg-[#F0F4FA] p-1.5 text-[#059669] hover:bg-[#ECFDF5] transition-colors"
+                          >
+                            <RotateCcw size={14} />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  )}
+                </tr>
+              ))}
+              {items.length === 0 && (
+                <tr>
+                  <td colSpan={11 + (canManage ? 1 : 0) + (statusFilter === 'all' ? 1 : 0)} className="px-4 py-8 text-center text-[#7E92B2] font-medium">
+                    No items found matching your filter criteria.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
 
         {items.length > 0 && (
-          <div className="flex items-center justify-between border-t border-border-soft px-4 py-3 text-sm">
-            <span className="text-ink-muted">
-              Showing {(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, items.length)} of {items.length}
+          <div className="flex items-center justify-between border-t border-[#D8E6F7] bg-[#F8FAFD]/60 px-5 py-3 text-xs">
+            <span className="text-[#64789D] font-medium">
+              Showing {(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, items.length)} of {items.length} items
             </span>
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="rounded border border-border-soft px-3 py-1 text-ink disabled:opacity-40"
+                className="rounded-xl border border-[#D5E3F7] bg-white px-3 py-1.5 font-bold text-[#0F1E4A] hover:bg-[#EDF5FF] shadow-2xs disabled:opacity-40 transition-colors"
               >
                 Previous
               </button>
-              <span className="text-ink-muted">Page {currentPage} of {totalPages}</span>
+              <span className="text-[#64789D] font-bold px-2">Page {currentPage} of {totalPages}</span>
               <button
                 type="button"
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
-                className="rounded border border-border-soft px-3 py-1 text-ink disabled:opacity-40"
+                className="rounded-xl border border-[#D5E3F7] bg-white px-3 py-1.5 font-bold text-[#0F1E4A] hover:bg-[#EDF5FF] shadow-2xs disabled:opacity-40 transition-colors"
               >
                 Next
               </button>
@@ -596,38 +655,67 @@ export function ItemsPanel({ canManage }) {
       </div>
 
       {canManage && (
-        <div className="card p-4">
-          <div className="mb-2 font-semibold text-ink">Bulk Import (Excel)</div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Button variant="secondary" size="sm" onClick={() => itemsApi.downloadImportTemplate()}>Download Template</Button>
-            <input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv" onChange={handleImportFile} className="text-sm" />
-            <Button variant="secondary" size="sm" disabled={!importFile} onClick={handlePreview}>Preview</Button>
-            <Button size="sm" disabled={!importFile || !importResult} onClick={handleCommit}>Commit Import</Button>
+        <div className="card rounded-2xl border border-[#D8E6F7] bg-white p-5 shadow-[0_2px_12px_rgba(15,30,65,0.04)]">
+          <div className="mb-3 font-bold text-[#0F1E4A] flex items-center gap-2">
+            <Upload size={16} className="text-[#315BFF]" />
+            <span>Bulk Import (Excel / CSV)</span>
+          </div>
+          <div className="flex flex-wrap items-center gap-2.5">
+            <button
+              type="button"
+              onClick={() => itemsApi.downloadImportTemplate()}
+              className="rounded-xl border border-[#D5E3F7] bg-white px-3.5 py-1.5 text-xs font-bold text-[#0F1E4A] hover:bg-[#EDF5FF] shadow-2xs transition-all active:scale-95"
+            >
+              Download Template
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".xlsx,.xls,.csv"
+              onChange={handleImportFile}
+              className="text-xs text-[#5A6E8C] file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border file:border-[#D5E3F7] file:text-xs file:font-bold file:bg-[#F8FAFD] file:text-[#0F1E4A] hover:file:bg-[#EDF5FF] cursor-pointer"
+            />
+            <button
+              type="button"
+              disabled={!importFile}
+              onClick={handlePreview}
+              className="rounded-xl border border-[#D5E3F7] bg-white px-3.5 py-1.5 text-xs font-bold text-[#0F1E4A] hover:bg-[#EDF5FF] shadow-2xs disabled:opacity-40 transition-all active:scale-95"
+            >
+              Preview
+            </button>
+            <button
+              type="button"
+              disabled={!importFile || !importResult}
+              onClick={handleCommit}
+              className="rounded-xl bg-gradient-to-r from-[#0B1B45] via-[#142B5C] to-[#2449C6] px-4 py-1.5 text-xs font-bold text-white shadow-xs hover:brightness-110 active:scale-95 disabled:opacity-40 transition-all"
+            >
+              Commit Import
+            </button>
           </div>
 
           {importResult && (
-            <div className="mt-3 text-sm">
-              <p className="mb-2 text-ink-muted">
+            <div className="mt-3.5 text-xs">
+              <p className="mb-2 text-[#5A6E8C] font-medium">
                 {importResult.total_rows} rows — {importResult.valid_rows} valid, {importResult.invalid_rows} invalid.
                 {importResult.committed && ` Inserted ${importResult.inserted}, updated ${importResult.updated}.`}
               </p>
-              <div className="max-h-64 overflow-auto rounded border border-border-soft">
+              <div className="max-h-64 overflow-auto rounded-xl border border-[#D8E6F7]">
                 <table className="w-full text-xs">
                   <thead>
-                    <tr className="bg-page text-left text-ink-muted">
-                      <th className="px-3 py-1.5">Row</th>
-                      <th className="px-3 py-1.5">Item</th>
-                      <th className="px-3 py-1.5">Opening Stock</th>
-                      <th className="px-3 py-1.5">Errors</th>
+                    <tr className="bg-[#F8FAFD] text-left text-[11px] font-bold uppercase tracking-wider text-[#5A6E8C]">
+                      <th className="px-3 py-2">Row</th>
+                      <th className="px-3 py-2">Item</th>
+                      <th className="px-3 py-2">Opening Stock</th>
+                      <th className="px-3 py-2">Errors</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-[#EAF1FA]">
                     {importResult.rows.map((r) => (
-                      <tr key={r.row} className={r.errors.length ? 'bg-red-50' : ''}>
-                        <td className="px-3 py-1.5">{r.row}</td>
-                        <td className="px-3 py-1.5">{r.item_name}</td>
-                        <td className="px-3 py-1.5">{r.opening_stock ?? '—'}</td>
-                        <td className="px-3 py-1.5 text-danger">{r.errors.join(', ')}</td>
+                      <tr key={r.row} className={r.errors.length ? 'bg-[#FEF2F2]' : 'hover:bg-[#F8FAFD]'}>
+                        <td className="px-3 py-1.5 font-semibold text-[#64789D]">{r.row}</td>
+                        <td className="px-3 py-1.5 font-bold text-[#0F1E4A]">{r.item_name}</td>
+                        <td className="px-3 py-1.5 text-[#0F1E4A]">{r.opening_stock ?? '—'}</td>
+                        <td className="px-3 py-1.5 font-semibold text-[#E11D48]">{r.errors.join(', ')}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -646,7 +734,7 @@ export function ItemsPanel({ canManage }) {
 function Field({ label, children }) {
   return (
     <label className="flex flex-col gap-1">
-      <span className="text-xs font-medium text-ink-muted">{label}</span>
+      <span className="text-xs font-bold uppercase tracking-wider text-[#5A6E8C]">{label}</span>
       {children}
     </label>
   );

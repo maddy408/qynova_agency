@@ -122,14 +122,13 @@ export function CustomerSelect({
   return (
     <div ref={wrapperRef} className={`relative min-w-[240px] flex-1 ${className}`}>
       <div className="relative flex items-center">
-        <Search size={15} className="pointer-events-none absolute left-3 text-ink-muted z-10" />
+        <Search size={16} className="pointer-events-none absolute left-3.5 text-slate-400 z-10" />
         <input
           ref={inputRef}
           type="text"
           value={searchTerm}
           onClick={() => {
             setIsOpen(true);
-            // Select text on click for easy replacement if needed
             if (selectedCustomer && searchTerm === (selectedCustomer.ledger_name || selectedCustomer.name)) {
               inputRef.current?.select();
             }
@@ -143,8 +142,8 @@ export function CustomerSelect({
           }}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          className={`input pl-9 pr-8 w-full text-sm font-medium transition-all ${
-            selectedCustomer ? 'border-gold bg-gold/5 font-semibold text-gold-dark' : ''
+          className={`h-10 pl-10 pr-9 w-full rounded-xl text-sm font-semibold border transition-all focus:outline-none focus:ring-2 focus:ring-[#2449C6]/20 focus:border-[#2449C6] shadow-2xs ${
+            selectedCustomer ? 'border-[#2449C6] bg-[#EDF5FF] text-[#0B1B45]' : 'border-[#D5E3F7] bg-white text-[#0B1B45] placeholder-slate-400'
           }`}
         />
 
@@ -153,14 +152,14 @@ export function CustomerSelect({
             type="button"
             onClick={handleClear}
             title="Clear customer selection (revert to Walk-in)"
-            className="absolute right-2.5 p-1 text-ink-muted hover:text-danger rounded-full transition-colors"
+            className="absolute right-3 p-1 text-slate-400 hover:text-rose-600 rounded-full transition-colors"
           >
             <X size={14} />
           </button>
         ) : (
           <ChevronDown
             size={14}
-            className={`absolute right-2.5 text-ink-muted pointer-events-none transition-transform ${
+            className={`absolute right-3 text-slate-400 pointer-events-none transition-transform duration-200 ${
               isOpen ? 'rotate-180' : ''
             }`}
           />
@@ -168,10 +167,10 @@ export function CustomerSelect({
       </div>
 
       {isOpen && (
-        <div className="absolute left-0 right-0 top-full z-30 mt-1 rounded-lg border border-border-soft bg-white shadow-xl py-1">
+        <div className="absolute left-0 right-0 top-full z-40 mt-1.5 rounded-2xl border border-[#D5E3F7] bg-white shadow-xl py-1.5 overflow-hidden animate-in fade-in zoom-in-95 duration-100">
           <div className="max-h-64 overflow-y-auto">
           {filteredCustomers.length === 0 ? (
-            <div className="px-3 py-2 text-xs text-ink-muted text-center">No customers found</div>
+            <div className="px-4 py-4 text-xs font-medium text-slate-400 text-center">No customers found</div>
           ) : (
             pagedCustomers.map((c, index) => {
               const isSelected = String(c.id) === String(value);
@@ -183,42 +182,42 @@ export function CustomerSelect({
                   type="button"
                   onClick={() => handleSelect(c)}
                   onMouseEnter={() => setHighlightedIndex(index)}
-                  className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm transition-colors ${
-                    isHighlighted ? 'bg-gold/10 text-gold-dark' : 'hover:bg-page'
-                  } ${isSelected ? 'font-semibold bg-gold/15' : ''}`}
+                  className={`flex w-full items-center justify-between px-4 py-2.5 text-left text-sm transition-colors ${
+                    isHighlighted ? 'bg-[#EDF5FF] text-[#0B1B45]' : 'hover:bg-[#F8FAFD]'
+                  } ${isSelected ? 'font-bold bg-[#EDF5FF] text-[#0B1B45]' : ''}`}
                 >
-                  <div className="flex items-center gap-2 truncate">
-                    <User size={14} className={isSelected ? 'text-gold' : 'text-ink-muted'} />
-                    <span className="truncate">{c.ledger_name || c.name}</span>
+                  <div className="flex items-center gap-2.5 truncate">
+                    <User size={15} className={isSelected ? 'text-[#2449C6]' : 'text-slate-400'} />
+                    <span className="truncate font-semibold text-[#0B1B45]">{c.ledger_name || c.name}</span>
                     {c.phone && (
-                      <span className="flex items-center gap-1 text-xs text-ink-muted">
+                      <span className="flex items-center gap-1 text-xs font-normal text-slate-500">
                         <Phone size={11} />
                         {c.phone}
                       </span>
                     )}
                   </div>
-                  {isSelected && <Check size={14} className="text-gold shrink-0 ml-2" />}
+                  {isSelected && <Check size={15} className="text-[#2449C6] shrink-0 ml-2" />}
                 </button>
               );
             })
           )}
           </div>
           {filteredCustomers.length > PAGE_SIZE && (
-            <div className="flex items-center justify-between border-t border-border-soft px-2 py-1.5 text-xs">
+            <div className="flex items-center justify-between border-t border-[#EAF1FA] bg-[#F8FAFD] px-3 py-2 text-xs">
               <button
                 type="button"
                 onMouseDown={(e) => { e.preventDefault(); setPage((p) => Math.max(1, p - 1)); }}
                 disabled={currentPage === 1}
-                className="rounded px-2 py-1 text-ink-muted hover:bg-page disabled:opacity-30"
+                className="rounded-lg px-2.5 py-1 font-semibold text-slate-600 hover:bg-white hover:shadow-2xs disabled:opacity-30"
               >
                 Previous
               </button>
-              <span className="text-ink-muted">Page {currentPage} of {totalPages} · {filteredCustomers.length} customers</span>
+              <span className="text-[11px] font-medium text-slate-500">Page {currentPage} of {totalPages} · {filteredCustomers.length} customers</span>
               <button
                 type="button"
                 onMouseDown={(e) => { e.preventDefault(); setPage((p) => Math.min(totalPages, p + 1)); }}
                 disabled={currentPage === totalPages}
-                className="rounded px-2 py-1 text-ink-muted hover:bg-page disabled:opacity-30"
+                className="rounded-lg px-2.5 py-1 font-semibold text-slate-600 hover:bg-white hover:shadow-2xs disabled:opacity-30"
               >
                 Next
               </button>

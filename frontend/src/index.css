@@ -2,23 +2,206 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  /* Semantic & Brand Tokens */
+  --color-primary-brand: 232 201 133;
+  --color-primary-brand-hover: 255 243 216;
+  --color-primary-action: 49 91 255;
+  --color-success: 22 163 74;
+  --color-success-bg: 220 252 231;
+  --color-warning: 146 64 14;
+  --color-warning-bg: 255 243 216;
+  --color-danger: 240 91 122;
+  --color-brand-whatsapp: 22 163 74;
+  --color-navbar: 11 27 69;
+  --color-navbar-alt: 20 43 92;
+  --color-gold: 232 201 133;
+  --color-gold-soft: 255 243 216;
+  --color-page: 237 245 255;
+  --color-card: 255 255 255;
+  --color-border-soft: 215 229 255;
+  --color-highlight: 255 243 216;
+  --color-ink: 20 38 79;
+  --color-ink-muted: 100 120 157;
+  --color-ink-onnavy: 237 245 255;
+
+  /* POS Billing Screen Tokens */
+  --color-pos-navy: 11 27 69;
+  --color-pos-navy-dark: 7 18 48;
+  --color-pos-navy-light: 20 43 92;
+  --color-pos-navy-surface: 16 36 92;
+  --color-pos-navy-border: 30 56 123;
+  --color-pos-royal: 36 73 198;
+  --color-pos-blue: 49 91 255;
+  --color-pos-gold: 232 201 133;
+  --color-pos-gold-soft: 255 243 216;
+  --color-pos-pink: 248 221 232;
+  --color-pos-pink-text: 168 34 78;
+  --color-pos-stock-warning: 240 91 122;
+  --color-pos-ivory: 232 201 133;
+  --color-pos-ivory-light: 255 243 216;
+  --color-pos-ivory-soft: 255 248 234;
+  --color-pos-ivory-text: 140 109 31;
+  --color-pos-ice: 237 245 255;
+  --color-pos-ice-card: 245 248 255;
+  --color-pos-ice-silver: 237 245 255;
+  --color-pos-silver-moon: 215 229 255;
+  --color-pos-teal: 49 91 255;
+  --color-pos-slate: 100 120 157;
+  --color-pos-border: 215 229 255;
+
+  --color-white: 255 255 255;
+  --color-black: 0 0 0;
+
+  /* Standard Palette Shades (Actually Used) */
+  --color-slate-50: 248 250 252;
+  --color-slate-100: 241 245 249;
+  --color-slate-200: 226 232 240;
+  --color-slate-300: 203 213 225;
+  --color-slate-400: 148 163 184;
+  --color-slate-500: 100 116 139;
+  --color-slate-600: 71 85 105;
+  --color-slate-700: 51 65 85;
+  --color-slate-800: 30 41 59;
+  --color-slate-900: 15 23 42;
+  --color-gray-50: 249 250 251;
+  --color-gray-100: 243 244 246;
+  --color-gray-200: 229 231 235;
+  --color-gray-300: 209 213 219;
+  --color-gray-400: 156 163 175;
+  --color-gray-500: 107 114 128;
+  --color-gray-600: 75 85 99;
+  --color-gray-700: 55 65 81;
+  --color-gray-800: 31 41 55;
+  --color-gray-900: 17 24 39;
+  --color-emerald-50: 236 253 245;
+  --color-emerald-200: 167 243 208;
+  --color-emerald-300: 110 231 183;
+  --color-emerald-400: 52 211 153;
+  --color-emerald-500: 16 185 129;
+  --color-emerald-600: 5 150 105;
+  --color-emerald-700: 4 120 87;
+  --color-emerald-800: 6 95 70;
+  --color-emerald-950: 2 44 34;
+  --color-red-50: 254 242 242;
+  --color-red-100: 254 226 226;
+  --color-red-200: 254 202 202;
+  --color-red-300: 252 165 165;
+  --color-red-400: 248 113 113;
+  --color-red-500: 239 68 68;
+  --color-red-600: 220 38 38;
+  --color-red-700: 185 28 28;
+  --color-red-800: 153 27 27;
+  --color-red-900: 127 29 29;
+  --color-red-950: 69 10 10;
+  --color-indigo-50: 238 242 255;
+  --color-indigo-100: 224 231 255;
+  --color-indigo-200: 199 210 254;
+  --color-indigo-300: 165 180 252;
+  --color-indigo-400: 129 140 248;
+  --color-indigo-500: 99 102 241;
+  --color-indigo-600: 79 70 229;
+  --color-indigo-700: 67 56 202;
+  --color-indigo-900: 49 46 129;
+  --color-amber-50: 255 251 235;
+  --color-amber-100: 254 243 199;
+  --color-amber-200: 253 230 138;
+  --color-amber-300: 252 211 77;
+  --color-amber-400: 251 191 36;
+  --color-amber-500: 245 158 11;
+  --color-amber-600: 217 119 6;
+  --color-amber-700: 180 83 9;
+  --color-amber-800: 146 64 14;
+  --color-rose-50: 255 241 242;
+  --color-rose-200: 254 205 211;
+  --color-rose-600: 225 29 72;
+  --color-rose-800: 159 18 57;
+  --color-blue-50: 239 246 255;
+  --color-blue-100: 219 234 254;
+  --color-blue-200: 191 219 254;
+  --color-blue-600: 37 99 235;
+  --color-blue-700: 29 78 216;
+  --color-cyan-50: 236 254 255;
+  --color-cyan-200: 165 243 252;
+  --color-cyan-400: 34 211 238;
+  --color-cyan-600: 8 145 178;
+  --color-green-50: 240 253 244;
+  --color-green-200: 187 247 208;
+  --color-green-600: 22 163 74;
+  --color-green-700: 21 128 61;
+  --color-teal-50: 240 253 250;
+  --color-teal-200: 153 246 228;
+  --color-teal-600: 13 148 136;
+  --color-sky-50: 240 249 255;
+  --color-sky-200: 186 230 253;
+  --color-sky-600: 2 132 199;
+  --color-violet-50: 245 243 255;
+  --color-violet-200: 221 214 254;
+  --color-violet-600: 124 58 237;
+  --color-purple-50: 250 245 255;
+  --color-purple-200: 233 213 255;
+  --color-purple-600: 147 51 234;
+  --color-orange-50: 255 247 237;
+  --color-orange-200: 254 215 170;
+  --color-orange-600: 234 88 12;
+
+  /* Print Tokens */
+  --color-print-blue: 29 78 216;
+  --color-print-amber: 180 83 9;
+  --color-print-border: 153 153 153;
+  --color-print-black: 0 0 0;
+  --color-print-dark: 17 17 17;
+  --color-print-white: 255 255 255;
+}
+
 @layer base {
   body {
-    @apply bg-page text-ink;
+    font-family: 'Plus Jakarta Sans', Inter, system-ui, -apple-system, sans-serif;
+    @apply bg-page text-ink antialiased;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
+}
+
+/* Custom scrollbars and hidden scrollbar utilities */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #C4D7F2;
+  border-radius: 9999px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #9DBFEA;
+}
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #C4D7F2 transparent;
 }
 
 @layer components {
   .input {
-    @apply rounded-lg border border-border-soft bg-white px-2.5 py-1.5 text-sm w-full
-           focus:outline-none focus:ring-2 focus:ring-gold/40 focus:border-gold transition-colors;
+    @apply rounded-xl border border-pos-border bg-white px-3 py-2 text-sm w-full text-ink font-medium
+           focus:outline-none focus:ring-2 focus:ring-[#315BFF]/25 focus:border-[#315BFF] transition-all;
   }
 
   .brand-wordmark {
-    @apply font-display font-bold tracking-wide text-gold;
+    @apply font-display font-bold tracking-wide text-white;
   }
 
   .card {
-    @apply rounded-xl border border-border-soft bg-white shadow-sm;
+    @apply rounded-2xl border border-pos-border bg-white shadow-sm;
   }
 }

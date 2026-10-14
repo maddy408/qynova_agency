@@ -131,56 +131,74 @@ function DateRangeBar({ from, to, setFrom, setTo, onApply, onReset, onExport, pd
   };
 
   return (
-    <div className="mb-3 flex flex-col gap-2">
-      <div className="flex flex-wrap items-end gap-2">
+    <div className="mb-4 flex flex-col gap-2.5">
+      <div className="flex flex-wrap items-end gap-2.5">
         <div>
-          <label className="block text-xs text-ink-muted">From</label>
-          <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="input w-40" />
+          <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">From</label>
+          <input
+            type="date"
+            value={from}
+            onChange={(e) => setFrom(e.target.value)}
+            className="w-36 rounded-xl border border-[#D5E3F7] bg-white px-3 py-1.5 text-sm font-medium text-slate-800 transition focus:border-[#2449C6] focus:outline-none focus:ring-2 focus:ring-[#2449C6]/20"
+          />
         </div>
         <div>
-          <label className="block text-xs text-ink-muted">To</label>
-          <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="input w-40" />
+          <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">To</label>
+          <input
+            type="date"
+            value={to}
+            onChange={(e) => setTo(e.target.value)}
+            className="w-36 rounded-xl border border-[#D5E3F7] bg-white px-3 py-1.5 text-sm font-medium text-slate-800 transition focus:border-[#2449C6] focus:outline-none focus:ring-2 focus:ring-[#2449C6]/20"
+          />
         </div>
-        <Button size="sm" onClick={onApply}>Apply</Button>
-        <button type="button" onClick={onReset} className="text-sm font-medium text-ink-muted hover:underline">Reset</button>
+        <Button size="sm" onClick={onApply} className="shadow-xs">
+          Apply Filter
+        </Button>
+        <button
+          type="button"
+          onClick={onReset}
+          className="rounded-xl px-3 py-1.5 text-sm font-semibold text-slate-500 hover:bg-[#F5F8FF] hover:text-[#2449C6] transition"
+        >
+          Reset
+        </button>
 
         {canExport && (
           <div className="ml-auto flex items-center gap-2">
             <button
               onClick={handleExportExcel}
               disabled={exportingExcel}
-              className={`flex items-center gap-1.5 rounded px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-60 ${
+              className={`flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-sm font-bold transition-all shadow-xs disabled:opacity-60 ${
                 selectedCount > 0
-                  ? 'bg-gold text-white hover:bg-gold-soft shadow-sm'
-                  : 'bg-gray-100 text-ink hover:bg-gray-200'
+                  ? 'bg-gradient-to-r from-[#2449C6] to-[#0B1B45] text-white ring-1 ring-white/20'
+                  : 'border border-[#D5E3F7] bg-white text-slate-700 hover:bg-[#F5F8FF] hover:border-[#2449C6]/40 hover:text-[#2449C6]'
               }`}
             >
-              <FileSpreadsheet className="h-4 w-4" />
-              {exportingExcel ? 'Exporting…' : selectedCount > 0 ? `Export Excel (${selectedCount} selected)` : 'Export Excel'}
+              <FileSpreadsheet className="h-4 w-4 text-[#E8C985]" />
+              {exportingExcel ? 'Exporting…' : selectedCount > 0 ? `Export Excel (${selectedCount})` : 'Export Excel'}
             </button>
             <button
               onClick={handleExportPdf}
               disabled={exportingPdf || (!pdfConfig?.rows?.length && !selectedCount)}
-              className={`flex items-center gap-1.5 rounded px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-60 ${
+              className={`flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-sm font-bold transition-all shadow-xs disabled:opacity-60 ${
                 selectedCount > 0
-                  ? 'bg-gold text-white hover:bg-gold-soft shadow-sm'
-                  : 'bg-gray-100 text-ink hover:bg-gray-200'
+                  ? 'bg-gradient-to-r from-[#2449C6] to-[#0B1B45] text-white ring-1 ring-white/20'
+                  : 'border border-[#D5E3F7] bg-white text-slate-700 hover:bg-[#F5F8FF] hover:border-[#2449C6]/40 hover:text-[#2449C6]'
               }`}
             >
-              <FileDown className="h-4 w-4" />
-              {exportingPdf ? 'Exporting…' : selectedCount > 0 ? `Export PDF (${selectedCount} selected)` : 'Export PDF'}
+              <FileDown className="h-4 w-4 text-[#E8C985]" />
+              {exportingPdf ? 'Exporting…' : selectedCount > 0 ? `Export PDF (${selectedCount})` : 'Export PDF'}
             </button>
           </div>
         )}
       </div>
 
       {selectedCount > 0 && (
-        <div className="flex items-center justify-between rounded-lg bg-gold/10 px-3 py-1.5 text-xs font-semibold text-gold-dark border border-gold/30">
+        <div className="flex items-center justify-between rounded-xl bg-[#F5F8FF] px-4 py-2 text-sm font-semibold text-[#2449C6] border border-[#D5E3F7] shadow-xs">
           <span>✓ {selectedCount} row(s) selected for export</span>
           <button
             type="button"
             onClick={selection.clearSelection}
-            className="text-ink-muted hover:text-danger underline font-normal"
+            className="text-slate-500 hover:text-rose-600 underline font-normal transition"
           >
             Clear selection
           </button>
@@ -188,7 +206,9 @@ function DateRangeBar({ from, to, setFrom, setTo, onApply, onReset, onExport, pd
       )}
 
       {exportError && (
-        <div className="text-xs text-red-400 bg-red-950/40 p-2 rounded border border-red-800/40">{exportError}</div>
+        <div className="text-xs text-rose-800 bg-rose-50 p-3 rounded-xl border border-rose-200 font-medium">
+          {exportError}
+        </div>
       )}
     </div>
   );
@@ -223,12 +243,12 @@ function GenericTable({ rows, columns, totalKeys, selection }) {
   const firstKey = columns[0]?.key;
 
   return (
-    <div className="overflow-x-auto card">
+    <div className="overflow-x-auto rounded-2xl border border-[#D5E3F7] bg-white shadow-xs">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-border-soft text-left text-xs uppercase text-ink-muted">
+          <tr className="border-b border-[#D5E3F7] bg-[#F5F8FF] text-left text-xs font-bold uppercase tracking-wider text-slate-600">
             {selection && (
-              <th className="w-10 px-3 py-2 text-center">
+              <th className="w-10 px-3.5 py-2.5 text-center">
                 <input
                   type="checkbox"
                   checked={selection.isAllSelected}
@@ -236,19 +256,19 @@ function GenericTable({ rows, columns, totalKeys, selection }) {
                     if (el) el.indeterminate = selection.isSomeSelected;
                   }}
                   onChange={selection.toggleSelectAll}
-                  className="h-4 w-4 rounded border-border-soft text-gold focus:ring-gold cursor-pointer"
+                  className="h-4 w-4 rounded-md border-[#D5E3F7] text-[#2449C6] focus:ring-[#2449C6] cursor-pointer"
                   title="Select / Deselect all rows"
                 />
               </th>
             )}
             {columns.map((c) => (
-              <th key={c.key} className={`whitespace-nowrap px-4 py-2 ${totalKeys?.includes(c.key) ? 'text-right' : ''}`}>
+              <th key={c.key} className={`whitespace-nowrap px-3.5 py-2.5 ${totalKeys?.includes(c.key) ? 'text-right' : ''}`}>
                 {c.label}
               </th>
             ))}
           </tr>
         </thead>
-        <tbody>
+        <tbody className="divide-y divide-[#EAF1FA]">
           {rows.map((r, i) => {
             const rowKey = selection?.getKey ? selection.getKey(r, i) : i;
             const isSelected = selection?.selectedKeys.has(rowKey);
@@ -257,22 +277,22 @@ function GenericTable({ rows, columns, totalKeys, selection }) {
               <tr
                 key={rowKey}
                 onClick={() => selection?.toggleSelectRow(rowKey)}
-                className={`border-b border-border-soft transition-colors cursor-pointer ${
-                  isSelected ? 'bg-gold/10 font-medium' : 'hover:bg-page'
+                className={`transition-colors cursor-pointer ${
+                  isSelected ? 'bg-[#F5F8FF] font-semibold text-[#0B1B45]' : 'hover:bg-[#F8FAFD]'
                 }`}
               >
                 {selection && (
-                  <td className="w-10 px-3 py-2 text-center" onClick={(e) => e.stopPropagation()}>
+                  <td className="w-10 px-3.5 py-2.5 text-center" onClick={(e) => e.stopPropagation()}>
                     <input
                       type="checkbox"
                       checked={isSelected}
                       onChange={() => selection.toggleSelectRow(rowKey)}
-                      className="h-4 w-4 rounded border-border-soft text-gold focus:ring-gold cursor-pointer"
+                      className="h-4 w-4 rounded-md border-[#D5E3F7] text-[#2449C6] focus:ring-[#2449C6] cursor-pointer"
                     />
                   </td>
                 )}
                 {columns.map((c) => (
-                  <td key={c.key} className={`whitespace-nowrap px-4 py-2 ${totalKeys?.includes(c.key) ? 'text-right' : ''}`}>
+                  <td key={c.key} className={`whitespace-nowrap px-3.5 py-2.5 ${totalKeys?.includes(c.key) ? 'text-right font-bold text-[#2449C6]' : ''}`}>
                     {totalKeys?.includes(c.key) ? Number(r[c.key] ?? 0).toFixed(2) : (r[c.key] ?? '-')}
                   </td>
                 ))}
@@ -281,7 +301,7 @@ function GenericTable({ rows, columns, totalKeys, selection }) {
           })}
           {rows.length === 0 && (
             <tr>
-              <td colSpan={columns.length + (selection ? 1 : 0)} className="px-4 py-6 text-center text-ink-muted">
+              <td colSpan={columns.length + (selection ? 1 : 0)} className="px-3.5 py-10 text-center text-slate-400">
                 No data for this range.
               </td>
             </tr>
@@ -289,10 +309,10 @@ function GenericTable({ rows, columns, totalKeys, selection }) {
         </tbody>
         {totals && rows.length > 0 && (
           <tfoot>
-            <tr className="border-t-2 border-ink bg-surface-subtle/30 font-semibold text-ink">
-              {selection && <td className="w-10 px-3 py-2"></td>}
+            <tr className="border-t-2 border-[#D5E3F7] bg-[#F5F8FF] font-bold text-[#0B1B45]">
+              {selection && <td className="w-10 px-3.5 py-2.5"></td>}
               {columns.map((c) => (
-                <td key={c.key} className={`whitespace-nowrap px-4 py-2 ${totalKeys.includes(c.key) ? 'text-right' : ''}`}>
+                <td key={c.key} className={`whitespace-nowrap px-3.5 py-2.5 ${totalKeys.includes(c.key) ? 'text-right font-black text-[#2449C6]' : ''}`}>
                   {totalKeys.includes(c.key)
                     ? totals[c.key].toFixed(2)
                     : c.key === firstKey
@@ -527,18 +547,36 @@ function SalesWiseReportPanel({ report, canExport }) {
 
   return (
     <div>
-      <div className="mb-3 flex flex-col gap-2">
-        <div className="flex flex-wrap items-end gap-2">
+      <div className="mb-4 flex flex-col gap-2.5">
+        <div className="flex flex-wrap items-end gap-2.5">
           <div>
-            <label className="block text-xs text-ink-muted">From</label>
-            <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="input w-40" />
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">From</label>
+            <input
+              type="date"
+              value={from}
+              onChange={(e) => setFrom(e.target.value)}
+              className="w-36 rounded-xl border border-[#D5E3F7] bg-white px-3 py-1.5 text-sm font-medium text-slate-800 transition focus:border-[#2449C6] focus:outline-none focus:ring-2 focus:ring-[#2449C6]/20"
+            />
           </div>
           <div>
-            <label className="block text-xs text-ink-muted">To</label>
-            <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="input w-40" />
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">To</label>
+            <input
+              type="date"
+              value={to}
+              onChange={(e) => setTo(e.target.value)}
+              className="w-36 rounded-xl border border-[#D5E3F7] bg-white px-3 py-1.5 text-sm font-medium text-slate-800 transition focus:border-[#2449C6] focus:outline-none focus:ring-2 focus:ring-[#2449C6]/20"
+            />
           </div>
-          <Button size="sm" onClick={applyFilters}>Apply Filter</Button>
-          <button type="button" onClick={resetFilters} className="text-sm font-medium text-ink-muted hover:underline">Reset</button>
+          <Button size="sm" onClick={applyFilters} className="shadow-xs">
+            Apply Filter
+          </Button>
+          <button
+            type="button"
+            onClick={resetFilters}
+            className="rounded-xl px-3 py-1.5 text-sm font-semibold text-slate-500 hover:bg-[#F5F8FF] hover:text-[#2449C6] transition"
+          >
+            Reset
+          </button>
 
           {report.searchable && (
             <input
@@ -546,7 +584,7 @@ function SalesWiseReportPanel({ report, canExport }) {
               placeholder="Search…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="input w-48"
+              className="w-48 rounded-xl border border-[#D5E3F7] bg-[#F8FAFD] px-3.5 py-1.5 text-sm font-medium text-slate-800 transition focus:border-[#2449C6] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2449C6]/20"
             />
           )}
 
@@ -555,38 +593,38 @@ function SalesWiseReportPanel({ report, canExport }) {
               <button
                 onClick={handleExportExcel}
                 disabled={exportingExcel}
-                className={`flex items-center gap-1.5 rounded px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-60 ${
+                className={`flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-sm font-bold transition-all shadow-xs disabled:opacity-60 ${
                   selectedCount > 0
-                    ? 'bg-gold text-white hover:bg-gold-soft shadow-sm'
-                    : 'bg-gray-100 text-ink hover:bg-gray-200'
+                    ? 'bg-gradient-to-r from-[#2449C6] to-[#0B1B45] text-white ring-1 ring-white/20'
+                    : 'border border-[#D5E3F7] bg-white text-slate-700 hover:bg-[#F5F8FF] hover:border-[#2449C6]/40 hover:text-[#2449C6]'
                 }`}
               >
-                <FileSpreadsheet className="h-4 w-4" />
-                {exportingExcel ? 'Exporting…' : selectedCount > 0 ? `Export Excel (${selectedCount} selected)` : 'Export Excel'}
+                <FileSpreadsheet className="h-4 w-4 text-[#E8C985]" />
+                {exportingExcel ? 'Exporting…' : selectedCount > 0 ? `Export Excel (${selectedCount})` : 'Export Excel'}
               </button>
               <button
                 onClick={handleExportPdf}
                 disabled={exportingPdf || filteredRows.length === 0}
-                className={`flex items-center gap-1.5 rounded px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-60 ${
+                className={`flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-sm font-bold transition-all shadow-xs disabled:opacity-60 ${
                   selectedCount > 0
-                    ? 'bg-gold text-white hover:bg-gold-soft shadow-sm'
-                    : 'bg-gray-100 text-ink hover:bg-gray-200'
+                    ? 'bg-gradient-to-r from-[#2449C6] to-[#0B1B45] text-white ring-1 ring-white/20'
+                    : 'border border-[#D5E3F7] bg-white text-slate-700 hover:bg-[#F5F8FF] hover:border-[#2449C6]/40 hover:text-[#2449C6]'
                 }`}
               >
-                <FileDown className="h-4 w-4" />
-                {exportingPdf ? 'Exporting…' : selectedCount > 0 ? `Export PDF (${selectedCount} selected)` : 'Export PDF'}
+                <FileDown className="h-4 w-4 text-[#E8C985]" />
+                {exportingPdf ? 'Exporting…' : selectedCount > 0 ? `Export PDF (${selectedCount})` : 'Export PDF'}
               </button>
             </div>
           )}
         </div>
 
         {selectedCount > 0 && (
-          <div className="flex items-center justify-between rounded-lg bg-gold/10 px-3 py-1.5 text-xs font-semibold text-gold-dark border border-gold/30">
+          <div className="flex items-center justify-between rounded-xl bg-[#F5F8FF] px-4 py-2 text-sm font-semibold text-[#2449C6] border border-[#D5E3F7] shadow-xs">
             <span>✓ {selectedCount} row(s) selected for export</span>
             <button
               type="button"
               onClick={selection.clearSelection}
-              className="text-ink-muted hover:text-danger underline font-normal"
+              className="text-slate-500 hover:text-rose-600 underline font-normal transition"
             >
               Clear selection
             </button>
@@ -594,35 +632,37 @@ function SalesWiseReportPanel({ report, canExport }) {
         )}
 
         {exportError && (
-          <div className="text-xs text-red-400 bg-red-950/40 p-2 rounded border border-red-800/40">{exportError}</div>
+          <div className="text-xs text-rose-800 bg-rose-50 p-3 rounded-xl border border-rose-200 font-medium">
+            {exportError}
+          </div>
         )}
       </div>
 
-      <div className="overflow-x-auto card">
+      <div className="overflow-x-auto rounded-2xl border border-[#D5E3F7] bg-white shadow-xs">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-border-soft text-left text-xs uppercase text-ink-muted">
-              <th className="w-10 px-3 py-2 text-center">
+            <tr className="border-b border-[#D5E3F7] bg-[#F5F8FF] text-left text-xs font-bold uppercase tracking-wider text-slate-600">
+              <th className="w-10 px-3.5 py-2.5 text-center">
                 <input
                   type="checkbox"
                   checked={selection.isAllSelected}
                   ref={(el) => { if (el) el.indeterminate = selection.isSomeSelected; }}
                   onChange={selection.toggleSelectAll}
-                  className="h-4 w-4 rounded border-border-soft text-gold focus:ring-gold cursor-pointer"
+                  className="h-4 w-4 rounded-md border-[#D5E3F7] text-[#2449C6] focus:ring-[#2449C6] cursor-pointer"
                   title="Select / Deselect all rows"
                 />
               </th>
               {Object.entries(report.columns).map(([k, label]) => (
-                <th key={k} className={`whitespace-nowrap px-4 py-2 ${NUMERIC_REPORT_KEYS.has(k) ? 'text-right' : ''}`}>{label}</th>
+                <th key={k} className={`whitespace-nowrap px-3.5 py-2.5 ${NUMERIC_REPORT_KEYS.has(k) ? 'text-right' : ''}`}>{label}</th>
               ))}
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-[#EAF1FA]">
             {query.isLoading && (
-              <tr><td colSpan={Object.keys(report.columns).length + 1} className="px-4 py-6 text-center text-ink-muted">Loading…</td></tr>
+              <tr><td colSpan={Object.keys(report.columns).length + 1} className="px-3.5 py-10 text-center text-slate-400">Loading report data…</td></tr>
             )}
             {query.isError && (
-              <tr><td colSpan={Object.keys(report.columns).length + 1} className="px-4 py-6 text-center text-red-400">{query.error?.response?.data?.error || 'Failed to load this report.'}</td></tr>
+              <tr><td colSpan={Object.keys(report.columns).length + 1} className="px-3.5 py-10 text-center text-rose-600">{query.error?.response?.data?.error || 'Failed to load this report.'}</td></tr>
             )}
             {!query.isLoading && !query.isError && filteredRows.map((r, i) => {
               const rowKey = selection.getKey(r, i);
@@ -632,20 +672,20 @@ function SalesWiseReportPanel({ report, canExport }) {
                 <tr
                   key={rowKey}
                   onClick={() => selection.toggleSelectRow(rowKey)}
-                  className={`border-b border-border-soft transition-colors cursor-pointer ${
-                    isSelected ? 'bg-gold/10 font-medium' : 'hover:bg-page'
+                  className={`transition-colors cursor-pointer ${
+                    isSelected ? 'bg-[#F5F8FF] font-semibold text-[#0B1B45]' : 'hover:bg-[#F8FAFD]'
                   }`}
                 >
-                  <td className="w-10 px-3 py-2 text-center" onClick={(e) => e.stopPropagation()}>
+                  <td className="w-10 px-3.5 py-2.5 text-center" onClick={(e) => e.stopPropagation()}>
                     <input
                       type="checkbox"
                       checked={isSelected}
                       onChange={() => selection.toggleSelectRow(rowKey)}
-                      className="h-4 w-4 rounded border-border-soft text-gold focus:ring-gold cursor-pointer"
+                      className="h-4 w-4 rounded-md border-[#D5E3F7] text-[#2449C6] focus:ring-[#2449C6] cursor-pointer"
                     />
                   </td>
                   {Object.keys(report.columns).map((k) => (
-                    <td key={k} className={`whitespace-nowrap px-4 py-2 ${NUMERIC_REPORT_KEYS.has(k) ? 'text-right' : ''}`}>
+                    <td key={k} className={`whitespace-nowrap px-3.5 py-2.5 ${NUMERIC_REPORT_KEYS.has(k) ? 'text-right font-bold text-[#2449C6]' : ''}`}>
                       {NUMERIC_REPORT_KEYS.has(k) ? Number(r[k] ?? 0).toFixed(2) : (r[k] ?? '-')}
                     </td>
                   ))}
@@ -653,15 +693,15 @@ function SalesWiseReportPanel({ report, canExport }) {
               );
             })}
             {!query.isLoading && !query.isError && filteredRows.length === 0 && (
-              <tr><td colSpan={Object.keys(report.columns).length + 1} className="px-4 py-6 text-center text-ink-muted">No data for this range.</td></tr>
+              <tr><td colSpan={Object.keys(report.columns).length + 1} className="px-3.5 py-10 text-center text-slate-400">No data for this range.</td></tr>
             )}
           </tbody>
           {!query.isLoading && !query.isError && filteredRows.length > 0 && (
             <tfoot>
-              <tr className="border-t-2 border-ink bg-surface-subtle/30 font-semibold text-ink">
-                <td className="w-10 px-3 py-2"></td>
+              <tr className="border-t-2 border-[#D5E3F7] bg-[#F5F8FF] font-bold text-[#0B1B45]">
+                <td className="w-10 px-3.5 py-2.5"></td>
                 {Object.keys(report.columns).map((k) => (
-                  <td key={k} className={`whitespace-nowrap px-4 py-2 ${NUMERIC_REPORT_KEYS.has(k) ? 'text-right' : ''}`}>
+                  <td key={k} className={`whitespace-nowrap px-3.5 py-2.5 ${NUMERIC_REPORT_KEYS.has(k) ? 'text-right font-black text-[#2449C6]' : ''}`}>
                     {NUMERIC_REPORT_KEYS.has(k)
                       ? totals[k].toFixed(2)
                       : k === firstTextKey
@@ -755,41 +795,41 @@ function SnapshotExportBar({ canExport, onExport, pdfConfig, excelConfig, select
   };
 
   return (
-    <div className="mb-3 flex flex-col gap-2">
+    <div className="mb-4 flex flex-col gap-2.5">
       <div className="flex justify-end gap-2">
         <button
           onClick={handleExportExcel}
           disabled={exportingExcel}
-          className={`flex items-center gap-1.5 rounded px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-60 ${
+          className={`flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-sm font-bold transition-all shadow-xs disabled:opacity-60 ${
             selectedCount > 0
-              ? 'bg-gold text-white hover:bg-gold-soft shadow-sm'
-              : 'bg-gray-100 text-ink hover:bg-gray-200'
+              ? 'bg-gradient-to-r from-[#2449C6] to-[#0B1B45] text-white ring-1 ring-white/20'
+              : 'border border-[#D5E3F7] bg-white text-slate-700 hover:bg-[#F5F8FF] hover:border-[#2449C6]/40 hover:text-[#2449C6]'
           }`}
         >
-          <FileSpreadsheet className="h-4 w-4" />
-          {exportingExcel ? 'Exporting…' : selectedCount > 0 ? `Export Excel (${selectedCount} selected)` : 'Export Excel'}
+          <FileSpreadsheet className="h-4 w-4 text-[#E8C985]" />
+          {exportingExcel ? 'Exporting…' : selectedCount > 0 ? `Export Excel (${selectedCount})` : 'Export Excel'}
         </button>
         <button
           onClick={handleExportPdf}
           disabled={exportingPdf || (!pdfConfig?.rows?.length && !selectedCount)}
-          className={`flex items-center gap-1.5 rounded px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-60 ${
+          className={`flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-sm font-bold transition-all shadow-xs disabled:opacity-60 ${
             selectedCount > 0
-              ? 'bg-gold text-white hover:bg-gold-soft shadow-sm'
-              : 'bg-gray-100 text-ink hover:bg-gray-200'
+              ? 'bg-gradient-to-r from-[#2449C6] to-[#0B1B45] text-white ring-1 ring-white/20'
+              : 'border border-[#D5E3F7] bg-white text-slate-700 hover:bg-[#F5F8FF] hover:border-[#2449C6]/40 hover:text-[#2449C6]'
           }`}
         >
-          <FileDown className="h-4 w-4" />
-          {exportingPdf ? 'Exporting…' : selectedCount > 0 ? `Export PDF (${selectedCount} selected)` : 'Export PDF'}
+          <FileDown className="h-4 w-4 text-[#E8C985]" />
+          {exportingPdf ? 'Exporting…' : selectedCount > 0 ? `Export PDF (${selectedCount})` : 'Export PDF'}
         </button>
       </div>
 
       {selectedCount > 0 && (
-        <div className="flex items-center justify-between rounded-lg bg-gold/10 px-3 py-1.5 text-xs font-semibold text-gold-dark border border-gold/30">
+        <div className="flex items-center justify-between rounded-xl bg-[#F5F8FF] px-4 py-2 text-sm font-semibold text-[#2449C6] border border-[#D5E3F7] shadow-xs">
           <span>✓ {selectedCount} row(s) selected for export</span>
           <button
             type="button"
             onClick={selection.clearSelection}
-            className="text-ink-muted hover:text-danger underline font-normal"
+            className="text-slate-500 hover:text-rose-600 underline font-normal transition"
           >
             Clear selection
           </button>
@@ -797,7 +837,9 @@ function SnapshotExportBar({ canExport, onExport, pdfConfig, excelConfig, select
       )}
 
       {exportError && (
-        <div className="text-xs text-red-400 bg-red-950/40 p-2 rounded border border-red-800/40">{exportError}</div>
+        <div className="text-xs text-rose-800 bg-rose-50 p-3 rounded-xl border border-rose-200 font-medium">
+          {exportError}
+        </div>
       )}
     </div>
   );
@@ -882,14 +924,16 @@ function ProfitPanel({ canExport }) {
   const [mode, setMode] = useState('summary'); // 'summary' | 'invoice_wise'
   return (
     <div>
-      <div className="mb-3 flex gap-2 rounded-lg border border-border-soft bg-white p-1 w-fit">
+      <div className="mb-4 flex gap-1.5 rounded-2xl border border-[#D5E3F7] bg-[#F8FAFD] p-1.5 w-fit shadow-xs">
         {[['summary', 'Date-wise / Summary'], ['invoice_wise', 'Invoice-wise Profit/Loss']].map(([key, label]) => (
           <button
             key={key}
             type="button"
             onClick={() => setMode(key)}
-            className={`rounded px-3 py-1.5 text-sm font-medium transition-colors ${
-              mode === key ? 'bg-navbar text-gold' : 'text-ink-muted hover:bg-page'
+            className={`rounded-xl px-4 py-2 text-xs font-bold transition-all ${
+              mode === key
+                ? 'bg-gradient-to-r from-[#0B1B45] to-[#2449C6] text-white shadow-md shadow-[#0B1B45]/20 ring-1 ring-white/20'
+                : 'text-slate-600 hover:text-[#0B1B45] hover:bg-white/60'
             }`}
           >
             {label}
@@ -939,45 +983,73 @@ function ProfitSummaryPanel({ canExport }) {
 
   return (
     <div>
-      <div className="mb-3 flex flex-wrap items-end gap-2">
+      <div className="mb-4 flex flex-wrap items-end gap-2.5">
         <div>
-          <label className="block text-xs text-ink-muted">From</label>
-          <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="input w-40" />
+          <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">From</label>
+          <input
+            type="date"
+            value={from}
+            onChange={(e) => setFrom(e.target.value)}
+            className="w-36 rounded-xl border border-[#D5E3F7] bg-white px-3 py-1.5 text-sm font-medium text-slate-800 transition focus:border-[#2449C6] focus:outline-none focus:ring-2 focus:ring-[#2449C6]/20"
+          />
         </div>
         <div>
-          <label className="block text-xs text-ink-muted">To</label>
-          <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="input w-40" />
+          <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">To</label>
+          <input
+            type="date"
+            value={to}
+            onChange={(e) => setTo(e.target.value)}
+            className="w-36 rounded-xl border border-[#D5E3F7] bg-white px-3 py-1.5 text-sm font-medium text-slate-800 transition focus:border-[#2449C6] focus:outline-none focus:ring-2 focus:ring-[#2449C6]/20"
+          />
         </div>
-        <Button size="sm" onClick={applyFilters}>Apply</Button>
-        <button type="button" onClick={resetFilters} className="text-sm font-medium text-ink-muted hover:underline">Reset</button>
+        <Button size="sm" onClick={applyFilters} className="shadow-xs">Apply Filter</Button>
+        <button
+          type="button"
+          onClick={resetFilters}
+          className="rounded-xl px-3 py-1.5 text-sm font-semibold text-slate-500 hover:bg-[#F5F8FF] hover:text-[#2449C6] transition"
+        >
+          Reset
+        </button>
         {canExport && (
           <div className="ml-auto flex gap-2">
-            <button onClick={handleExportExcel} disabled={exportingExcel} className="flex items-center gap-1.5 rounded bg-gray-100 px-3 py-1.5 text-sm font-medium text-ink hover:bg-gray-200 disabled:opacity-60">
-              <FileSpreadsheet className="h-4 w-4" />
+            <button
+              onClick={handleExportExcel}
+              disabled={exportingExcel}
+              className="flex items-center gap-1.5 rounded-xl border border-[#D5E3F7] bg-white px-3.5 py-1.5 text-sm font-bold text-slate-700 shadow-xs hover:border-[#2449C6]/40 hover:bg-[#F5F8FF] hover:text-[#2449C6] disabled:opacity-60 transition"
+            >
+              <FileSpreadsheet className="h-4 w-4 text-[#E8C985]" />
               {exportingExcel ? 'Exporting…' : 'Export Excel'}
             </button>
-            <button onClick={handleExportPdf} disabled={!p} className="flex items-center gap-1.5 rounded bg-gray-100 px-3 py-1.5 text-sm font-medium text-ink hover:bg-gray-200 disabled:opacity-60">
-              <FileDown className="h-4 w-4" />
+            <button
+              onClick={handleExportPdf}
+              disabled={!p}
+              className="flex items-center gap-1.5 rounded-xl border border-[#D5E3F7] bg-white px-3.5 py-1.5 text-sm font-bold text-slate-700 shadow-xs hover:border-[#2449C6]/40 hover:bg-[#F5F8FF] hover:text-[#2449C6] disabled:opacity-60 transition"
+            >
+              <FileDown className="h-4 w-4 text-[#E8C985]" />
               Export PDF
             </button>
           </div>
         )}
       </div>
-      {exportError && <div className="mb-3 text-xs text-red-400 bg-red-950/40 p-2 rounded border border-red-800/40">{exportError}</div>}
+      {exportError && (
+        <div className="mb-4 text-xs text-rose-800 bg-rose-50 p-3 rounded-xl border border-rose-200 font-medium">
+          {exportError}
+        </div>
+      )}
       {p && (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
           {[
             ['Revenue (ex-tax)', p.revenue], ['COGS', p.cogs], ['Gross Profit', p.gross_profit],
             ['Expenses', p.expenses], ['Net Profit', p.net_profit],
           ].map(([label, value]) => (
-            <div key={label} className="card p-4">
-              <div className="text-xs font-medium uppercase text-ink-muted">{label}</div>
-              <div className={`mt-1 text-xl font-bold ${Number(value) < 0 ? 'text-red-600' : 'text-ink'}`}>Rs. {value}</div>
+            <div key={label} className="rounded-2xl border border-[#D5E3F7] bg-white p-5 shadow-xs hover:border-[#2449C6]/30 transition">
+              <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500">{label}</div>
+              <div className={`mt-2 text-2xl font-black ${Number(value) < 0 ? 'text-rose-600' : 'text-[#0B1B45]'}`}>₹{Number(value).toFixed(2)}</div>
             </div>
           ))}
         </div>
       )}
-      <p className="mt-3 text-xs text-ink-muted">
+      <p className="mt-3 text-xs text-slate-400">
         COGS uses each item's current cost price (invoices don't snapshot cost at sale time) — see README assumptions.
       </p>
     </div>
@@ -1091,22 +1163,22 @@ function PricingPanel({ type, label, canExport }) {
 
   return (
     <div>
-      <div className="mb-3 flex flex-wrap items-center gap-2">
+      <div className="mb-4 flex flex-wrap items-center gap-2.5">
         <input
           type="text"
           placeholder="Search item name / code / barcode"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="input w-64"
+          className="w-64 rounded-xl border border-[#D5E3F7] bg-[#F8FAFD] px-3.5 py-1.5 text-sm font-medium text-slate-800 transition focus:border-[#2449C6] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2449C6]/20"
         />
-        <Button size="sm" onClick={handleSave} disabled={changedIds.length === 0 || saveMutation.isPending}>
+        <Button size="sm" onClick={handleSave} disabled={changedIds.length === 0 || saveMutation.isPending} className="shadow-xs">
           {saveMutation.isPending ? 'Saving…' : `Save${changedIds.length ? ` (${changedIds.length})` : ''}`}
         </Button>
         {changedIds.length > 0 && (
           <button
             type="button"
             onClick={() => { setEdits({}); setMessage(null); }}
-            className="text-sm font-medium text-ink-muted hover:underline"
+            className="rounded-xl px-3 py-1.5 text-sm font-semibold text-slate-500 hover:bg-[#F5F8FF] hover:text-[#2449C6] transition"
           >
             Reset
           </button>
@@ -1117,75 +1189,77 @@ function PricingPanel({ type, label, canExport }) {
             <button
               onClick={handleExportExcel}
               disabled={rows.length === 0}
-              className={`flex items-center gap-1.5 rounded px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-60 ${
+              className={`flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-sm font-bold transition-all shadow-xs disabled:opacity-60 ${
                 selectedCount > 0
-                  ? 'bg-gold text-white hover:bg-gold-soft shadow-sm'
-                  : 'bg-gray-100 text-ink hover:bg-gray-200'
+                  ? 'bg-gradient-to-r from-[#2449C6] to-[#0B1B45] text-white ring-1 ring-white/20'
+                  : 'border border-[#D5E3F7] bg-white text-slate-700 hover:bg-[#F5F8FF] hover:border-[#2449C6]/40 hover:text-[#2449C6]'
               }`}
             >
-              <FileSpreadsheet className="h-4 w-4" />
-              {selectedCount > 0 ? `Export Excel (${selectedCount} selected)` : 'Export Excel'}
+              <FileSpreadsheet className="h-4 w-4 text-[#E8C985]" />
+              {selectedCount > 0 ? `Export Excel (${selectedCount})` : 'Export Excel'}
             </button>
             <button
               onClick={handleExportPdf}
               disabled={rows.length === 0}
-              className={`flex items-center gap-1.5 rounded px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-60 ${
+              className={`flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-sm font-bold transition-all shadow-xs disabled:opacity-60 ${
                 selectedCount > 0
-                  ? 'bg-gold text-white hover:bg-gold-soft shadow-sm'
-                  : 'bg-gray-100 text-ink hover:bg-gray-200'
+                  ? 'bg-gradient-to-r from-[#2449C6] to-[#0B1B45] text-white ring-1 ring-white/20'
+                  : 'border border-[#D5E3F7] bg-white text-slate-700 hover:bg-[#F5F8FF] hover:border-[#2449C6]/40 hover:text-[#2449C6]'
               }`}
             >
-              <FileDown className="h-4 w-4" />
-              {selectedCount > 0 ? `Export PDF (${selectedCount} selected)` : 'Export PDF'}
+              <FileDown className="h-4 w-4 text-[#E8C985]" />
+              {selectedCount > 0 ? `Export PDF (${selectedCount})` : 'Export PDF'}
             </button>
           </div>
         )}
 
         {message && (
-          <span className={`text-sm font-medium ${message.kind === 'error' ? 'text-danger' : 'text-success'}`}>{message.text}</span>
+          <span className={`text-xs font-semibold px-3 py-1 rounded-xl ${message.kind === 'error' ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'}`}>
+            {message.text}
+          </span>
         )}
       </div>
 
       {selectedCount > 0 && (
-        <div className="mb-3 flex items-center justify-between rounded-lg bg-gold/10 px-3 py-1.5 text-xs font-semibold text-gold-dark border border-gold/30">
+        <div className="mb-4 flex items-center justify-between rounded-xl bg-[#F5F8FF] px-4 py-2 text-sm font-semibold text-[#2449C6] border border-[#D5E3F7] shadow-xs">
           <span>✓ {selectedCount} row(s) selected for export</span>
           <button
             type="button"
             onClick={selection.clearSelection}
-            className="text-ink-muted hover:text-danger underline font-normal"
+            className="text-slate-500 hover:text-rose-600 underline font-normal transition"
           >
             Clear selection
           </button>
         </div>
       )}
 
-      <div className="overflow-x-auto card">
+      <div className="overflow-x-auto rounded-2xl border border-[#D5E3F7] bg-white shadow-xs">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-border-soft text-left text-xs uppercase text-ink-muted">
-              <th className="w-10 px-3 py-2 text-center">
+            <tr className="border-b border-[#D5E3F7] bg-[#F5F8FF] text-left text-xs font-bold uppercase tracking-wider text-slate-600">
+              <th className="w-10 px-3.5 py-2.5 text-center">
                 <input
                   type="checkbox"
                   checked={selection.isAllSelected}
                   ref={(el) => { if (el) el.indeterminate = selection.isSomeSelected; }}
                   onChange={selection.toggleSelectAll}
-                  className="h-4 w-4 rounded border-border-soft text-gold focus:ring-gold cursor-pointer"
+                  className="h-4 w-4 rounded-md border-[#D5E3F7] text-[#2449C6] focus:ring-[#2449C6] cursor-pointer"
                   title="Select / Deselect all rows"
                 />
               </th>
-              <th className="px-4 py-2">Item</th>
-              <th className="px-4 py-2">Unit</th>
-              <th className="px-4 py-2 text-right">MRP</th>
-              <th className="px-4 py-2 text-right">Normal NET_SRATE</th>
-              <th className="px-4 py-2 text-right">{label} Price</th>
+              <th className="px-3.5 py-2.5">Item</th>
+              <th className="px-3.5 py-2.5">Unit</th>
+              <th className="px-3.5 py-2.5 text-right">MRP</th>
+              <th className="px-3.5 py-2.5 text-right">Normal NET_SRATE</th>
+              <th className="px-3.5 py-2.5 text-right">{label} Price</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-[#EAF1FA]">
             {query.isLoading && (
-              <tr><td colSpan={6} className="px-4 py-6 text-center text-ink-muted">Loading items…</td></tr>
+              <tr><td colSpan={6} className="px-3.5 py-10 text-center text-slate-400">Loading items…</td></tr>
             )}
             {!query.isLoading && rows.length === 0 && (
-              <tr><td colSpan={6} className="px-4 py-6 text-center text-ink-muted">No items found.</td></tr>
+              <tr><td colSpan={6} className="px-3.5 py-10 text-center text-slate-400">No items found.</td></tr>
             )}
             {!query.isLoading && rows.map((r) => {
               const edited = Object.prototype.hasOwnProperty.call(edits, r.id);
@@ -1196,25 +1270,25 @@ function PricingPanel({ type, label, canExport }) {
                 <tr
                   key={r.id}
                   onClick={() => selection.toggleSelectRow(r.id)}
-                  className={`border-b border-border-soft transition-colors cursor-pointer ${
-                    isSelected ? 'bg-gold/10 font-medium' : edited ? 'bg-highlight' : 'hover:bg-page'
+                  className={`transition-colors cursor-pointer ${
+                    isSelected ? 'bg-[#F5F8FF] font-semibold text-[#0B1B45]' : edited ? 'bg-amber-50/70' : 'hover:bg-[#F8FAFD]'
                   }`}
                 >
-                  <td className="w-10 px-3 py-2 text-center" onClick={(e) => e.stopPropagation()}>
+                  <td className="w-10 px-3.5 py-2.5 text-center" onClick={(e) => e.stopPropagation()}>
                     <input
                       type="checkbox"
                       checked={isSelected}
                       onChange={() => selection.toggleSelectRow(r.id)}
-                      className="h-4 w-4 rounded border-border-soft text-gold focus:ring-gold cursor-pointer"
+                      className="h-4 w-4 rounded-md border-[#D5E3F7] text-[#2449C6] focus:ring-[#2449C6] cursor-pointer"
                     />
                   </td>
-                  <td className="px-4 py-2 font-medium text-ink">
-                    {r.item_name} <span className="font-normal text-ink-muted">({r.item_code})</span>
+                  <td className="px-3.5 py-2.5 font-semibold text-[#0B1B45]">
+                    {r.item_name} <span className="font-normal text-slate-400">({r.item_code})</span>
                   </td>
-                  <td className="px-4 py-2 text-ink-muted">{r.unit_code || '—'}</td>
-                  <td className="px-4 py-2 text-right text-ink-muted">{r.mrp}</td>
-                  <td className="px-4 py-2 text-right text-ink-muted">{r.net_srate}</td>
-                  <td className="px-4 py-2 text-right" onClick={(e) => e.stopPropagation()}>
+                  <td className="px-3.5 py-2.5 text-slate-500">{r.unit_code || '—'}</td>
+                  <td className="px-3.5 py-2.5 text-right text-slate-700 font-bold whitespace-nowrap">₹{Number(r.mrp || 0).toFixed(2)}</td>
+                  <td className="px-3.5 py-2.5 text-right text-slate-700 font-bold whitespace-nowrap">₹{Number(r.net_srate || 0).toFixed(2)}</td>
+                  <td className="px-3.5 py-2.5 text-right" onClick={(e) => e.stopPropagation()}>
                     <input
                       type="number"
                       step="any"
@@ -1222,7 +1296,7 @@ function PricingPanel({ type, label, canExport }) {
                       value={value}
                       placeholder="Not set"
                       onChange={(e) => handleChange(r.id, e.target.value)}
-                      className="input w-28 text-right"
+                      className="w-28 rounded-xl border border-[#D5E3F7] bg-white px-3 py-1.5 text-sm text-right font-bold text-[#0B1B45] transition focus:border-[#2449C6] focus:outline-none focus:ring-2 focus:ring-[#2449C6]/20"
                     />
                   </td>
                 </tr>
@@ -1257,9 +1331,30 @@ export function Reports() {
   if (canAll) tabs.push({ key: 'low-stock', label: 'Low Stock', content: <LowStockPanel canExport={canExport} /> });
 
   return (
-    <div>
-      <h1 className="mb-4 text-2xl font-bold text-ink">Reports</h1>
-      {tabs.length === 0 ? <p className="text-ink-muted">You don't have access to any reports.</p> : <Tabs tabs={tabs} />}
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#D5E3F7] pb-5">
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-[#0B1B45] to-[#2449C6] text-white shadow-md shadow-[#0B1B45]/20 ring-1 ring-white/20">
+            <FileSpreadsheet className="w-5 h-5 text-[#E8C985]" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-black tracking-tight text-[#0B1B45]">
+              Business Reports
+            </h1>
+            <p className="text-xs font-medium text-slate-500 mt-0.5">
+              GST registers, purchases, sales breakdowns, outstanding balances, and P&L financial analysis
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {tabs.length === 0 ? (
+        <div className="rounded-2xl border border-[#D5E3F7] bg-white p-8 text-center text-slate-400 text-xs">
+          You don't have access to any reports.
+        </div>
+      ) : (
+        <Tabs tabs={tabs} />
+      )}
     </div>
   );
 }

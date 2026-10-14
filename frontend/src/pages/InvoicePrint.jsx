@@ -29,32 +29,48 @@ export function InvoicePrint() {
   if (!data) return <div className="p-6 text-gray-500">Loading…</div>;
 
   return (
-    <div className="min-h-screen bg-gray-100 py-6">
-      <div className="no-print mx-auto mb-4 flex max-w-3xl items-center gap-2 rounded-lg bg-white p-3 shadow-sm">
-        <span className="text-sm font-medium text-gray-600">Format:</span>
+    <div className="min-h-screen bg-[#EDF5FF] py-6">
+      <div className="no-print mx-auto mb-4 flex max-w-3xl items-center gap-2.5 rounded-2xl border border-[#D5E3F7] bg-white p-3 shadow-xs">
+        <span className="text-xs font-bold uppercase tracking-wider text-slate-500 mr-1">Format:</span>
         <button
           onClick={() => setSearchParams({ format: 'thermal' })}
-          className={`rounded px-3 py-1 text-sm ${format === 'thermal' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}`}
+          className={`rounded-xl px-3.5 py-1.5 text-xs font-bold transition-all ${
+            format === 'thermal'
+              ? 'bg-gradient-to-r from-[#0B1B45] to-[#2449C6] text-white shadow-xs ring-1 ring-white/20'
+              : 'border border-[#D5E3F7] bg-[#F8FAFD] text-slate-700 hover:bg-[#F5F8FF]'
+          }`}
         >
           Thermal (80mm)
         </button>
         <button
           onClick={() => setSearchParams({ format: 'a4' })}
-          className={`rounded px-3 py-1 text-sm ${format === 'a4' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}`}
+          className={`rounded-xl px-3.5 py-1.5 text-xs font-bold transition-all ${
+            format === 'a4'
+              ? 'bg-gradient-to-r from-[#0B1B45] to-[#2449C6] text-white shadow-xs ring-1 ring-white/20'
+              : 'border border-[#D5E3F7] bg-[#F8FAFD] text-slate-700 hover:bg-[#F5F8FF]'
+          }`}
         >
-          A4
+          A4 Standard
         </button>
-        <button onClick={() => window.print()} className="ml-auto rounded bg-gray-800 px-3 py-1 text-sm text-white">
-          Print
+        <button
+          onClick={() => window.print()}
+          className="ml-auto rounded-xl bg-gradient-to-r from-[#0B1B45] to-[#2449C6] px-4 py-1.5 text-xs font-bold text-white shadow-xs hover:shadow-md transition"
+        >
+          Print Invoice
         </button>
         {data.invoice.customer_phone && (
-          <a href={whatsappHref()} target="_blank" rel="noreferrer" className="rounded bg-green-600 px-3 py-1 text-sm text-white">
+          <a
+            href={whatsappHref()}
+            target="_blank"
+            rel="noreferrer"
+            className="rounded-xl bg-emerald-600 hover:bg-emerald-500 px-4 py-1.5 text-xs font-bold text-white shadow-xs transition"
+          >
             Share via WhatsApp
           </a>
         )}
       </div>
 
-      <div className="mx-auto w-fit rounded-lg bg-white p-6 shadow-sm">
+      <div className="mx-auto w-fit rounded-2xl border border-[#D5E3F7] bg-white p-6 shadow-md">
         {format === 'thermal' ? <ThermalTemplate data={data} /> : <A4Template data={data} />}
       </div>
     </div>
