@@ -27,7 +27,7 @@ function SideNavItem({ to, label, icon: Icon, end, activePaths, badge, onClick }
         const active = isCustomActive !== undefined ? isCustomActive : isActive;
         return `group relative flex items-center justify-between rounded-xl px-3 py-2.5 text-xs font-semibold transition-all select-none ${
           active
-            ? 'bg-gradient-to-r from-[#FFF5DE] via-[#FCE9BD] to-[#E8C985] text-[#0B1B45] font-bold shadow-[0_4px_12px_rgba(232,201,133,0.3)]'
+            ? 'bg-gradient-to-r from-[#1D4ED8] via-[#2563EB] to-[#3B82F6] text-white font-extrabold shadow-[0_4px_14px_rgba(37,99,235,0.4)]'
             : 'text-white/80 hover:bg-white/10 hover:text-white'
         }`;
       }}
@@ -38,15 +38,15 @@ function SideNavItem({ to, label, icon: Icon, end, activePaths, badge, onClick }
           <>
             <div className="flex items-center gap-3 min-w-0">
               <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-colors ${
-                active ? 'bg-[#0B1B45]/10 text-[#0B1B45]' : 'bg-white/5 text-white/80 group-hover:text-white group-hover:bg-white/10'
+                active ? 'bg-white/20 text-white' : 'bg-white/5 text-white/80 group-hover:text-white group-hover:bg-white/10'
               }`}>
                 <Icon size={15} />
               </span>
               <span className="truncate">{label}</span>
             </div>
             {badge && (
-              <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold tracking-wider uppercase ${
-                active ? 'bg-[#0B1B45] text-[#E8C985]' : 'bg-white/10 text-white/70'
+              <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-black tracking-wider uppercase ${
+                active ? 'bg-[#FFF1F5] text-[#BE185D] shadow-2xs' : 'bg-[#FFF1F5]/15 text-[#FDA4AF]'
               }`}>
                 {badge}
               </span>
@@ -79,9 +79,9 @@ function SidebarBranchSwitcher() {
 
   return (
     <div className="rounded-xl bg-[#071333]/70 border border-[#1C3675] p-2">
-      <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-[#E8C985]/90 mb-1">
+      <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-[#93C5FD] mb-1">
         <span className="flex items-center gap-1.5">
-          <MapPin size={12} className="text-[#315BFF]" />
+          <MapPin size={12} className="text-[#38BDF8]" />
           Active Branch
         </span>
       </div>
@@ -92,7 +92,7 @@ function SidebarBranchSwitcher() {
           queryClient.invalidateQueries();
         }}
         aria-label="Select active branch"
-        className="w-full rounded-lg bg-[#0B1B45] border border-[#2449C6]/40 px-2 py-1.5 text-xs font-semibold text-white focus:outline-none focus:border-[#E8C985] cursor-pointer truncate"
+        className="w-full rounded-lg bg-[#0B1B45] border border-[#2449C6]/40 px-2 py-1.5 text-xs font-semibold text-white focus:outline-none focus:border-[#60A5FA] cursor-pointer truncate"
       >
         {branches.map((b) => (
           <option key={b.id} value={b.id} className="text-[#0B1B45] bg-white font-medium">
@@ -150,14 +150,14 @@ export function SideNav({ mobileOpen, onCloseMobile }) {
         <div className="relative p-4 border-b border-[#1C3675]/60 shrink-0">
           <div className="flex items-center justify-between">
             <Link to="/" className="flex items-center gap-2.5 group focus:outline-none">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#122A63] via-[#0B1B45] to-[#071333] border border-[#E8C985]/50 text-[#E8C985] shadow-md ring-1 ring-white/10 group-hover:border-[#E8C985] transition-colors">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#1E3A8A] via-[#172554] to-[#0B1B45] border border-white/20 text-white shadow-md ring-1 ring-white/10 group-hover:border-white/40 transition-colors">
                 <span className="font-serif font-black text-sm tracking-tighter">AJ</span>
               </div>
               <div className="flex flex-col leading-none">
-                <span className="font-serif text-lg font-bold tracking-tight text-white group-hover:text-[#FFF5DE] transition-colors drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]">
+                <span className="font-serif text-lg font-bold tracking-tight text-white group-hover:text-blue-100 transition-colors drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]">
                   AJ Agency
                 </span>
-                <span className="text-[7.5px] font-bold uppercase tracking-wider text-[#E8C985]/90 mt-1 whitespace-nowrap">
+                <span className="text-[7.5px] font-bold uppercase tracking-wider text-[#93C5FD] mt-1 whitespace-nowrap">
                   Distributor Billing &amp; Inventory
                 </span>
               </div>
@@ -174,13 +174,13 @@ export function SideNav({ mobileOpen, onCloseMobile }) {
             </button>
           </div>
 
-          {/* Decorative Subtle Gold Arc Under Brand */}
-          <div className="absolute left-0 right-0 -bottom-[1px] h-[1px] bg-gradient-to-r from-transparent via-[#E8C985]/40 to-transparent" />
+          {/* Decorative Subtle Blue Arc Under Brand */}
+          <div className="absolute left-0 right-0 -bottom-[1px] h-[1px] bg-gradient-to-r from-transparent via-[#3B82F6]/30 to-transparent" />
         </div>
 
         {/* Navigation Items (Scrollable without 'More' dropdown) */}
         <nav className="flex-1 overflow-y-auto px-3 py-3.5 space-y-1.5 custom-scrollbar">
-          <div className="px-3 pb-1.5 text-[10px] font-extrabold uppercase tracking-widest text-[#E8C985]/70">
+          <div className="px-3 pb-1.5 text-[10px] font-extrabold uppercase tracking-widest text-[#93C5FD]/75">
             Main Navigation
           </div>
 
@@ -232,7 +232,7 @@ export function SideNav({ mobileOpen, onCloseMobile }) {
             />
           )}
 
-          <div className="pt-3 px-3 pb-1.5 text-[10px] font-extrabold uppercase tracking-widest text-[#E8C985]/70">
+          <div className="pt-3 px-3 pb-1.5 text-[10px] font-extrabold uppercase tracking-widest text-[#93C5FD]/75">
             Operations &amp; Reports
           </div>
 
@@ -260,11 +260,11 @@ export function SideNav({ mobileOpen, onCloseMobile }) {
           <div className="flex items-center justify-between gap-2 pt-1">
             <div className="flex items-center gap-2 min-w-0">
               <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#2449C6] to-[#0B1B45] text-white font-bold text-xs ring-1 ring-white/20">
-                {user?.name ? user.name.charAt(0).toUpperCase() : 'A'}
+                {user?.name && user.name !== 'Super Admin' ? user.name.charAt(0).toUpperCase() : 'A'}
               </div>
               <div className="flex flex-col leading-tight min-w-0">
-                <span className="text-xs font-bold text-white truncate">{user?.name || 'Super Admin'}</span>
-                <span className="text-[10px] text-[#E8C985]/80 capitalize truncate">{user?.role || 'Admin'}</span>
+                <span className="text-xs font-bold text-white truncate">{user?.name && user.name !== 'Super Admin' ? user.name : 'Administrator'}</span>
+                <span className="text-[10px] text-[#93C5FD] capitalize truncate">{user?.role && user.role !== 'Super Admin' ? user.role : 'Admin'}</span>
               </div>
             </div>
 

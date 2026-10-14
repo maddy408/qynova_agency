@@ -204,29 +204,29 @@ export function Dashboard() {
       {/* Header Bar */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pb-1 shrink-0">
         <div>
-          <h1 className="text-2xl font-black text-[#0F1E4A] tracking-tight">
+          <h1 className="text-2xl font-black text-[#0B1B45] tracking-tight">
             Dashboard
           </h1>
-          <p className="text-xs text-[#64789D] font-medium mt-0.5">
-            Welcome, <span className="font-bold text-[#0F1E4A]">{user?.name}</span> ({user?.role})
+          <p className="text-xs text-[#475569] font-medium mt-0.5">
+            Distributor Operations &amp; Real-time Counter Management
           </p>
         </div>
 
         {/* Search & Totals Button */}
         <div className="flex items-center gap-2.5">
           <div className="relative flex-1 sm:w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#7E92B2]" size={15} />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#64748B]" size={15} />
             <input
               type="text"
               placeholder="Search modules..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-xl border border-[#D5E3F7] bg-white pl-9 pr-3 py-2 text-xs font-medium text-[#0F1E4A] placeholder-[#7E92B2] shadow-[0_2px_8px_rgba(15,30,65,0.04)] focus:border-[#315BFF] focus:ring-2 focus:ring-[#315BFF]/25 focus:outline-none transition-all"
+              className="w-full rounded-xl border border-[#CBD5E1] bg-white pl-9 pr-3 py-2 text-xs font-semibold text-[#0B1B45] placeholder-[#64748B] shadow-2xs focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/20 focus:outline-none transition-all"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#7E92B2] hover:text-[#0F1E4A]"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#64748B] hover:text-[#0B1B45]"
               >
                 <X size={14} />
               </button>
@@ -236,9 +236,9 @@ export function Dashboard() {
           {canViewFinancials && (
             <button
               onClick={() => setShowTotalsReport(true)}
-              className="inline-flex items-center gap-2 rounded-xl border border-[#D5E3F7] bg-white px-4 py-2 text-xs font-bold text-[#0F1E4A] shadow-[0_2px_8px_rgba(15,30,65,0.04)] hover:bg-[#EDF5FF] transition-all active:scale-95 shrink-0"
+              className="inline-flex items-center gap-2 rounded-xl border border-[#CBD5E1] bg-white px-4 py-2 text-xs font-bold text-[#0B1B45] shadow-2xs hover:bg-[#EDF5FF] hover:border-[#2449C6] transition-all active:scale-95 shrink-0"
             >
-              <PieChart size={15} className="text-[#315BFF]" />
+              <PieChart size={15} className="text-[#2449C6]" />
               <span className="hidden sm:inline">Totals Report</span>
             </button>
           )}
@@ -255,11 +255,11 @@ export function Dashboard() {
               onClick={() => setSelectedCategory(cat.id)}
               className={`rounded-xl px-4 py-2 text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 ${
                 isActive
-                  ? 'bg-gradient-to-r from-[#0F1E4A] via-[#14275E] to-[#1C3372] text-white shadow-[0_2px_8px_rgba(15,30,65,0.25)]'
-                  : 'bg-white text-[#64789D] border border-[#D5E3F7] hover:text-[#0F1E4A] hover:bg-[#EDF5FF] shadow-2xs'
+                  ? 'bg-gradient-to-r from-[#0B1B45] via-[#142B5C] to-[#1C3675] text-white shadow-md border border-[#0B1B45]'
+                  : 'bg-white text-[#334155] border border-[#CBD5E1] hover:text-[#0B1B45] hover:bg-[#EDF5FF] hover:border-[#93C5FD] shadow-2xs'
               }`}
             >
-              {cat.id === 'all' && <LayoutGrid size={13} className={isActive ? 'text-white' : 'text-[#315BFF]'} />}
+              {cat.id === 'all' && <LayoutGrid size={13} className={isActive ? 'text-white' : 'text-[#2449C6]'} />}
               <span>{cat.label}</span>
             </button>
           );
@@ -283,76 +283,76 @@ export function Dashboard() {
 
       {/* Module Cards Grid */}
       <div className="flex-1 flex flex-col justify-center my-auto">
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-6 gap-3.5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-6 gap-4">
           {/* Standard Module Cards Grid */}
           {filteredModules.map((item) => {
             const allowed = usePermission(item.perm);
             if (!allowed) return null;
             const Icon = item.icon;
 
-            // Hero POS Card
+            // Hero POS Card: Navy Blue + Blush Pink
             if (item.isHero) {
               return (
                 <div
                   key={item.to}
                   onClick={() => navigate(item.to)}
-                  className="group col-span-2 row-span-2 cursor-pointer relative rounded-2xl border border-[#CDE1F8] bg-gradient-to-br from-[#F5F9FF] via-[#EBF4FF] to-[#DCEBFF] p-6 text-[#0F1E4A] shadow-[0_4px_20px_rgba(36,73,198,0.07)] transition-all duration-200 hover:shadow-[0_8px_28px_rgba(36,73,198,0.14)] hover:-translate-y-0.5 flex flex-col justify-between overflow-hidden"
+                  className="group col-span-2 row-span-2 cursor-pointer relative rounded-3xl border-2 border-[#FBCFE8] bg-gradient-to-br from-[#FFFFFF] via-[#FFF5F7] to-[#FDF2F8] p-6 text-[#0B1B45] shadow-[0_8px_24px_rgba(244,63,94,0.08)] transition-all duration-200 hover:shadow-[0_14px_32px_rgba(244,63,94,0.16)] hover:border-[#F472B6] hover:-translate-y-1 flex flex-col justify-between overflow-hidden"
                 >
-                  {/* Subtle ice-blue water glow flourish */}
-                  <div className="pointer-events-none absolute -right-12 -bottom-12 w-64 h-64 rounded-full bg-gradient-to-tl from-[#315BFF]/15 via-[#315BFF]/5 to-transparent blur-xl" />
-                  <div className="pointer-events-none absolute right-0 top-0 w-48 h-48 rounded-full bg-gradient-to-br from-white/60 to-transparent blur-lg" />
+                  {/* Subtle blush pink water glow flourish */}
+                  <div className="pointer-events-none absolute -right-12 -bottom-12 w-64 h-64 rounded-full bg-gradient-to-tl from-[#FB7185]/20 via-[#F472B6]/10 to-transparent blur-2xl" />
+                  <div className="pointer-events-none absolute right-0 top-0 w-48 h-48 rounded-full bg-gradient-to-br from-white to-transparent blur-lg" />
 
                   <div className="relative z-10 flex items-start justify-between">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-[#315BFF] border border-[#D5E5FC] shadow-xs transition-transform group-hover:scale-105">
-                      <ShoppingCart size={22} className="text-[#315BFF]" />
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#0B1B45] text-[#FB7185] border border-[#1C3675] shadow-md transition-transform group-hover:scale-105">
+                      <ShoppingCart size={22} className="text-[#FB7185]" />
                     </div>
-                    <span className="flex items-center gap-1.5 rounded-full bg-gradient-to-r from-[#FFF6E3] to-[#FEF0D0] border border-[#F6DE9F] px-3 py-1 text-[11px] font-bold text-[#A67A1E] shadow-2xs">
-                      <span className="text-[#D4A333]">★</span>
-                      Primary Module
+                    <span className="flex items-center gap-1.5 rounded-full bg-[#FFF1F5] border border-[#FBCFE8] px-3.5 py-1 text-[11px] font-extrabold text-[#BE185D] shadow-2xs">
+                      <Sparkles size={12} className="text-[#E11D48]" />
+                      Primary Terminal
                     </span>
                   </div>
 
                   <div className="relative z-10 mt-4">
-                    <div className="text-[11px] font-black uppercase tracking-wider text-[#315BFF]">
+                    <div className="text-[11px] font-black uppercase tracking-wider text-[#E11D48]">
                       Counter Terminal
                     </div>
-                    <h3 className="text-2xl font-black text-[#0F1E4A] tracking-tight mt-1 group-hover:text-[#2449C6] transition-colors">
+                    <h3 className="text-2xl font-black text-[#0B1B45] tracking-tight mt-1 group-hover:text-[#BE185D] transition-colors">
                       POS &amp; Billing
                     </h3>
-                    <p className="mt-1.5 text-xs text-[#5A6E8C] font-medium leading-relaxed max-w-[280px]">
+                    <p className="mt-1.5 text-xs text-[#475569] font-medium leading-relaxed max-w-[280px]">
                       {item.subtitle}
                     </p>
                   </div>
 
                   <div className="relative z-10 mt-5">
-                    <div className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-b from-[#FDE8B5] via-[#F6D389] to-[#E5BE6C] px-5 py-2.5 text-xs font-bold text-[#0B1B45] shadow-[0_3px_10px_rgba(229,190,108,0.35)] hover:brightness-105 active:scale-95 transition-all">
+                    <div className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#BE185D] via-[#E11D48] to-[#FB7185] px-5 py-2.5 text-xs font-bold text-white shadow-[0_4px_14px_rgba(225,29,72,0.3)] hover:brightness-105 active:scale-95 transition-all">
                       <span>Launch Counter Terminal</span>
-                      <span className="font-bold text-sm">&gt;</span>
+                      <span className="font-extrabold text-sm">&gt;</span>
                     </div>
                   </div>
                 </div>
               );
             }
 
-            // Standard Module Card
+            // Standard Module Card: High contrast, highlighted text & cards
             return (
               <div
                 key={item.to}
                 onClick={() => navigate(item.to)}
-                className="group cursor-pointer rounded-2xl border border-[#D8E6F7] bg-white p-4 text-[#0F1E4A] shadow-[0_2px_8px_rgba(15,30,65,0.04)] transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_8px_20px_rgba(15,30,65,0.08)] hover:border-[#B8D5FF] flex flex-col justify-between"
+                className="group cursor-pointer rounded-2xl border-2 border-[#D5E3F7] bg-white p-4 sm:p-5 text-[#0B1B45] shadow-[0_3px_10px_rgba(11,27,69,0.06)] transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_12px_24px_rgba(11,27,69,0.12)] hover:border-[#2449C6] flex flex-col justify-between"
               >
                 <div className="flex items-center justify-between">
-                  <div className={`flex h-10 w-10 items-center justify-center rounded-xl border ${item.iconColor} shadow-2xs transition-transform group-hover:scale-105`}>
-                    <Icon size={20} />
+                  <div className={`flex h-11 w-11 items-center justify-center rounded-2xl border ${item.iconColor} shadow-2xs transition-transform group-hover:scale-105`}>
+                    <Icon size={21} />
                   </div>
-                  <ChevronRight size={15} className="text-[#9BB4D8] group-hover:text-[#315BFF] group-hover:translate-x-0.5 transition-all" />
+                  <ChevronRight size={17} className="text-[#94A3B8] group-hover:text-[#2449C6] group-hover:translate-x-1 transition-all" />
                 </div>
 
-                <div className="mt-3">
-                  <h4 className="text-[15px] font-bold text-[#0F1E4A] group-hover:text-[#2449C6] transition-colors truncate">
+                <div className="mt-3.5">
+                  <h4 className="text-[15px] font-extrabold text-[#0B1B45] group-hover:text-[#2449C6] transition-colors truncate tracking-tight">
                     {item.label}
                   </h4>
-                  <p className="text-xs font-medium text-[#7E92B2] truncate mt-0.5">
+                  <p className="text-xs font-semibold text-[#475569] truncate mt-1">
                     {item.subtitle}
                   </p>
                 </div>

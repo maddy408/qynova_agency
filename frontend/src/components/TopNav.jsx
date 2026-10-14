@@ -49,7 +49,7 @@ function NavItem({ to, label, icon: Icon, end, activePaths, onClick }) {
         const active = isCustomActive !== undefined ? isCustomActive : isActive;
         return `flex shrink-0 items-center gap-1.5 rounded-xl px-2 py-1 text-xs font-semibold transition-all whitespace-nowrap ${
           active
-            ? 'bg-gradient-to-b from-[#FFF5DE] via-[#FCE9BD] to-[#E8C985] text-[#0B1B45] shadow-[0_2px_8px_rgba(232,201,133,0.3)] font-bold'
+            ? 'bg-gradient-to-b from-[#1D4ED8] via-[#2563EB] to-[#3B82F6] text-white shadow-md font-bold'
             : 'text-white/85 hover:bg-white/10 hover:text-white'
         }`;
       }}
@@ -126,16 +126,16 @@ function NavDropdown({ label, icon: Icon, to, items, align = 'left' }) {
         aria-expanded={isOpen}
         className={`flex items-center gap-1 rounded-xl px-1.5 py-1 text-xs font-semibold transition-all whitespace-nowrap cursor-pointer ${
           isParentActive
-            ? 'bg-gradient-to-b from-[#FFF5DE] via-[#FCE9BD] to-[#E8C985] text-[#0B1B45] shadow-[0_2px_8px_rgba(232,201,133,0.3)] font-bold'
+            ? 'bg-gradient-to-b from-[#1D4ED8] via-[#2563EB] to-[#3B82F6] text-white shadow-md font-bold'
             : 'text-white/85 hover:bg-white/10 hover:text-white'
         }`}
       >
-        <Icon size={14} className={isParentActive ? 'text-[#0B1B45]' : 'text-white/85'} />
+        <Icon size={14} className={isParentActive ? 'text-white' : 'text-white/85'} />
         <span>{label}</span>
         <ChevronDown
           size={11}
           className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''} ${
-            isParentActive ? 'text-[#0B1B45]' : 'text-white/60'
+            isParentActive ? 'text-white' : 'text-white/60'
           }`}
         />
       </button>
@@ -162,11 +162,11 @@ function NavDropdown({ label, icon: Icon, to, items, align = 'left' }) {
                 onClick={() => setIsOpen(false)}
                 className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs transition-all ${
                   isSubActive
-                    ? 'bg-gradient-to-r from-[#FFF5DE] via-[#FCE9BD] to-[#E8C985] text-[#0B1B45] font-bold shadow-xs'
-                    : 'text-white/85 hover:bg-[#142B5C] hover:text-[#E8C985] font-medium'
+                    ? 'bg-gradient-to-r from-[#1D4ED8] via-[#2563EB] to-[#3B82F6] text-white font-bold shadow-xs'
+                    : 'text-white/85 hover:bg-[#142B5C] hover:text-[#93C5FD] font-medium'
                 }`}
               >
-                <SubIcon size={14} className={isSubActive ? 'text-[#0B1B45]' : 'text-[#E8C985]'} />
+                <SubIcon size={14} className={isSubActive ? 'text-white' : 'text-[#93C5FD]'} />
                 <span>{item.label}</span>
               </Link>
             );
