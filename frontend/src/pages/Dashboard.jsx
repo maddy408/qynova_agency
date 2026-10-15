@@ -207,7 +207,7 @@ export function Dashboard() {
           <h1 className="text-2xl font-black text-[#0B1B45] tracking-tight">
             Dashboard
           </h1>
-          <p className="text-xs text-[#475569] font-medium mt-0.5">
+          <p className="text-xs text-[#1E293B] font-semibold mt-0.5">
             Distributor Operations &amp; Real-time Counter Management
           </p>
         </div>
@@ -319,7 +319,7 @@ export function Dashboard() {
                     <h3 className="text-2xl font-black text-[#0B1B45] tracking-tight mt-1 group-hover:text-[#BE185D] transition-colors">
                       POS &amp; Billing
                     </h3>
-                    <p className="mt-1.5 text-xs text-[#475569] font-medium leading-relaxed max-w-[280px]">
+                    <p className="mt-1.5 text-xs text-[#1E293B] font-semibold leading-relaxed max-w-[280px]">
                       {item.subtitle}
                     </p>
                   </div>
@@ -352,7 +352,7 @@ export function Dashboard() {
                   <h4 className="text-[15px] font-extrabold text-[#0B1B45] group-hover:text-[#2449C6] transition-colors truncate tracking-tight">
                     {item.label}
                   </h4>
-                  <p className="text-xs font-semibold text-[#475569] truncate mt-1">
+                  <p className="text-xs font-semibold text-[#1E293B] truncate mt-1">
                     {item.subtitle}
                   </p>
                 </div>

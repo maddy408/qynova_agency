@@ -497,7 +497,7 @@ function CustomersPanel({ canManage }) {
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead>
-                <tr className="border-b border-[#D5E3F7] bg-[#F8FAFD] text-xs font-bold uppercase tracking-wider text-slate-500">
+                <tr className="border-b border-[#D5E3F7] bg-[#F1F5F9] text-xs font-bold uppercase tracking-wider text-slate-800">
                   <th className="px-3.5 py-2.5">#</th>
                   <th className="px-3.5 py-2.5">Customer Name</th>
                   <th className="px-3.5 py-2.5">Phone</th>
@@ -514,10 +514,10 @@ function CustomersPanel({ canManage }) {
                   const cActive = r.status !== 'inactive' && r.is_active !== 0 && r.is_active !== false;
                   return (
                     <tr key={r.id} className="hover:bg-[#F5F8FF]/80 transition-colors">
-                      <td className="px-3.5 py-2.5 font-semibold text-slate-400">{index + 1}</td>
+                      <td className="px-3.5 py-2.5 font-bold text-slate-600">{index + 1}</td>
                       <td className="px-3.5 py-2.5 font-bold text-[#0B1B45]">{r.ledger_name || r.name}</td>
-                      <td className="px-3.5 py-2.5 font-medium text-slate-600">{r.phone || '-'}</td>
-                      <td className="px-3.5 py-2.5 font-medium text-slate-600">
+                      <td className="px-3.5 py-2.5 font-semibold text-slate-800">{r.phone || '-'}</td>
+                      <td className="px-3.5 py-2.5 font-semibold text-slate-800">
                         {routeMap.get(r.route_id) || 'No Route'} {cityMap.get(r.city_id) ? `(${cityMap.get(r.city_id)})` : ''}
                       </td>
                       <td className="px-3.5 py-2.5 font-medium text-slate-600">{r.gstin || '-'}</td>

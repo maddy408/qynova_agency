@@ -27,7 +27,7 @@ function SideNavItem({ to, label, icon: Icon, end, activePaths, badge, onClick }
         const active = isCustomActive !== undefined ? isCustomActive : isActive;
         return `group relative flex items-center justify-between rounded-xl px-2.5 py-1.5 text-xs font-semibold transition-all select-none ${
           active
-            ? 'bg-gradient-to-r from-[#1D4ED8] via-[#2563EB] to-[#3B82F6] text-white font-extrabold shadow-[0_3px_10px_rgba(37,99,235,0.4)]'
+            ? 'bg-gradient-to-r from-[#FFF5DE] via-[#FCE9BD] to-[#E8C985] text-[#0B1B45] font-bold shadow-[0_3px_10px_rgba(232,201,133,0.35)]'
             : 'text-white/80 hover:bg-white/10 hover:text-white'
         }`;
       }}
@@ -38,7 +38,7 @@ function SideNavItem({ to, label, icon: Icon, end, activePaths, badge, onClick }
           <>
             <div className="flex items-center gap-2.5 min-w-0">
               <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg transition-colors ${
-                active ? 'bg-white/20 text-white' : 'bg-white/5 text-white/80 group-hover:text-white group-hover:bg-white/10'
+                active ? 'bg-[#0B1B45]/10 text-[#0B1B45]' : 'bg-white/5 text-white/80 group-hover:text-white group-hover:bg-white/10'
               }`}>
                 <Icon size={14} />
               </span>
@@ -46,7 +46,7 @@ function SideNavItem({ to, label, icon: Icon, end, activePaths, badge, onClick }
             </div>
             {badge && (
               <span className={`shrink-0 rounded-full px-1.5 py-0.2 text-[9px] font-black tracking-wider uppercase ${
-                active ? 'bg-[#FFF1F5] text-[#BE185D] shadow-2xs' : 'bg-[#FFF1F5]/15 text-[#FDA4AF]'
+                active ? 'bg-[#0B1B45] text-[#E8C985]' : 'bg-[#E8C985]/20 text-[#FCE9BD]'
               }`}>
                 {badge}
               </span>
@@ -79,9 +79,9 @@ function SidebarBranchSwitcher() {
 
   return (
     <div className="rounded-xl bg-[#071333]/70 border border-[#1C3675] p-1.5">
-      <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-[#93C5FD] mb-0.5">
+      <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-[#E8C985]/90 mb-0.5">
         <span className="flex items-center gap-1">
-          <MapPin size={11} className="text-[#38BDF8]" />
+          <MapPin size={11} className="text-[#E8C985]" />
           Active Branch
         </span>
       </div>
@@ -92,7 +92,7 @@ function SidebarBranchSwitcher() {
           queryClient.invalidateQueries();
         }}
         aria-label="Select active branch"
-        className="w-full rounded-lg bg-[#0B1B45] border border-[#2449C6]/40 px-2 py-1 text-xs font-semibold text-white focus:outline-none focus:border-[#60A5FA] cursor-pointer truncate"
+        className="w-full rounded-lg bg-[#0B1B45] border border-[#2449C6]/40 px-2 py-1 text-xs font-semibold text-white focus:outline-none focus:border-[#E8C985] cursor-pointer truncate"
       >
         {branches.map((b) => (
           <option key={b.id} value={b.id} className="text-[#0B1B45] bg-white font-medium">
@@ -148,14 +148,14 @@ export function SideNav({ isOpen, onToggle, onClose }) {
           <div className="relative px-3.5 py-3 border-b border-[#1C3675]/60 shrink-0">
             <div className="flex items-center justify-between">
               <Link to="/" className="flex items-center gap-2 group focus:outline-none min-w-0">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#1E3A8A] via-[#172554] to-[#0B1B45] border border-white/20 text-white shadow-md ring-1 ring-white/10 group-hover:border-white/40 transition-colors">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#122A63] via-[#0B1B45] to-[#071333] border border-[#E8C985]/50 text-[#E8C985] shadow-md ring-1 ring-white/10 group-hover:border-[#E8C985] transition-colors">
                   <span className="font-serif font-black text-xs tracking-tighter">AJ</span>
                 </div>
                 <div className="flex flex-col leading-none truncate">
-                  <span className="font-serif text-base font-bold tracking-tight text-white group-hover:text-blue-100 transition-colors drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)] truncate">
+                  <span className="font-serif text-base font-bold tracking-tight text-white group-hover:text-[#FFF5DE] transition-colors drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)] truncate">
                     AJ Agency
                   </span>
-                  <span className="text-[7px] font-bold uppercase tracking-wider text-[#93C5FD] mt-0.5 whitespace-nowrap">
+                  <span className="text-[7px] font-bold uppercase tracking-wider text-[#E8C985]/90 mt-0.5 whitespace-nowrap">
                     Distributor Billing
                   </span>
                 </div>
@@ -165,7 +165,7 @@ export function SideNav({ isOpen, onToggle, onClose }) {
               <button
                 type="button"
                 onClick={onToggle}
-                className="flex items-center justify-center h-8 w-8 rounded-xl text-white/80 hover:text-white hover:bg-white/10 active:scale-95 transition cursor-pointer shrink-0"
+                className="flex items-center justify-center h-8 w-8 rounded-xl text-white/80 hover:text-[#E8C985] hover:bg-white/10 active:scale-95 transition cursor-pointer shrink-0"
                 aria-label="Close navigation sidebar"
                 title="Close Sidebar"
               >
@@ -173,13 +173,13 @@ export function SideNav({ isOpen, onToggle, onClose }) {
               </button>
             </div>
 
-            {/* Decorative Subtle Blue Arc Under Brand */}
-            <div className="absolute left-0 right-0 -bottom-[1px] h-[1px] bg-gradient-to-r from-transparent via-[#3B82F6]/30 to-transparent" />
+            {/* Decorative Subtle Gold Arc Under Brand */}
+            <div className="absolute left-0 right-0 -bottom-[1px] h-[1px] bg-gradient-to-r from-transparent via-[#E8C985]/40 to-transparent" />
           </div>
 
         {/* Navigation Items (Fit completely on screen with NO SCROLLING) */}
         <nav className="flex-1 overflow-hidden px-2.5 py-1.5 space-y-0.5">
-          <div className="px-2.5 pb-0.5 pt-1 text-[9.5px] font-extrabold uppercase tracking-widest text-[#93C5FD]/75">
+          <div className="px-2.5 pb-0.5 pt-1 text-[9.5px] font-extrabold uppercase tracking-widest text-[#E8C985]/75">
             Main Navigation
           </div>
 
@@ -231,7 +231,7 @@ export function SideNav({ isOpen, onToggle, onClose }) {
             />
           )}
 
-          <div className="pt-1.5 px-2.5 pb-0.5 text-[9.5px] font-extrabold uppercase tracking-widest text-[#93C5FD]/75">
+          <div className="pt-1.5 px-2.5 pb-0.5 text-[9.5px] font-extrabold uppercase tracking-widest text-[#E8C985]/75">
             Operations &amp; Reports
           </div>
 
@@ -263,7 +263,7 @@ export function SideNav({ isOpen, onToggle, onClose }) {
               </div>
               <div className="flex flex-col leading-tight min-w-0">
                 <span className="text-xs font-bold text-white truncate">{user?.name && user.name !== 'Super Admin' ? user.name : 'Administrator'}</span>
-                <span className="text-[10px] text-[#93C5FD] capitalize truncate">{user?.role && user.role !== 'Super Admin' ? user.role : 'Admin'}</span>
+                <span className="text-[10px] text-[#E8C985]/80 capitalize truncate">{user?.role && user.role !== 'Super Admin' ? user.role : 'Admin'}</span>
               </div>
             </div>
 

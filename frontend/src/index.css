@@ -21,8 +21,8 @@
   --color-card: 255 255 255;
   --color-border-soft: 215 229 255;
   --color-highlight: 255 243 216;
-  --color-ink: 20 38 79;
-  --color-ink-muted: 100 120 157;
+  --color-ink: 15 23 42;
+  --color-ink-muted: 51 65 85;
   --color-ink-onnavy: 237 245 255;
 
   /* POS Billing Screen Tokens */
@@ -47,7 +47,7 @@
   --color-pos-ice-silver: 237 245 255;
   --color-pos-silver-moon: 215 229 255;
   --color-pos-teal: 49 91 255;
-  --color-pos-slate: 100 120 157;
+  --color-pos-slate: 51 65 85;
   --color-pos-border: 215 229 255;
 
   --color-white: 255 255 255;
@@ -59,10 +59,10 @@
   --color-slate-200: 226 232 240;
   --color-slate-300: 203 213 225;
   --color-slate-400: 148 163 184;
-  --color-slate-500: 100 116 139;
-  --color-slate-600: 71 85 105;
-  --color-slate-700: 51 65 85;
-  --color-slate-800: 30 41 59;
+  --color-slate-500: 71 85 105;
+  --color-slate-600: 51 65 85;
+  --color-slate-700: 30 41 59;
+  --color-slate-800: 15 23 42;
   --color-slate-900: 15 23 42;
   --color-gray-50: 249 250 251;
   --color-gray-100: 243 244 246;

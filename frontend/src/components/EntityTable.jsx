@@ -112,7 +112,7 @@ export function EntityTable({ title, fields, columns, rows, onCreate, onUpdate, 
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-[#EAF1FA] bg-[#F8FAFD] text-left text-xs font-bold tracking-wider uppercase text-slate-500">
+            <tr className="border-b border-[#D5E3F7] bg-[#F1F5F9] text-left text-xs font-bold tracking-wider uppercase text-slate-800">
               {columns.map((c) => (
                 <th key={c.key} className={`px-4 py-2.5 font-bold ${c.align === 'right' ? 'text-right' : 'text-left'}`}>
                   {c.label}
@@ -169,7 +169,7 @@ export function EntityTable({ title, fields, columns, rows, onCreate, onUpdate, 
                           <button
                             onClick={() => startEdit(row)}
                             title="Edit"
-                            className="rounded-lg p-1.5 text-slate-400 transition hover:bg-blue-50 hover:text-[#2449C6]"
+                            className="rounded-lg p-1.5 text-slate-600 transition hover:bg-blue-50 hover:text-[#2449C6]"
                           >
                             <Pencil size={15} />
                           </button>
@@ -177,7 +177,7 @@ export function EntityTable({ title, fields, columns, rows, onCreate, onUpdate, 
                         <button
                           onClick={() => handleDelete(row.id, row[columns[0].key])}
                           title="Delete"
-                          className="rounded-lg p-1.5 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600"
+                          className="rounded-lg p-1.5 text-slate-600 transition hover:bg-rose-50 hover:text-rose-600"
                         >
                           <Trash2 size={15} />
                         </button>

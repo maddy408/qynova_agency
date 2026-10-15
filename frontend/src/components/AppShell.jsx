@@ -64,7 +64,7 @@ export function AppShell({ children }) {
           onToggleSidebar={toggleSidebar}
           sidebarOpen={sidebarOpen}
         />
-        <main className="flex-1 w-full p-3 sm:p-5 lg:p-6 max-w-[1750px] mx-auto">
+        <main className="flex-1 w-full p-3 sm:p-5 lg:p-6">
           {children}
         </main>
         <StatusFooter />

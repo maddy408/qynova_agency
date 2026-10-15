@@ -56,9 +56,9 @@ export const semanticColors = {
   'border-soft': '#D7E5FF',
   'highlight': '#FFF3D8',
 
-  // Typography
-  'ink': '#14264F',
-  'ink-muted': '#64789D',
+  // Typography (Darker, high-contrast, crisp professional content)
+  'ink': '#0F172A',
+  'ink-muted': '#334155',
   'ink-onnavy': '#EDF5FF',
 
   // POS Billing Screen Tokens (Deep Navy #0B1B45, Royal #2449C6, Electric #315BFF, Ice #EDF5FF, Champagne #E8C985, Blush #F8DDE8, Warning #F05B7A)
@@ -83,7 +83,7 @@ export const semanticColors = {
   'pos-ice-silver': '#EDF5FF',
   'pos-silver-moon': '#D7E5FF',
   'pos-teal': '#315BFF',
-  'pos-slate': '#64789D',
+  'pos-slate': '#334155',
   'pos-border': '#D7E5FF',
 
   // Universal base colors (channelized for byte-identical opacity support)

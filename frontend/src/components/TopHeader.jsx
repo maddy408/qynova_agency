@@ -63,12 +63,12 @@ export function TopHeader({ onToggleSidebar, sidebarOpen }) {
         {canPos && (
           <Link
             to="/pos"
-            className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#0B1B45] via-[#142B5C] to-[#2449C6] text-white px-3.5 py-1.5 text-xs font-bold shadow-xs hover:brightness-110 active:scale-95 transition-all border border-[#FBCFE8]/30"
+            className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#0B1B45] via-[#142B5C] to-[#2449C6] text-white px-3.5 py-1.5 text-xs font-bold shadow-xs hover:brightness-110 active:scale-95 transition-all border border-white/15"
             title="Open Fullscreen Billing Terminal"
           >
-            <ShoppingCart size={14} className="text-[#FB7185]" />
+            <ShoppingCart size={14} className="text-[#E8C985]" />
             <span className="hidden xs:inline">Billing Counter</span>
-            <span className="rounded-full bg-[#FFF1F5] text-[#BE185D] text-[10px] font-black px-1.5 py-0.2 shadow-2xs">POS</span>
+            <span className="rounded-full bg-[#E8C985] text-[#0B1B45] text-[10px] font-black px-1.5 py-0.2 shadow-2xs">POS</span>
           </Link>
         )}
       </div>

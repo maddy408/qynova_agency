@@ -617,7 +617,7 @@ export function InvoiceManagement() {
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-[#D5E3F7] bg-[#F5F8FF] text-xs font-bold uppercase tracking-wider text-slate-600">
+              <tr className="border-b border-[#D5E3F7] bg-[#F1F5F9] text-xs font-bold uppercase tracking-wider text-slate-800">
                 <th className="px-3.5 py-2.5">Invoice #</th>
                 <th className="px-3.5 py-2.5">Customer</th>
                 <th className="px-3.5 py-2.5">Date</th>
@@ -633,15 +633,15 @@ export function InvoiceManagement() {
                   <td className="px-3.5 py-2.5 font-mono font-bold text-[#0B1B45]">
                     {inv.invoice_no || inv.original_invoice_no || `Held #${inv.id}`}
                   </td>
-                  <td className="px-3.5 py-2.5 font-medium text-slate-800">{inv.customer_name || 'Walk-in'}</td>
-                  <td className="px-3.5 py-2.5 text-slate-500 font-mono text-xs">{inv.invoice_date}</td>
+                  <td className="px-3.5 py-2.5 font-semibold text-slate-900">{inv.customer_name || 'Walk-in'}</td>
+                  <td className="px-3.5 py-2.5 text-slate-700 font-mono text-xs font-semibold">{inv.invoice_date}</td>
                   <td className="px-3.5 py-2.5 text-right font-black text-[#2449C6] whitespace-nowrap">₹{inv.grand_total}</td>
                   <td className="px-3.5 py-2.5">
                     <Badge variant={STATUS_VARIANT[inv.payment_status] || 'neutral'}>
                       {inv.payment_status || '-'}
                     </Badge>
                   </td>
-                  <td className="px-3.5 py-2.5 capitalize font-semibold text-slate-600">
+                  <td className="px-3.5 py-2.5 capitalize font-bold text-slate-800">
                     {inv.status}{inv.edited_at ? ' (edited)' : ''}
                   </td>
                   <td className="px-3.5 py-2.5 text-right">

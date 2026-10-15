@@ -529,7 +529,7 @@ export function ItemsPanel({ canManage }) {
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
-              <tr className="border-b border-[#D8E6F7] bg-[#F8FAFD] text-left text-[11px] font-bold uppercase tracking-wider text-[#5A6E8C]">
+              <tr className="border-b border-[#D8E6F7] bg-[#F1F5F9] text-left text-[11px] font-bold uppercase tracking-wider text-slate-800">
                 <th className="px-4 py-3"></th>
                 <th className="px-4 py-3">Code</th>
                 <th className="px-4 py-3">Name</th>
@@ -561,16 +561,16 @@ export function ItemsPanel({ canManage }) {
                       <ImageIcon size={16} className="text-[#9BB4D8]" style={{ display: item.image ? 'none' : 'flex' }} />
                     </div>
                   </td>
-                  <td className="px-4 py-2.5 font-bold text-[#64789D]">{item.item_code}</td>
+                  <td className="px-4 py-2.5 font-bold text-[#1E293B]">{item.item_code}</td>
                   <td className="px-4 py-2.5 font-bold text-[#0F1E4A]">{item.item_name}</td>
-                  <td className="px-4 py-2.5 font-medium text-[#64789D]">{item.category_name || '—'}</td>
+                  <td className="px-4 py-2.5 font-semibold text-[#334155]">{item.category_name || '—'}</td>
                   <td className="px-4 py-2.5 font-semibold text-[#0F1E4A]">{item.base_unit_code}</td>
                   <td className="px-4 py-2.5 font-bold text-[#0F1E4A]">Rs. {item.mrp}</td>
                   <td className="px-4 py-2.5 font-semibold text-[#2449C6]">Rs. {item.net_srate ?? item.retail_price}</td>
-                  <td className="px-4 py-2.5 font-medium text-[#64789D]">Rs. {item.net_purrate ?? item.purchase_price}</td>
+                  <td className="px-4 py-2.5 font-semibold text-[#334155]">Rs. {item.net_purrate ?? item.purchase_price}</td>
                   <td className="px-4 py-2.5 font-bold text-[#0F1E4A]">{item.opening_stock ?? 0}</td>
-                  <td className="px-4 py-2.5 font-medium text-[#64789D]">{item.gst_percent ? `${item.gst_percent}%` : '—'}</td>
-                  <td className="px-4 py-2.5 font-medium text-[#64789D]">{item.hsn_code || '—'}</td>
+                  <td className="px-4 py-2.5 font-semibold text-[#334155]">{item.gst_percent ? `${item.gst_percent}%` : '—'}</td>
+                  <td className="px-4 py-2.5 font-semibold text-[#334155]">{item.hsn_code || '—'}</td>
                   {statusFilter === 'all' && (
                     <td className="px-4 py-2.5">
                       <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-bold border ${
@@ -628,7 +628,7 @@ export function ItemsPanel({ canManage }) {
 
         {items.length > 0 && (
           <div className="flex items-center justify-between border-t border-[#D8E6F7] bg-[#F8FAFD]/60 px-5 py-3 text-xs">
-            <span className="text-[#64789D] font-medium">
+            <span className="text-[#1E293B] font-semibold">
               Showing {(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, items.length)} of {items.length} items
             </span>
             <div className="flex items-center gap-2">
@@ -640,7 +640,7 @@ export function ItemsPanel({ canManage }) {
               >
                 Previous
               </button>
-              <span className="text-[#64789D] font-bold px-2">Page {currentPage} of {totalPages}</span>
+              <span className="text-[#1E293B] font-bold px-2">Page {currentPage} of {totalPages}</span>
               <button
                 type="button"
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}

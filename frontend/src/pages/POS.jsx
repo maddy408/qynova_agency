@@ -556,8 +556,8 @@ export function POS() {
   const now = new Date();
 
   return (
-    <div className="-m-3 sm:-m-5 lg:-m-6 min-h-[calc(100vh-64px)] bg-[#EDF5FF] p-3 sm:p-4">
-      <div className="mb-3.5 flex flex-wrap items-center justify-between gap-2">
+    <div className="w-full min-h-[calc(100vh-54px)] bg-[#EDF5FF] p-3 sm:p-5 lg:p-6">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2.5">
         <div className="flex overflow-hidden rounded-xl border border-[#D5E3F7] bg-white p-1 shadow-[0_2px_8px_rgba(15,30,65,0.04)] gap-1">
           <button
             disabled={!canGst}
@@ -847,9 +847,9 @@ export function POS() {
                       Rs. {resolveSellingPrice(item, item.base_unit_id, priceType).rate.toFixed(2)}
                     </div>
                     <div className="mb-1">{taxBadge(item, billType)}</div>
-                    <div className="flex items-center justify-between text-xs text-[#7E92B2]">
-                      <span className="font-medium">{canViewStock ? `Stock: ${stock}` : item.item_code}</span>
-                      {item.barcode && <Barcode size={14} className="text-[#9BB4D8]" />}
+                    <div className="flex items-center justify-between text-xs text-[#1E293B] font-semibold">
+                      <span>{canViewStock ? `Stock: ${stock}` : item.item_code}</span>
+                      {item.barcode && <Barcode size={14} className="text-[#475569]" />}
                     </div>
                   </button>
                 );
@@ -1086,11 +1086,11 @@ export function POS() {
                   </div>
                 ))}
                 {cart.length === 0 && (
-                  <div className="h-full min-h-[160px] flex flex-col items-center justify-center gap-2 py-8 text-center text-[#7E92B2]">
+                  <div className="h-full min-h-[160px] flex flex-col items-center justify-center gap-2 py-8 text-center text-[#475569]">
                     <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-b from-[#E6F0FF] to-[#D5E5FF] shadow-xs">
                       <ShoppingCart size={20} className="text-[#315BFF]" />
                     </div>
-                    <p className="max-w-[210px] text-xs font-medium text-[#7E92B2] leading-relaxed">
+                    <p className="max-w-[210px] text-xs font-semibold text-[#334155] leading-relaxed">
                       Cart is empty — scan or search an item, or tap a product.
                     </p>
                   </div>
@@ -1103,7 +1103,7 @@ export function POS() {
                 <SummaryRow label={`GST Total${uniformTaxPercent ? ` (${uniformTaxPercent}%)` : ''}`} value={totals.cgst + totals.sgst + totals.cessAmount} />
                 {canDiscount && (
                   <div className="flex items-center justify-between py-0.5 text-sm">
-                    <span className="flex items-center gap-1.5 font-medium text-[#5A6E8C]">
+                    <span className="flex items-center gap-1.5 font-semibold text-[#1E293B]">
                       Discount
                       <div className="flex overflow-hidden rounded-md border border-[#D5E3F7] text-[11px] shadow-2xs">
                         <button
@@ -1412,8 +1412,8 @@ function PaymentModal({
 function SummaryRow({ label, value }) {
   return (
     <div className="flex justify-between py-0.5 text-sm">
-      <span className="font-medium text-[#5A6E8C]">{label}</span>
-      <span className="font-bold text-[#0F1E4A] whitespace-nowrap">Rs. {Number(value).toFixed(2)}</span>
+      <span className="font-semibold text-[#1E293B]">{label}</span>
+      <span className="font-black text-[#0B1B45] whitespace-nowrap">Rs. {Number(value).toFixed(2)}</span>
     </div>
   );
 }
