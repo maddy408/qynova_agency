@@ -601,85 +601,109 @@ export function POS() {
   const now = new Date();
 
   return (
-    <div className="w-full min-h-[calc(100vh-54px)] bg-[#EDF5FF] p-3 sm:p-5 lg:p-6">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-2.5">
-        <div className="flex overflow-hidden rounded-xl border border-[#D5E3F7] bg-white p-1 shadow-[0_2px_8px_rgba(15,30,65,0.04)] gap-1">
-          <button
-            disabled={!canGst}
-            onClick={() => setBillType('gst')}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-bold rounded-lg transition-all ${
-              billType === 'gst'
-                ? 'bg-gradient-to-r from-[#0F1E4A] via-[#14275E] to-[#1C3372] text-white shadow-[0_2px_8px_rgba(15,30,65,0.28)]'
-                : 'text-[#14264F] hover:bg-[#EDF5FF]'
-            } disabled:opacity-40`}
-          >
-            <ShieldCheck size={14} className={billType === 'gst' ? 'text-white' : 'text-[#315BFF]'} />
-            GST Billing
-          </button>
-          <button
-            disabled={!canNonGst}
-            onClick={() => setBillType('non_gst')}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-semibold rounded-lg transition-all ${
-              billType === 'non_gst'
-                ? 'bg-gradient-to-r from-[#0F1E4A] via-[#14275E] to-[#1C3372] text-white shadow-[0_2px_8px_rgba(15,30,65,0.28)]'
-                : 'text-[#14264F] hover:bg-[#EDF5FF]'
-            } disabled:opacity-40`}
-          >
-            Non-GST / Estimate
-          </button>
-        </div>
-        <div className="flex overflow-hidden rounded-xl border border-[#D5E3F7] bg-white p-1 shadow-[0_2px_8px_rgba(15,30,65,0.04)] gap-1">
-          <button
-            onClick={() => setBillingFormat('local')}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-bold rounded-lg transition-all ${
-              billingFormat === 'local'
-                ? 'bg-gradient-to-r from-[#0F1E4A] via-[#14275E] to-[#1C3372] text-white shadow-[0_2px_8px_rgba(15,30,65,0.28)]'
-                : 'text-[#14264F] hover:bg-[#EDF5FF]'
-            }`}
-          >
-            <MapPin size={14} className={billingFormat === 'local' ? 'text-white' : 'text-[#315BFF]'} />
-            Local Billing
-          </button>
-          <button
-            onClick={() => setBillingFormat('outstation')}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-semibold rounded-lg transition-all ${
-              billingFormat === 'outstation'
-                ? 'bg-gradient-to-r from-[#0F1E4A] via-[#14275E] to-[#1C3372] text-white shadow-[0_2px_8px_rgba(15,30,65,0.28)]'
-                : 'text-[#14264F] hover:bg-[#EDF5FF]'
-            }`}
-          >
-            Distance Billing
-          </button>
-        </div>
-        <div className="flex overflow-hidden rounded-xl border border-[#D5E3F7] bg-white p-1 shadow-[0_2px_8px_rgba(15,30,65,0.04)] gap-1">
-          {[
-            { key: 'normal', label: 'Normal', icon: Tag },
-            { key: 'retail', label: 'Retail' },
-            { key: 'wholesale', label: 'Wholesale' },
-          ].map((opt) => (
+    <div className="w-full min-h-[calc(100vh-54px)] bg-[#EDF5FF] px-4 sm:px-6 lg:px-8 py-5 sm:py-6">
+      {/* Top POS Control Bar */}
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white border border-[#D5E3F7] p-2.5 sm:p-3 shadow-[0_2px_10px_rgba(15,30,65,0.04)]">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
+          {/* GST Billing Toggle */}
+          <div className="flex overflow-hidden rounded-xl border border-[#D5E3F7] bg-white p-0.5 shadow-2xs gap-0.5">
             <button
-              key={opt.key}
-              onClick={() => changePriceType(opt.key)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-bold rounded-lg transition-all ${
-                priceType === opt.key
+              type="button"
+              disabled={!canGst}
+              onClick={() => setBillType('gst')}
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all cursor-pointer ${
+                billType === 'gst'
+                  ? 'bg-gradient-to-r from-[#0F1E4A] via-[#14275E] to-[#1C3372] text-white shadow-[0_2px_8px_rgba(15,30,65,0.28)]'
+                  : 'text-[#14264F] hover:bg-[#EDF5FF]'
+              } disabled:opacity-40`}
+            >
+              <ShieldCheck size={14} className={billType === 'gst' ? 'text-white' : 'text-[#315BFF]'} />
+              GST Billing
+            </button>
+            <button
+              type="button"
+              disabled={!canNonGst}
+              onClick={() => setBillType('non_gst')}
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all cursor-pointer ${
+                billType === 'non_gst'
+                  ? 'bg-gradient-to-r from-[#0F1E4A] via-[#14275E] to-[#1C3372] text-white shadow-[0_2px_8px_rgba(15,30,65,0.28)]'
+                  : 'text-[#14264F] hover:bg-[#EDF5FF]'
+              } disabled:opacity-40`}
+            >
+              Non-GST / Estimate
+            </button>
+          </div>
+
+          {/* Billing Format Toggle */}
+          <div className="flex overflow-hidden rounded-xl border border-[#D5E3F7] bg-white p-0.5 shadow-2xs gap-0.5">
+            <button
+              type="button"
+              onClick={() => setBillingFormat('local')}
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all cursor-pointer ${
+                billingFormat === 'local'
                   ? 'bg-gradient-to-r from-[#0F1E4A] via-[#14275E] to-[#1C3372] text-white shadow-[0_2px_8px_rgba(15,30,65,0.28)]'
                   : 'text-[#14264F] hover:bg-[#EDF5FF]'
               }`}
             >
-              {opt.icon && <opt.icon size={13} className={priceType === opt.key ? 'text-white' : 'text-[#315BFF]'} />}
-              {opt.label}
+              <MapPin size={14} className={billingFormat === 'local' ? 'text-white' : 'text-[#315BFF]'} />
+              Local Billing
             </button>
-          ))}
+            <button
+              type="button"
+              onClick={() => setBillingFormat('outstation')}
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all cursor-pointer ${
+                billingFormat === 'outstation'
+                  ? 'bg-gradient-to-r from-[#0F1E4A] via-[#14275E] to-[#1C3372] text-white shadow-[0_2px_8px_rgba(15,30,65,0.28)]'
+                  : 'text-[#14264F] hover:bg-[#EDF5FF]'
+              }`}
+            >
+              Distance Billing
+            </button>
+          </div>
+
+          {/* Price Tier Toggle */}
+          <div className="flex overflow-hidden rounded-xl border border-[#D5E3F7] bg-white p-0.5 shadow-2xs gap-0.5">
+            {[
+              { key: 'normal', label: 'Normal', icon: Tag },
+              { key: 'retail', label: 'Retail' },
+              { key: 'wholesale', label: 'Wholesale' },
+            ].map((opt) => (
+              <button
+                key={opt.key}
+                type="button"
+                onClick={() => changePriceType(opt.key)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all cursor-pointer ${
+                  priceType === opt.key
+                    ? 'bg-gradient-to-r from-[#0F1E4A] via-[#14275E] to-[#1C3372] text-white shadow-[0_2px_8px_rgba(15,30,65,0.28)]'
+                    : 'text-[#14264F] hover:bg-[#EDF5FF]'
+                }`}
+              >
+                {opt.icon && <opt.icon size={13} className={priceType === opt.key ? 'text-white' : 'text-[#315BFF]'} />}
+                {opt.label}
+              </button>
+            ))}
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          {message && <span className="text-sm font-semibold text-emerald-600">{message}</span>}
+
+        {/* Hold Bills & Status Alert */}
+        <div className="flex items-center gap-2.5">
+          {message && (
+            <span className="rounded-xl bg-emerald-50 border border-emerald-200/80 px-3 py-1 text-xs font-bold text-emerald-700 shadow-2xs animate-in fade-in">
+              {message}
+            </span>
+          )}
           <button
             type="button"
             onClick={() => setShowHeldList((v) => !v)}
-            className="flex items-center gap-2 rounded-xl border border-[#D5E3F7] bg-white shadow-[0_2px_8px_rgba(15,30,65,0.04)] px-3.5 py-1.5 text-sm font-bold text-[#14264F] hover:bg-[#EDF5FF] transition-all"
+            className="flex items-center gap-2 rounded-xl border border-[#D5E3F7] bg-white shadow-2xs px-3.5 py-1.5 text-xs sm:text-sm font-bold text-[#14264F] hover:bg-[#EDF5FF] transition-all cursor-pointer"
           >
             <FileText size={15} className="text-[#315BFF]" />
-            Hold Bills ({heldInvoices.length})
+            <span>Hold Bills</span>
+            {heldInvoices.length > 0 && (
+              <span className="rounded-full bg-[#315BFF] px-2 py-0.2 text-[10px] font-black text-white shadow-2xs">
+                {heldInvoices.length}
+              </span>
+            )}
           </button>
         </div>
       </div>
@@ -707,7 +731,7 @@ export function POS() {
         </Card>
       )}
 
-      <div className="grid grid-cols-1 gap-3.5 lg:grid-cols-[1fr_360px] xl:grid-cols-[1fr_380px]">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_370px] xl:grid-cols-[1fr_400px]">
         {/* Left panel — product browsing */}
         <div>
           <div className="mb-4 flex flex-wrap items-center gap-2.5">
@@ -814,59 +838,42 @@ export function POS() {
             </button>
           </div>
 
-          <div className="mb-3.5 flex flex-wrap items-center gap-2">
-            <button
-              onClick={() => setActiveCategory('all')}
-              className={`rounded-full px-5 py-2 text-sm font-bold transition-all ${
-                activeCategory === 'all'
-                  ? 'bg-gradient-to-r from-[#446BF5] via-[#355CEE] to-[#2449C6] text-white shadow-[0_4px_12px_rgba(36,73,198,0.35)]'
-                  : 'border border-[#D5E3F7] bg-white text-[#64789D] hover:text-[#14264F] hover:bg-white shadow-[0_2px_6px_rgba(15,30,65,0.03)]'
-              }`}
-            >
-              All
-            </button>
-            {activeCategories.map((c) => (
+          {/* Products List Toolbar (Categories removed per client requirement) */}
+          <div className="mb-4 flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <span className="text-sm sm:text-base font-extrabold text-[#0B1B45] tracking-tight">Products Catalog</span>
+              <span className="rounded-full bg-white border border-[#D5E3F7] px-2.5 py-0.5 text-xs font-black text-[#2449C6] shadow-2xs">
+                {gridItems.length} items
+              </span>
+            </div>
+            <div className="flex overflow-hidden rounded-xl border border-[#D5E3F7] bg-white p-0.5 shadow-[0_2px_6px_rgba(15,30,65,0.04)] gap-0.5">
               <button
-                key={c.id}
-                onClick={() => setActiveCategory(c.id)}
-                className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${
-                  activeCategory === c.id
-                    ? 'bg-gradient-to-r from-[#446BF5] via-[#355CEE] to-[#2449C6] text-white shadow-[0_4px_12px_rgba(36,73,198,0.35)] font-bold'
-                    : 'border border-[#D5E3F7] bg-white text-[#64789D] hover:text-[#14264F] hover:bg-white shadow-[0_2px_6px_rgba(15,30,65,0.03)]'
+                type="button"
+                onClick={() => setViewMode('grid')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg transition-all cursor-pointer ${
+                  viewMode === 'grid'
+                    ? 'bg-gradient-to-r from-[#EDF5FF] to-[#E3EFFF] font-bold text-[#2449C6] shadow-2xs'
+                    : 'text-[#64789D] hover:text-[#14264F] font-medium'
                 }`}
               >
-                {c.name}
+                <Grid2x2 size={14} /> Grid
               </button>
-            ))}
-            <div className="ml-auto flex items-center gap-3">
-              <span className="text-sm text-[#7E92B2] font-medium">{gridItems.length} products</span>
-              <div className="flex overflow-hidden rounded-xl border border-[#D5E3F7] bg-white p-0.5 shadow-[0_2px_6px_rgba(15,30,65,0.04)] gap-0.5">
-                <button
-                  onClick={() => setViewMode('grid')}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg transition-all ${
-                    viewMode === 'grid'
-                      ? 'bg-gradient-to-r from-[#EDF5FF] to-[#E3EFFF] font-bold text-[#2449C6] shadow-2xs'
-                      : 'text-[#64789D] hover:text-[#14264F] font-medium'
-                  }`}
-                >
-                  <Grid2x2 size={14} /> Grid
-                </button>
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg transition-all ${
-                    viewMode === 'list'
-                      ? 'bg-gradient-to-r from-[#EDF5FF] to-[#E3EFFF] font-bold text-[#2449C6] shadow-2xs'
-                      : 'text-[#64789D] hover:text-[#14264F] font-medium'
-                  }`}
-                >
-                  <List size={14} /> List
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => setViewMode('list')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg transition-all cursor-pointer ${
+                  viewMode === 'list'
+                    ? 'bg-gradient-to-r from-[#EDF5FF] to-[#E3EFFF] font-bold text-[#2449C6] shadow-2xs'
+                    : 'text-[#64789D] hover:text-[#14264F] font-medium'
+                }`}
+              >
+                <List size={14} /> List
+              </button>
             </div>
           </div>
 
           {viewMode === 'grid' ? (
-            <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-3 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4">
               {gridItems.map((item, index) => {
                 const stock = getItemStock(item);
                 const outOfStock = isItemOutOfStock(item);
