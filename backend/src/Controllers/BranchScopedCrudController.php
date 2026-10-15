@@ -65,8 +65,32 @@ class BranchScopedCrudController
     {
         $claims = JwtAuthMiddleware::authenticate();
         $branchId = $this->resolveBranchId($claims);
-        Response::json($this->model()->all(['branch_id' => $branchId]));
+        $where = ['branch_id' => $branchId];
+
+        if (isset($_GET['page'])) {
+            $page = max(1, (int) $_GET['page']);
+            $limit = max(1, min(100, (int) ($_GET['limit'] ?? 10)));
+            $search = isset($_GET['search']) && trim((string) $_GET['search']) !== '' ? trim((string) $_GET['search']) : null;
+            $status = isset($_GET['status']) && in_array($_GET['status'], ['active', 'inactive'], true) ? $_GET['status'] : null;
+
+            if ($status !== null && in_array('status', $this->columns, true)) {
+                $where['status'] = $status;
+            }
+
+            $searchColumns = [];
+            foreach (['ledger_name', 'name', 'phone', 'gstin', 'expense_no', 'description', 'receipt_no', 'payment_mode'] as $candidate) {
+                if (in_array($candidate, $this->columns, true)) {
+                    $searchColumns[] = $candidate;
+                }
+            }
+
+            Response::json($this->model()->paginate($where, $page, $limit, $search, $searchColumns));
+            return;
+        }
+
+        Response::json($this->model()->all($where));
     }
+
 
     public function show(string $id): void
     {

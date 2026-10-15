@@ -6,6 +6,7 @@ import { suppliersApi } from '../api/parties';
 import { purchasesApi, supplierPaymentsApi } from '../api/purchasing';
 import { Tabs } from '../components/Tabs';
 import { Button } from '../components/Button.jsx';
+import { Pagination } from '../components/Pagination.jsx';
 import { usePermission } from '../hooks/usePermission';
 import { resolveUnitPricing } from '../utils/pricing';
 import { downloadReportPdf, downloadGrnPdf } from '../utils/reportPdf';
@@ -468,12 +469,16 @@ export function GrnPanel({ canManage, canEdit, canViewCost, canDelete }) {
   const queryClient = useQueryClient();
   const [editingGrn, setEditingGrn] = useState(undefined);
   const [unitsByItemId, setUnitsByItemId] = useState({});
+  const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedIds, setSelectedIds] = useState([]);
   const [exportError, setExportError] = useState('');
   const [exporting, setExporting] = useState(false);
 
-  const purchasesQuery = useQuery({ queryKey: ['purchases'], queryFn: purchasesApi.list });
+  const purchasesQuery = useQuery({
+    queryKey: ['purchases', page, searchQuery],
+    queryFn: () => purchasesApi.list({ page, limit: 10, search: searchQuery || undefined }),
+  });
   const itemsQuery = useQuery({ queryKey: ['items', ''], queryFn: () => itemsApi.list('') });
 
   const deleteMutation = useMutation({
@@ -499,17 +504,10 @@ export function GrnPanel({ canManage, canEdit, canViewCost, canDelete }) {
 
   const openEdit = async (p) => setEditingGrn(await purchasesApi.get(p.id));
 
-  const purchases = purchasesQuery.data || [];
+  const purchases = Array.isArray(purchasesQuery.data) ? purchasesQuery.data : (purchasesQuery.data?.data || []);
+  const total = Array.isArray(purchasesQuery.data) ? purchasesQuery.data.length : (purchasesQuery.data?.total ?? purchases.length);
   const items = itemsQuery.data || [];
-
-  const filteredPurchases = purchases.filter((p) => {
-    return (
-      p.grn_no?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.supplier_invoice_no?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.supplier_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.status?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  });
+  const filteredPurchases = purchases;
 
   const toggleSelect = (id) => setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   const toggleSelectAll = () => setSelectedIds((prev) => (
@@ -619,11 +617,11 @@ export function GrnPanel({ canManage, canEdit, canViewCost, canDelete }) {
               type="text"
               placeholder="Search GRNs..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
               className="w-full rounded-xl border border-[#D5E3F7] bg-[#F8FAFD] pl-9 pr-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-400 focus:bg-white focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15 outline-none transition-all"
             />
           </div>
-          <span className="rounded-full bg-[#EDF5FF] border border-[#D5E3F7] px-2.5 py-0.5 text-xs font-bold text-[#2449C6]">{filteredPurchases.length} record(s)</span>
+          <span className="rounded-full bg-[#EDF5FF] border border-[#D5E3F7] px-2.5 py-0.5 text-xs font-bold text-[#2449C6]">{total} record(s)</span>
         </div>
 
         <div className="rounded-2xl border border-[#D5E3F7] bg-white shadow-xs overflow-hidden">
@@ -730,6 +728,13 @@ export function GrnPanel({ canManage, canEdit, canViewCost, canDelete }) {
               </tbody>
             </table>
           </div>
+          <Pagination
+            page={page}
+            total={total}
+            limit={10}
+            onPageChange={setPage}
+            label="GRN records"
+          />
         </div>
       </div>
     </div>
@@ -738,6 +743,7 @@ export function GrnPanel({ canManage, canEdit, canViewCost, canDelete }) {
 
 export function SupplierPaymentsPanel({ canManage }) {
   const queryClient = useQueryClient();
+  const [page, setPage] = useState(1);
   const [supplierId, setSupplierId] = useState('');
   const [amount, setAmount] = useState('');
   const [paymentMode, setPaymentMode] = useState('bank_transfer');
@@ -755,7 +761,10 @@ export function SupplierPaymentsPanel({ canManage }) {
     queryFn: () => supplierPaymentsApi.unpaidGrns(supplierId),
     enabled: !!supplierId,
   });
-  const paymentsQuery = useQuery({ queryKey: ['supplier-payments'], queryFn: supplierPaymentsApi.list });
+  const paymentsQuery = useQuery({
+    queryKey: ['supplier-payments', page, searchQuery],
+    queryFn: () => supplierPaymentsApi.list({ page, limit: 10, search: searchQuery || undefined }),
+  });
 
   const createMutation = useMutation({
     mutationFn: supplierPaymentsApi.create,
@@ -769,43 +778,9 @@ export function SupplierPaymentsPanel({ canManage }) {
 
   const unpaid = unpaidQuery.data || [];
   const suppliers = suppliersQuery.data || [];
-  const payments = paymentsQuery.data || [];
-
-  const preview = (() => {
-    let remaining = Number(amount || 0);
-    return unpaid.map((grn) => {
-      const pending = Number(grn.pending_balance);
-      const applied = Math.max(0, Math.min(remaining, pending));
-      remaining -= applied;
-      return { ...grn, applied, remAfter: pending - applied };
-    });
-  })();
-
-  const submit = async (e) => {
-    e.preventDefault();
-    setError('');
-    setResult(null);
-    try {
-      await createMutation.mutateAsync({
-        supplier_id: Number(supplierId),
-        amount: Number(amount),
-        payment_mode: paymentMode,
-        reference_no: referenceNo || null,
-      });
-      setAmount('');
-      setReferenceNo('');
-    } catch (err) {
-      setError(err?.response?.data?.error || 'Failed to record payment');
-    }
-  };
-
-  const filteredPayments = payments.filter((p) => {
-    return (
-      p.payment_code?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.supplier_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.reference_no?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  });
+  const payments = Array.isArray(paymentsQuery.data) ? paymentsQuery.data : (paymentsQuery.data?.data || []);
+  const totalPayments = Array.isArray(paymentsQuery.data) ? paymentsQuery.data.length : (paymentsQuery.data?.total ?? payments.length);
+  const filteredPayments = payments;
 
   const togglePaymentSelect = (id) => setSelectedPaymentIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   const togglePaymentSelectAll = () => setSelectedPaymentIds((prev) => (
@@ -1040,11 +1015,11 @@ export function SupplierPaymentsPanel({ canManage }) {
               type="text"
               placeholder="Search payments..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
               className="w-full rounded-xl border border-[#D5E3F7] bg-[#F8FAFD] pl-9 pr-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-400 focus:bg-white focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15 outline-none transition-all"
             />
           </div>
-          <span className="rounded-full bg-[#EDF5FF] border border-[#D5E3F7] px-2.5 py-0.5 text-xs font-bold text-[#2449C6]">{filteredPayments.length} payment record(s)</span>
+          <span className="rounded-full bg-[#EDF5FF] border border-[#D5E3F7] px-2.5 py-0.5 text-xs font-bold text-[#2449C6]">{totalPayments} payment record(s)</span>
         </div>
 
         <div className="rounded-2xl border border-[#D5E3F7] bg-white shadow-xs overflow-hidden">
@@ -1108,6 +1083,13 @@ export function SupplierPaymentsPanel({ canManage }) {
               </tbody>
             </table>
           </div>
+          <Pagination
+            page={page}
+            total={totalPayments}
+            limit={10}
+            onPageChange={setPage}
+            label="payments"
+          />
         </div>
       </div>
     </div>

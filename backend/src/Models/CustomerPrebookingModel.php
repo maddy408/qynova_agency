@@ -48,6 +48,74 @@ class CustomerPrebookingModel
         return $stmt->fetchAll();
     }
 
+    public function paginate(
+        int $branchId,
+        int $page = 1,
+        int $limit = 10,
+        ?string $status = null,
+        ?string $search = null
+    ): array {
+        $page = max(1, $page);
+        $limit = max(1, min(100, $limit));
+        $offset = ($page - 1) * $limit;
+
+        $where = "WHERE cp.branch_id = :branch_id";
+        $params = ['branch_id' => $branchId];
+
+        if ($status !== null && $status !== 'all' && $status !== '') {
+            $where .= " AND cp.status = :status";
+            $params['status'] = $status;
+        }
+
+        if ($search !== null && trim($search) !== '') {
+            $where .= " AND (cp.booking_no LIKE :s1 OR c.ledger_name LIKE :s2 OR c.phone LIKE :s3)";
+            $term = '%' . trim($search) . '%';
+            $params['s1'] = $term;
+            $params['s2'] = $term;
+            $params['s3'] = $term;
+        }
+
+        $countStmt = $this->pdo->prepare(
+            "SELECT COUNT(*)
+             FROM customer_prebookings cp
+             JOIN customers c ON c.id = cp.customer_id
+             {$where}"
+        );
+        $countStmt->execute($params);
+        $total = (int) $countStmt->fetchColumn();
+
+        $stmt = $this->pdo->prepare(
+            "SELECT cp.*, c.ledger_name AS customer_name, c.phone AS customer_phone,
+                    r.name AS route_name, u.name AS created_by_name, e.name AS employee_name,
+                    (SELECT COUNT(*) FROM customer_prebooking_items cpi WHERE cpi.prebooking_id = cp.id) AS item_count,
+                    (SELECT COALESCE(SUM(cpi.qty * cpi.rate * (1 + cpi.tax_percent / 100)), 0)
+                       FROM customer_prebooking_items cpi WHERE cpi.prebooking_id = cp.id) AS estimated_total
+             FROM customer_prebookings cp
+             JOIN customers c ON c.id = cp.customer_id
+             LEFT JOIN routes r ON r.id = cp.route_id
+             LEFT JOIN users e ON e.id = cp.employee_id
+             JOIN users u ON u.id = cp.created_by
+             {$where}
+             ORDER BY cp.id DESC LIMIT :limit OFFSET :offset"
+        );
+        foreach ($params as $k => $v) {
+            $stmt->bindValue($k, $v);
+        }
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+        $rows = $stmt->fetchAll();
+
+        return [
+            'data' => $rows,
+            'total' => $total,
+            'page' => $page,
+            'limit' => $limit,
+            'total_pages' => (int) ceil($total / $limit),
+        ];
+    }
+
+
     public function find(int $id): ?array
     {
         $stmt = $this->pdo->prepare(

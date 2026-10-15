@@ -36,6 +36,63 @@ class SalesReturnModel
         return $stmt->fetchAll();
     }
 
+    public function paginate(
+        int $branchId,
+        int $page = 1,
+        int $limit = 10,
+        ?string $search = null
+    ): array {
+        $page = max(1, $page);
+        $limit = max(1, min(100, $limit));
+        $offset = ($page - 1) * $limit;
+
+        $where = "WHERE sr.branch_id = :branch_id";
+        $params = ['branch_id' => $branchId];
+
+        if ($search !== null && trim($search) !== '') {
+            $where .= " AND (sr.return_no LIKE :s1 OR c.ledger_name LIKE :s2 OR i.invoice_no LIKE :s3)";
+            $term = '%' . trim($search) . '%';
+            $params['s1'] = $term;
+            $params['s2'] = $term;
+            $params['s3'] = $term;
+        }
+
+        $countStmt = $this->pdo->prepare(
+            "SELECT COUNT(*)
+             FROM sales_returns sr
+             LEFT JOIN customers c ON c.id = sr.customer_id
+             LEFT JOIN invoices i ON i.id = sr.invoice_id
+             {$where}"
+        );
+        $countStmt->execute($params);
+        $total = (int) $countStmt->fetchColumn();
+
+        $stmt = $this->pdo->prepare(
+            "SELECT sr.*, c.ledger_name AS customer_name, i.invoice_no
+             FROM sales_returns sr
+             LEFT JOIN customers c ON c.id = sr.customer_id
+             LEFT JOIN invoices i ON i.id = sr.invoice_id
+             {$where}
+             ORDER BY sr.id DESC LIMIT :limit OFFSET :offset"
+        );
+        foreach ($params as $k => $v) {
+            $stmt->bindValue($k, $v);
+        }
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+        $rows = $stmt->fetchAll();
+
+        return [
+            'data' => $rows,
+            'total' => $total,
+            'page' => $page,
+            'limit' => $limit,
+            'total_pages' => (int) ceil($total / $limit),
+        ];
+    }
+
+
     public function find(int $id): ?array
     {
         $stmt = $this->pdo->prepare(

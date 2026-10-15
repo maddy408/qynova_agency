@@ -6,6 +6,7 @@ import { suppliersApi } from '../api/parties';
 import { branchesApi } from '../api/branches';
 import { Button } from '../components/Button.jsx';
 import { Toast } from '../components/Toast.jsx';
+import { Pagination } from '../components/Pagination.jsx';
 import { resolveImageUrl } from '../utils/media';
 
 const emptyForm = {
@@ -402,8 +403,8 @@ export function ItemsPanel({ canManage }) {
   const fileInputRef = useRef(null);
 
   const itemsQuery = useQuery({
-    queryKey: ['items', search, statusFilter],
-    queryFn: () => itemsApi.list(search, statusFilter),
+    queryKey: ['items', page, search, statusFilter],
+    queryFn: () => itemsApi.list({ page, limit: PAGE_SIZE, search: search.trim() || undefined, status: statusFilter }),
   });
   const invalidateItems = () => queryClient.invalidateQueries({ queryKey: ['items'] });
   const deleteItem = useMutation({ mutationFn: itemsApi.remove, onSuccess: invalidateItems });
@@ -459,10 +460,10 @@ export function ItemsPanel({ canManage }) {
     }
   };
 
-  const items = itemsQuery.data || [];
-  const totalPages = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
-  const currentPage = Math.min(page, totalPages);
-  const pagedItems = items.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  const rawItems = itemsQuery.data;
+  const items = Array.isArray(rawItems) ? rawItems : (rawItems?.data || []);
+  const totalItems = Array.isArray(rawItems) ? rawItems.length : (rawItems?.total ?? items.length);
+  const pagedItems = items;
 
   return (
     <div className="flex flex-col gap-4 font-sans">
@@ -472,7 +473,7 @@ export function ItemsPanel({ canManage }) {
           <div className="flex items-center gap-2">
             <span className="font-black text-[#0F1E4A] tracking-tight">Items Directory</span>
             <span className="rounded-full bg-[#EEF5FF] text-[#315BFF] border border-[#D5E5FC] px-2.5 py-0.5 text-xs font-bold">
-              {items.length} Total
+              {totalItems} Total
             </span>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -627,32 +628,13 @@ export function ItemsPanel({ canManage }) {
           </table>
         </div>
 
-        {items.length > 0 && (
-          <div className="flex items-center justify-between border-t border-[#D8E6F7] bg-[#F8FAFD]/60 px-5 py-3 text-xs">
-            <span className="text-[#1E293B] font-semibold">
-              Showing {(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, items.length)} of {items.length} items
-            </span>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-                className="rounded-xl border border-[#D5E3F7] bg-white px-3 py-1.5 font-bold text-[#0F1E4A] hover:bg-[#EDF5FF] shadow-2xs disabled:opacity-40 transition-colors"
-              >
-                Previous
-              </button>
-              <span className="text-[#1E293B] font-bold px-2">Page {currentPage} of {totalPages}</span>
-              <button
-                type="button"
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages}
-                className="rounded-xl border border-[#D5E3F7] bg-white px-3 py-1.5 font-bold text-[#0F1E4A] hover:bg-[#EDF5FF] shadow-2xs disabled:opacity-40 transition-colors"
-              >
-                Next
-              </button>
-            </div>
-          </div>
-        )}
+        <Pagination
+          page={page}
+          total={totalItems}
+          limit={PAGE_SIZE}
+          onPageChange={setPage}
+          label="items"
+        />
       </div>
 
       {canManage && (

@@ -162,6 +162,62 @@ class ItemModel
         return $stmt->fetchAll();
     }
 
+    public function paginate(?string $search = null, ?int $branchId = null, string $status = 'active', int $page = 1, int $limit = 10): array
+    {
+        $page = max(1, $page);
+        $limit = max(1, min(100, $limit));
+        $offset = ($page - 1) * $limit;
+
+        $joins = [];
+        $where = [];
+        $params = [];
+
+        if ($status === 'active') {
+            $where[] = 'i.is_active = 1';
+        } elseif ($status === 'inactive') {
+            $where[] = 'i.is_active = 0';
+        }
+
+        if ($branchId !== null) {
+            $joins[] = 'LEFT JOIN item_branches ib ON ib.item_id = i.id AND ib.branch_id = :branch_id_join';
+            $where[] = '(ib.branch_id = :branch_id_where OR NOT EXISTS (SELECT 1 FROM item_branches ib2 WHERE ib2.item_id = i.id))';
+            $params['branch_id_join'] = $branchId;
+            $params['branch_id_where'] = $branchId;
+        }
+        if ($search !== null && $search !== '') {
+            $where[] = '(i.item_name LIKE :search_name OR i.item_code LIKE :search_code OR i.barcode LIKE :search_barcode)';
+            $params['search_name'] = "%$search%";
+            $params['search_code'] = "%$search%";
+            $params['search_barcode'] = "%$search%";
+        }
+
+        $joinSql = $joins ? (' ' . implode(' ', $joins)) : '';
+        $whereSql = $where ? (' WHERE ' . implode(' AND ', $where)) : '';
+
+        $countStmt = $this->pdo->prepare("SELECT COUNT(*) FROM items i{$joinSql}{$whereSql}");
+        $countStmt->execute($params);
+        $total = (int) $countStmt->fetchColumn();
+
+        $sql = self::LIST_SELECT . "{$joinSql}{$whereSql} ORDER BY i.item_name LIMIT :limit OFFSET :offset";
+        $stmt = $this->pdo->prepare($sql);
+        foreach ($params as $k => $v) {
+            $stmt->bindValue($k, $v);
+        }
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+        $rows = $stmt->fetchAll();
+
+        return [
+            'data' => $rows,
+            'total' => $total,
+            'page' => $page,
+            'limit' => $limit,
+            'total_pages' => (int) ceil($total / $limit),
+        ];
+    }
+
+
     public function find(int $id): ?array
     {
         $stmt = $this->pdo->prepare(self::LIST_SELECT . ' WHERE i.id = :id');

@@ -13,6 +13,7 @@ import { Tabs } from '../components/Tabs.jsx';
 import { Card } from '../components/Card.jsx';
 import { Badge } from '../components/Badge.jsx';
 import { Button } from '../components/Button.jsx';
+import { Pagination } from '../components/Pagination.jsx';
 import { usePermission } from '../hooks/usePermission';
 
 const BOOKING_SOURCES = [
@@ -342,6 +343,7 @@ function CustomerPrebookingPanel() {
   const queryClient = useQueryClient();
 
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
   const [editingBooking, setEditingBooking] = useState(null);
   const [printingId, setPrintingId] = useState(null);
   const [viewingId, setViewingId] = useState(null);
@@ -356,7 +358,10 @@ function CustomerPrebookingPanel() {
   const [formError, setFormError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
-  const listQuery = useQuery({ queryKey: ['customer-prebookings'], queryFn: customerPrebookingsApi.list });
+  const listQuery = useQuery({
+    queryKey: ['customer-prebookings', page, search],
+    queryFn: () => customerPrebookingsApi.list({ page, limit: 10, search: search.trim() || undefined }),
+  });
   const customersQuery = useQuery({ queryKey: ['customers'], queryFn: customersApi.list });
   const routesQuery = useQuery({ queryKey: ['routes'], queryFn: routesApi.list });
   const usersQuery = useQuery({ queryKey: ['users'], queryFn: usersApi.list });
@@ -443,15 +448,8 @@ function CustomerPrebookingPanel() {
     setEditingBooking(full);
   };
 
-  const rows = (listQuery.data || []).filter((r) => {
-    const q = search.trim().toLowerCase();
-    if (!q) return true;
-    return (
-      (r.prebooking_no || '').toLowerCase().includes(q) ||
-      (r.customer_name || '').toLowerCase().includes(q) ||
-      (r.status || '').toLowerCase().includes(q)
-    );
-  });
+  const rows = Array.isArray(listQuery.data) ? listQuery.data : (listQuery.data?.data || []);
+  const total = Array.isArray(listQuery.data) ? listQuery.data.length : (listQuery.data?.total ?? rows.length);
 
   return (
     <div className="space-y-4">
@@ -576,7 +574,7 @@ function CustomerPrebookingPanel() {
                 type="text"
                 placeholder="Search pre-bookings..."
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => { setSearch(e.target.value); setPage(1); }}
                 className="w-full rounded-xl border border-[#D5E3F7] bg-[#F8FAFD] pl-9 pr-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-400 focus:bg-white focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15 outline-none transition-all"
               />
             </div>
@@ -589,7 +587,7 @@ function CustomerPrebookingPanel() {
               >
                 Export Excel
               </Button>
-              <span className="rounded-full bg-[#EDF5FF] border border-[#D5E3F7] px-2.5 py-0.5 text-xs font-bold text-[#2449C6]">{rows.length} order(s)</span>
+              <span className="rounded-full bg-[#EDF5FF] border border-[#D5E3F7] px-2.5 py-0.5 text-xs font-bold text-[#2449C6]">{total} order(s)</span>
             </div>
           </div>
 
@@ -690,6 +688,13 @@ function CustomerPrebookingPanel() {
                 </tbody>
               </table>
             </div>
+            <Pagination
+              page={page}
+              total={total}
+              limit={10}
+              onPageChange={setPage}
+              label="pre-bookings"
+            />
           </div>
         </div>
       </div>

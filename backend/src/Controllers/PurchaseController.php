@@ -40,7 +40,23 @@ class PurchaseController
     public function index(): void
     {
         $claims = JwtAuthMiddleware::authenticate();
+
+        if (isset($_GET['page']) && empty($_GET['export']) && empty($_GET['detail']) && empty($_GET['ids'])) {
+            $page = max(1, (int) $_GET['page']);
+            $limit = max(1, min(100, (int) ($_GET['limit'] ?? 10)));
+            $result = $this->model->paginate(
+                $this->resolveBranchId($claims),
+                $page,
+                $limit,
+                $_GET['search'] ?? null
+            );
+            $result['data'] = $this->stripCostIfUnauthorized($claims, $result['data']);
+            Response::json($result);
+            return;
+        }
+
         $rows = $this->model->all($this->resolveBranchId($claims));
+
 
         // ?ids=1,2,3 narrows to exactly those GRNs (the "Export Selected"
         // case from the UI's row checkboxes) — applied to the same

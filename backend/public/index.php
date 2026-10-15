@@ -406,6 +406,13 @@ $router->get('/api/reports/customer-wise-sales', fn () => $reports->customerWise
 $router->get('/api/reports/supplier-wise-sales', fn () => $reports->supplierWiseSales());
 $router->get('/api/reports/brand-wise-sales', fn () => $reports->brandWiseSales());
 $router->get('/api/reports/category-wise-sales', fn () => $reports->categoryWiseSales());
+$router->get('/api/reports/financial-summary', fn () => $reports->financialSummary());
+$router->get('/api/reports/financial-summary/profit-detail', fn () => $reports->profitDetail());
+$router->get('/api/reports/financial-summary/product-loss-detail', fn () => $reports->productLossDetail());
+$router->get('/api/reports/financial-summary/stock-purchase-detail', fn () => $reports->stockPurchaseDetail());
+$router->get('/api/reports/financial-summary/stock-adjustment-detail', fn () => $reports->stockAdjustmentDetail());
+$router->get('/api/reports/financial-summary/order-management-detail', fn () => $reports->orderManagementDetail());
+$router->get('/api/reports/financial-summary/total-sales-detail', fn () => $reports->totalSalesDetail());
 $router->get('/api/reports/brand-category-wise-sales', fn () => $reports->brandCategoryWiseSales());
 
 $branches = new BranchController($pdo);

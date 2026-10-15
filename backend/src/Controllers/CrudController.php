@@ -37,8 +37,26 @@ class CrudController
     public function index(): void
     {
         JwtAuthMiddleware::authenticate();
+
+        if (isset($_GET['page'])) {
+            $page = max(1, (int) $_GET['page']);
+            $limit = max(1, min(100, (int) ($_GET['limit'] ?? 10)));
+            $search = isset($_GET['search']) && trim((string) $_GET['search']) !== '' ? trim((string) $_GET['search']) : null;
+
+            $searchColumns = [];
+            foreach (['name', 'code', 'description'] as $candidate) {
+                if (in_array($candidate, $this->columns, true)) {
+                    $searchColumns[] = $candidate;
+                }
+            }
+
+            Response::json($this->model()->paginate([], $page, $limit, $search, $searchColumns));
+            return;
+        }
+
         Response::json($this->model()->all());
     }
+
 
     public function show(string $id): void
     {

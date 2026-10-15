@@ -9,6 +9,7 @@ import { Card } from '../components/Card.jsx';
 import { Badge } from '../components/Badge.jsx';
 import { Button } from '../components/Button.jsx';
 import { PrintPreviewModal } from '../components/PrintPreviewModal.jsx';
+import { Pagination } from '../components/Pagination.jsx';
 import { usePermission } from '../hooks/usePermission';
 
 const STATUS_VARIANT = {
@@ -529,6 +530,7 @@ export function InvoiceManagement() {
   const canDelete = usePermission('pos.delete_completed_invoice');
   const canEdit = usePermission('pos.edit_completed_invoice');
   const queryClient = useQueryClient();
+  const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState('');
   const [search, setSearch] = useState('');
   const [viewingId, setViewingId] = useState(null);
@@ -539,7 +541,16 @@ export function InvoiceManagement() {
   const [deleting, setDeleting] = useState(null);
   const [deleteError, setDeleteError] = useState('');
 
-  const invoicesQuery = useQuery({ queryKey: ['invoices', statusFilter], queryFn: () => invoicesApi.list(statusFilter || undefined) });
+  const invoicesQuery = useQuery({
+    queryKey: ['invoices', page, statusFilter, search],
+    queryFn: () =>
+      invoicesApi.list({
+        page,
+        limit: 10,
+        status: statusFilter || undefined,
+        search: search.trim() || undefined,
+      }),
+  });
   const cancelMutation = useMutation({
     mutationFn: ({ id, reason }) => invoicesApi.cancel(id, reason),
     onSuccess: () => {
@@ -559,16 +570,9 @@ export function InvoiceManagement() {
     onError: (err) => setDeleteError(err?.response?.data?.error || 'Failed to delete'),
   });
 
-  const invoices = invoicesQuery.data || [];
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return invoices;
-    return invoices.filter(
-      (inv) =>
-        (inv.invoice_no || '').toLowerCase().includes(q) ||
-        (inv.customer_name || '').toLowerCase().includes(q)
-    );
-  }, [invoices, search]);
+  const invoices = Array.isArray(invoicesQuery.data) ? invoicesQuery.data : (invoicesQuery.data?.data || []);
+  const total = Array.isArray(invoicesQuery.data) ? invoicesQuery.data.length : (invoicesQuery.data?.total ?? invoices.length);
+  const filtered = invoices;
 
   return (
     <div className="space-y-6">
@@ -595,14 +599,14 @@ export function InvoiceManagement() {
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => { setSearch(e.target.value); setPage(1); }}
                 placeholder="Search invoice # or customer"
                 className="w-full rounded-xl border border-[#D5E3F7] bg-[#F8FAFD] pl-9 pr-3.5 py-2 text-sm font-medium text-slate-800 transition focus:border-[#2449C6] focus:bg-white focus:outline-none"
               />
             </div>
             <select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
               className="rounded-xl border border-[#D5E3F7] bg-white px-3 py-2 text-sm font-semibold text-slate-800 transition focus:border-[#2449C6] focus:outline-none"
             >
               <option value="">All statuses</option>
@@ -701,6 +705,13 @@ export function InvoiceManagement() {
             </tbody>
           </table>
         </div>
+        <Pagination
+          page={page}
+          total={total}
+          limit={10}
+          onPageChange={setPage}
+          label="invoices"
+        />
       </div>
 
       {viewingId && <ViewModal id={viewingId} onClose={() => setViewingId(null)} />}

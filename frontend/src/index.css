@@ -191,6 +191,26 @@
   scrollbar-color: #C4D7F2 transparent;
 }
 
+.nav-scrollbar::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+.nav-scrollbar::-webkit-scrollbar-track {
+  background: #F1F5F9;
+  border-radius: 9999px;
+}
+.nav-scrollbar::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 9999px;
+}
+.nav-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #2449C6;
+}
+.nav-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #CBD5E1 #F1F5F9;
+}
+
 @layer components {
   .input {
     @apply rounded-xl border border-pos-border bg-white px-3 py-2 text-sm w-full text-ink font-medium

@@ -34,8 +34,24 @@ class CustomerPrebookingController
     {
         $claims = JwtAuthMiddleware::authenticate();
         PermissionMiddleware::require($claims, 'orders.view_prebooking');
+
+        if (isset($_GET['page'])) {
+            $page = max(1, (int) $_GET['page']);
+            $limit = max(1, min(100, (int) ($_GET['limit'] ?? 10)));
+            $result = $this->model->paginate(
+                $this->resolveBranchId($claims),
+                $page,
+                $limit,
+                $_GET['status'] ?? null,
+                $_GET['search'] ?? null
+            );
+            Response::json($result);
+            return;
+        }
+
         Response::json($this->model->all($this->resolveBranchId($claims)));
     }
+
 
     public function show(string $id): void
     {

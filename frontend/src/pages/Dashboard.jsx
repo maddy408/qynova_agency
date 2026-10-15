@@ -12,6 +12,7 @@ import { useAuth } from '../hooks/useAuth.jsx';
 import { usePermission } from '../hooks/usePermission';
 import { dashboardApi } from '../api/admin';
 import { Card } from '../components/Card.jsx';
+import { TotalsReportModal } from '../components/TotalsReportModal.jsx';
 
 const MODULES = [
   {
@@ -246,7 +247,7 @@ export function Dashboard() {
       </div>
 
       {/* Category Pills Bar */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-0.5 text-xs shrink-0 no-scrollbar">
+      <div className="flex items-center gap-2 overflow-x-auto pb-1.5 text-xs shrink-0 nav-scrollbar scroll-smooth">
         {CATEGORIES.map((cat) => {
           const isActive = selectedCategory === cat.id;
           return (
@@ -363,76 +364,12 @@ export function Dashboard() {
       </div>
 
       {/* Totals Report Modal */}
-      {canViewFinancials && showTotalsReport && summary && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-xs">
-          <div className="w-full max-w-3xl rounded-3xl bg-white p-6 text-[#0F1E4A] shadow-2xl space-y-5 border border-[#D5E3F7]">
-            <div className="flex items-center justify-between border-b border-[#D5E3F7] pb-3.5">
-              <div className="flex items-center gap-2.5">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#EEF5FF] text-[#315BFF] border border-[#D5E5FC]">
-                  <TrendingUp size={20} />
-                </div>
-                <div>
-                  <h2 className="text-base font-bold tracking-wide text-[#0F1E4A]">Financial Summary Report</h2>
-                  <p className="text-xs text-[#64789D]">Real-time revenue, purchase &amp; outstanding overview</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowTotalsReport(false)}
-                className="rounded-xl p-1.5 text-[#64789D] hover:bg-[#EDF5FF] hover:text-[#0F1E4A] transition-colors"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 max-h-[60vh] overflow-y-auto pr-1">
-              {SUMMARY_METRICS.map((c) => (
-                <div
-                  key={c.key}
-                  className={`rounded-2xl border border-[#D5E3F7] p-3.5 shadow-2xs ${
-                    c.highlight
-                      ? 'bg-gradient-to-br from-[#EEF5FF] to-[#E3EFFF] text-[#0F1E4A]'
-                      : 'bg-[#F8FAFD] text-[#0F1E4A]'
-                  }`}
-                >
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-[#64789D]">{c.label}</div>
-                  <div className="mt-1 text-base font-extrabold text-[#0F1E4A]">
-                    Rs. {summary[c.key] ?? '0.00'}
-                  </div>
-                </div>
-              ))}
-
-              <div
-                className={`rounded-2xl border border-[#D5E3F7] p-3.5 shadow-2xs ${
-                  summary.low_stock_count > 0
-                    ? 'bg-amber-50 text-amber-900'
-                    : 'bg-[#F8FAFD] text-[#0F1E4A]'
-                }`}
-              >
-                <div className="text-[10px] font-bold uppercase tracking-wider text-[#64789D]">Low Stock Alerts</div>
-                <div className="mt-1 text-base font-extrabold text-[#0F1E4A] flex items-center gap-1.5">
-                  {summary.low_stock_count} item(s)
-                  {summary.low_stock_count > 0 && <AlertCircle className="h-4 w-4 text-amber-600" />}
-                </div>
-              </div>
-            </div>
-
-            <div className="flex justify-between items-center pt-3 border-t border-[#D5E3F7]">
-              <Link
-                to="/reports"
-                onClick={() => setShowTotalsReport(false)}
-                className="text-xs font-bold text-[#315BFF] hover:underline flex items-center gap-1"
-              >
-                Open Detailed Reports Page <ArrowUpRight size={14} />
-              </Link>
-              <button
-                onClick={() => setShowTotalsReport(false)}
-                className="rounded-xl bg-gradient-to-r from-[#0F1E4A] to-[#1C3372] px-4 py-2 text-xs font-bold text-white shadow-xs hover:opacity-95 transition-opacity"
-              >
-                Close Report
-              </button>
-            </div>
-          </div>
-        </div>
+      {canViewFinancials && (
+        <TotalsReportModal
+          isOpen={showTotalsReport}
+          onClose={() => setShowTotalsReport(false)}
+          initialData={summary}
+        />
       )}
     </div>
   );

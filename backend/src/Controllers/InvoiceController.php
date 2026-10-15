@@ -39,8 +39,24 @@ class InvoiceController
         $claims = JwtAuthMiddleware::authenticate();
         PermissionMiddleware::require($claims, 'pos.access');
         $branchId = $this->resolveBranchId($claims);
+
+        if (isset($_GET['page'])) {
+            $page = max(1, (int) $_GET['page']);
+            $limit = max(1, min(100, (int) ($_GET['limit'] ?? 10)));
+            $result = $this->invoices->paginate(
+                $branchId,
+                $_GET['status'] ?? null,
+                $page,
+                $limit,
+                $_GET['search'] ?? null
+            );
+            Response::json($result);
+            return;
+        }
+
         Response::json($this->invoices->all($branchId, $_GET['status'] ?? null));
     }
+
 
     public function show(string $id): void
     {

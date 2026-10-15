@@ -34,7 +34,22 @@ class SupplierPaymentController
     public function index(): void
     {
         $claims = JwtAuthMiddleware::authenticate();
+
+        if (isset($_GET['page']) && empty($_GET['export']) && empty($_GET['ids'])) {
+            $page = max(1, (int) $_GET['page']);
+            $limit = max(1, min(100, (int) ($_GET['limit'] ?? 10)));
+            $result = $this->model->paginate(
+                $this->resolveBranchId($claims),
+                $page,
+                $limit,
+                $_GET['search'] ?? null
+            );
+            Response::json($result);
+            return;
+        }
+
         $rows = $this->model->all($this->resolveBranchId($claims));
+
 
         // ?ids=1,2,3 narrows to exactly those payments (the "Export
         // Selected" case), applied to the same branch-scoped list.

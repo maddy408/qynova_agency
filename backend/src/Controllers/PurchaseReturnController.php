@@ -31,7 +31,17 @@ class PurchaseReturnController
     public function index(): void
     {
         $claims = JwtAuthMiddleware::authenticate();
-        Response::json($this->model->all($this->resolveBranchId($claims)));
+        $branchId = $this->resolveBranchId($claims);
+
+        if (isset($_GET['page'])) {
+            $page = max(1, (int) $_GET['page']);
+            $limit = max(1, min(100, (int) ($_GET['limit'] ?? 10)));
+            $search = isset($_GET['search']) && trim((string) $_GET['search']) !== '' ? trim((string) $_GET['search']) : null;
+            Response::json($this->model->paginate($branchId, $page, $limit, $search));
+            return;
+        }
+
+        Response::json($this->model->all($branchId));
     }
 
     public function show(string $id): void

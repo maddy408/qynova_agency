@@ -42,6 +42,65 @@ class PurchaseModel
         return $stmt->fetchAll();
     }
 
+    public function paginate(
+        int $branchId,
+        int $page = 1,
+        int $limit = 10,
+        ?string $search = null
+    ): array {
+        $page = max(1, $page);
+        $limit = max(1, min(100, $limit));
+        $offset = ($page - 1) * $limit;
+
+        $where = "WHERE p.branch_id = :branch_id";
+        $params = ['branch_id' => $branchId];
+
+        if ($search !== null && trim($search) !== '') {
+            $where .= " AND (p.grn_no LIKE :s1 OR p.supplier_invoice_no LIKE :s2 OR s.name LIKE :s3 OR s.phone LIKE :s4)";
+            $term = '%' . trim($search) . '%';
+            $params['s1'] = $term;
+            $params['s2'] = $term;
+            $params['s3'] = $term;
+            $params['s4'] = $term;
+        }
+
+        $countStmt = $this->pdo->prepare(
+            "SELECT COUNT(*)
+             FROM purchases p
+             JOIN suppliers s ON s.id = p.supplier_id
+             {$where}"
+        );
+        $countStmt->execute($params);
+        $total = (int) $countStmt->fetchColumn();
+
+        $stmt = $this->pdo->prepare(
+            "SELECT p.*, s.name AS supplier_name, s.phone AS supplier_phone, s.address AS supplier_address,
+                    s.gstin AS supplier_gstin, b.branch_name, u.name AS created_by_name
+             FROM purchases p
+             JOIN suppliers s ON s.id = p.supplier_id
+             LEFT JOIN branches b ON b.id = p.branch_id
+             LEFT JOIN users u ON u.id = p.created_by
+             {$where}
+             ORDER BY p.id DESC LIMIT :limit OFFSET :offset"
+        );
+        foreach ($params as $k => $v) {
+            $stmt->bindValue($k, $v);
+        }
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+        $rows = $stmt->fetchAll();
+
+        return [
+            'data' => $rows,
+            'total' => $total,
+            'page' => $page,
+            'limit' => $limit,
+            'total_pages' => (int) ceil($total / $limit),
+        ];
+    }
+
+
     public function find(int $id): ?array
     {
         $stmt = $this->pdo->prepare(

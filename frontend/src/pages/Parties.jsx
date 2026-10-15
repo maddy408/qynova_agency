@@ -9,6 +9,7 @@ import { routesApi, citiesApi, customersApi, suppliersApi } from '../api/parties
 import { routeSuppliersApi } from '../api/purchasing';
 import { Tabs } from '../components/Tabs';
 import { Button } from '../components/Button.jsx';
+import { Pagination } from '../components/Pagination.jsx';
 import { usePermission } from '../hooks/usePermission';
 import { GrnPanel, SupplierPaymentsPanel } from './Purchasing.jsx';
 import { SupplierRequestPanel } from './OrderManagement.jsx';
@@ -16,7 +17,20 @@ import { SupplierRequestPanel } from './OrderManagement.jsx';
 // CUSTOMERS PANEL (Left Form, Right Directory Table)
 function CustomersPanel({ canManage }) {
   const queryClient = useQueryClient();
-  const query = useQuery({ queryKey: ['customers'], queryFn: customersApi.list });
+  const [page, setPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+
+  const query = useQuery({
+    queryKey: ['customers', page, searchQuery, statusFilter],
+    queryFn: () =>
+      customersApi.list({
+        page,
+        limit: 10,
+        search: searchQuery || undefined,
+        status: statusFilter !== 'all' ? statusFilter : undefined,
+      }),
+  });
   const routesQuery = useQuery({ queryKey: ['routes'], queryFn: routesApi.list });
   const citiesQuery = useQuery({ queryKey: ['cities'], queryFn: citiesApi.list });
 
@@ -39,8 +53,6 @@ function CustomersPanel({ canManage }) {
   const [dob, setDob] = useState('');
   const [pricingType, setPricingType] = useState('normal');
 
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
   const [formError, setFormError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
@@ -158,22 +170,11 @@ function CustomersPanel({ canManage }) {
     }
   };
 
-  const rows = query.data || [];
+  const rows = Array.isArray(query.data) ? query.data : (query.data?.data || []);
+  const total = Array.isArray(query.data) ? query.data.length : (query.data?.total ?? rows.length);
   const routeMap = new Map(routes.map((r) => [r.id, r.name]));
   const cityMap = new Map(cities.map((c) => [c.id, c.name]));
-
-  const filtered = rows.filter((r) => {
-    const nameStr = (r.ledger_name || r.name || '').toLowerCase();
-    const phoneStr = (r.phone || '').toLowerCase();
-    const matchesSearch = nameStr.includes(searchQuery.toLowerCase()) || phoneStr.includes(searchQuery.toLowerCase());
-
-    const cActive = r.status !== 'inactive' && r.is_active !== 0 && r.is_active !== false;
-    const matchesStatus =
-      statusFilter === 'all' ||
-      (statusFilter === 'active' && cActive) ||
-      (statusFilter === 'inactive' && !cActive);
-    return matchesSearch && matchesStatus;
-  });
+  const filtered = rows;
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
@@ -406,24 +407,24 @@ function CustomersPanel({ canManage }) {
           <div className="px-3.5 py-3 border-b border-[#D5E3F7] bg-gradient-to-r from-white via-[#F8FAFD] to-white flex flex-col gap-2.5 xl:flex-row xl:items-center xl:justify-between">
             <h2 className="text-sm font-bold text-[#0B1B45] flex items-center gap-1.5 shrink-0 whitespace-nowrap">
               <span>Customer Directory</span>
-              <span className="rounded-full bg-[#EDF5FF] border border-[#D5E3F7] px-2 py-0.5 text-[11px] font-bold text-[#2449C6]">{filtered.length} Total</span>
+              <span className="rounded-full bg-[#EDF5FF] border border-[#D5E3F7] px-2 py-0.5 text-[11px] font-bold text-[#2449C6]">{total} Total</span>
             </h2>
 
-            <div className="flex items-center gap-1.5 flex-nowrap overflow-x-auto no-scrollbar">
+            <div className="flex items-center gap-1.5 flex-nowrap overflow-x-auto nav-scrollbar pb-1 scroll-smooth">
               <div className="relative shrink-0">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={13} />
                 <input
                   type="text"
                   placeholder="Search customers..."
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
                   className="rounded-xl border border-[#D5E3F7] bg-[#F8FAFD] pl-8 pr-2.5 py-1.5 text-xs text-slate-800 placeholder:text-slate-400 focus:bg-white focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15 outline-none transition-all w-32 sm:w-40 md:w-44"
                 />
               </div>
 
               <select
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
+                onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
                 className="rounded-xl border border-[#D5E3F7] bg-[#F8FAFD] px-2 py-1.5 text-xs font-medium text-slate-800 focus:bg-white focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15 outline-none transition-all w-24 shrink-0"
               >
                 <option value="all">All Status</option>
@@ -515,7 +516,7 @@ function CustomersPanel({ canManage }) {
                   const cActive = r.status !== 'inactive' && r.is_active !== 0 && r.is_active !== false;
                   return (
                     <tr key={r.id} className="hover:bg-[#F5F8FF]/80 transition-colors">
-                      <td className="px-3.5 py-2.5 font-bold text-slate-600">{index + 1}</td>
+                      <td className="px-3.5 py-2.5 font-bold text-slate-600">{(page - 1) * 10 + index + 1}</td>
                       <td className="px-3.5 py-2.5 font-bold text-[#0B1B45]">{r.ledger_name || r.name}</td>
                       <td className="px-3.5 py-2.5 font-semibold text-slate-800">{r.phone || '-'}</td>
                       <td className="px-3.5 py-2.5 font-semibold text-slate-800">
@@ -568,6 +569,13 @@ function CustomersPanel({ canManage }) {
               </tbody>
             </table>
           </div>
+          <Pagination
+            page={page}
+            total={total}
+            limit={10}
+            onPageChange={setPage}
+            label="customers"
+          />
         </div>
       </div>
     </div>
@@ -577,7 +585,20 @@ function CustomersPanel({ canManage }) {
 // SUPPLIERS PANEL (Left Form, Right Directory Table)
 function SuppliersPanel({ canManage }) {
   const queryClient = useQueryClient();
-  const query = useQuery({ queryKey: ['suppliers'], queryFn: suppliersApi.list });
+  const [page, setPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+
+  const query = useQuery({
+    queryKey: ['suppliers', page, searchQuery, statusFilter],
+    queryFn: () =>
+      suppliersApi.list({
+        page,
+        limit: 10,
+        search: searchQuery || undefined,
+        status: statusFilter !== 'all' ? statusFilter : undefined,
+      }),
+  });
   const balancesQuery = useQuery({ queryKey: ['suppliers', 'balances'], queryFn: suppliersApi.balances });
 
   const balanceById = new Map((balancesQuery.data || []).map((b) => [b.id, b]));
@@ -589,8 +610,6 @@ function SuppliersPanel({ canManage }) {
   const [openingBalance, setOpeningBalance] = useState('0');
   const [isActive, setIsActive] = useState(true);
 
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
   const [formError, setFormError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
@@ -658,16 +677,9 @@ function SuppliersPanel({ canManage }) {
     }
   };
 
-  const rows = query.data || [];
-  const filtered = rows.filter((r) => {
-    const matchesSearch = r.name?.toLowerCase().includes(searchQuery.toLowerCase()) || r.gstin?.toLowerCase().includes(searchQuery.toLowerCase());
-    const sActive = r.status !== 'inactive' && r.is_active !== 0 && r.is_active !== false;
-    const matchesStatus =
-      statusFilter === 'all' ||
-      (statusFilter === 'active' && sActive) ||
-      (statusFilter === 'inactive' && !sActive);
-    return matchesSearch && matchesStatus;
-  });
+  const rows = Array.isArray(query.data) ? query.data : (query.data?.data || []);
+  const total = Array.isArray(query.data) ? query.data.length : (query.data?.total ?? rows.length);
+  const filtered = rows;
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
@@ -768,7 +780,7 @@ function SuppliersPanel({ canManage }) {
           <div className="p-4 border-b border-[#D5E3F7] bg-gradient-to-r from-white via-[#F8FAFD] to-white flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <h2 className="text-sm font-bold text-[#0B1B45] flex items-center gap-1.5 shrink-0 whitespace-nowrap">
               <span>Supplier Directory</span>
-              <span className="rounded-full bg-[#EDF5FF] border border-[#D5E3F7] px-2 py-0.5 text-[11px] font-bold text-[#2449C6]">{filtered.length} Total</span>
+              <span className="rounded-full bg-[#EDF5FF] border border-[#D5E3F7] px-2 py-0.5 text-[11px] font-bold text-[#2449C6]">{total} Total</span>
             </h2>
 
             <div className="flex items-center gap-2">
@@ -778,13 +790,13 @@ function SuppliersPanel({ canManage }) {
                   type="text"
                   placeholder="Search suppliers..."
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
                   className="rounded-xl border border-[#D5E3F7] bg-[#F8FAFD] pl-9 pr-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-400 focus:bg-white focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15 outline-none transition-all w-44 sm:w-56"
                 />
               </div>
               <select
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
+                onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
                 className="rounded-xl border border-[#D5E3F7] bg-[#F8FAFD] px-3 py-1.5 text-xs font-medium text-slate-800 focus:bg-white focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15 outline-none transition-all w-28"
               >
                 <option value="all">All Status</option>
@@ -813,7 +825,7 @@ function SuppliersPanel({ canManage }) {
                   const val = Number(balanceById.get(r.id)?.current_outstanding ?? 0);
                   return (
                     <tr key={r.id} className="hover:bg-[#F5F8FF]/80 transition-colors">
-                      <td className="px-3.5 py-2.5 font-semibold text-slate-400">{index + 1}</td>
+                      <td className="px-3.5 py-2.5 font-semibold text-slate-400">{(page - 1) * 10 + index + 1}</td>
                       <td className="px-3.5 py-2.5 font-bold text-[#0B1B45]">{r.name}</td>
                       <td className="px-3.5 py-2.5 font-medium text-slate-600">{r.phone || '-'}</td>
                       <td className="px-3.5 py-2.5 font-medium text-slate-600">{r.gstin || '-'}</td>
@@ -860,6 +872,13 @@ function SuppliersPanel({ canManage }) {
               </tbody>
             </table>
           </div>
+          <Pagination
+            page={page}
+            total={total}
+            limit={10}
+            onPageChange={setPage}
+            label="suppliers"
+          />
         </div>
       </div>
     </div>
@@ -869,13 +888,23 @@ function SuppliersPanel({ canManage }) {
 // ROUTES PANEL (Left Form, Right Directory Table & Mapping)
 function RoutesPanel({ canManage }) {
   const queryClient = useQueryClient();
-  const query = useQuery({ queryKey: ['routes'], queryFn: routesApi.list });
+  const [page, setPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const query = useQuery({
+    queryKey: ['routes', page, searchQuery],
+    queryFn: () =>
+      routesApi.list({
+        page,
+        limit: 10,
+        search: searchQuery || undefined,
+      }),
+  });
 
   const [editingId, setEditingId] = useState(null);
   const [name, setName] = useState('');
   const [isActive, setIsActive] = useState(true);
 
-  const [searchQuery, setSearchQuery] = useState('');
   const [formError, setFormError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
@@ -933,8 +962,9 @@ function RoutesPanel({ canManage }) {
     }
   };
 
-  const rows = query.data || [];
-  const filtered = rows.filter((r) => r.name?.toLowerCase().includes(searchQuery.toLowerCase()));
+  const rows = Array.isArray(query.data) ? query.data : (query.data?.data || []);
+  const total = Array.isArray(query.data) ? query.data.length : (query.data?.total ?? rows.length);
+  const filtered = rows;
 
   return (
     <div className="space-y-6">
@@ -1000,7 +1030,7 @@ function RoutesPanel({ canManage }) {
             <div className="p-4 border-b border-[#D5E3F7] bg-gradient-to-r from-white via-[#F8FAFD] to-white flex items-center justify-between">
               <h2 className="text-base font-bold text-[#0B1B45] flex items-center gap-2">
                 <span>Routes Directory</span>
-                <span className="rounded-full bg-[#EDF5FF] border border-[#D5E3F7] px-2.5 py-0.5 text-xs font-bold text-[#2449C6]">{filtered.length} Total</span>
+                <span className="rounded-full bg-[#EDF5FF] border border-[#D5E3F7] px-2.5 py-0.5 text-xs font-bold text-[#2449C6]">{total} Total</span>
               </h2>
 
               <div className="relative">
@@ -1009,7 +1039,7 @@ function RoutesPanel({ canManage }) {
                   type="text"
                   placeholder="Search routes..."
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
                   className="rounded-xl border border-[#D5E3F7] bg-[#F8FAFD] pl-9 pr-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-400 focus:bg-white focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15 outline-none transition-all w-48"
                 />
               </div>
@@ -1030,7 +1060,7 @@ function RoutesPanel({ canManage }) {
                     const rActive = r.is_active === undefined ? true : Boolean(Number(r.is_active));
                     return (
                       <tr key={r.id} className="hover:bg-[#F5F8FF]/80 transition-colors">
-                        <td className="px-3.5 py-2.5 font-semibold text-slate-400">{index + 1}</td>
+                        <td className="px-3.5 py-2.5 font-semibold text-slate-400">{(page - 1) * 10 + index + 1}</td>
                         <td className="px-3.5 py-2.5 font-bold text-[#0B1B45]">{r.name}</td>
                         <td className="px-3.5 py-2.5 text-center">
                           {rActive ? (
@@ -1072,6 +1102,13 @@ function RoutesPanel({ canManage }) {
                 </tbody>
               </table>
             </div>
+            <Pagination
+              page={page}
+              total={total}
+              limit={10}
+              onPageChange={setPage}
+              label="routes"
+            />
           </div>
         </div>
       </div>
@@ -1084,7 +1121,18 @@ function RoutesPanel({ canManage }) {
 // CITIES PANEL (Left Form, Right Directory Table)
 function CitiesPanel({ canManage }) {
   const queryClient = useQueryClient();
-  const query = useQuery({ queryKey: ['cities'], queryFn: citiesApi.list });
+  const [page, setPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const query = useQuery({
+    queryKey: ['cities', page, searchQuery],
+    queryFn: () =>
+      citiesApi.list({
+        page,
+        limit: 10,
+        search: searchQuery || undefined,
+      }),
+  });
   const routesQuery = useQuery({ queryKey: ['routes'], queryFn: routesApi.list });
 
   const routes = routesQuery.data || [];
@@ -1095,7 +1143,6 @@ function CitiesPanel({ canManage }) {
   const [routeId, setRouteId] = useState('');
   const [isActive, setIsActive] = useState(true);
 
-  const [searchQuery, setSearchQuery] = useState('');
   const [formError, setFormError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
@@ -1156,8 +1203,9 @@ function CitiesPanel({ canManage }) {
     }
   };
 
-  const rows = query.data || [];
-  const filtered = rows.filter((r) => r.name?.toLowerCase().includes(searchQuery.toLowerCase()));
+  const rows = Array.isArray(query.data) ? query.data : (query.data?.data || []);
+  const total = Array.isArray(query.data) ? query.data.length : (query.data?.total ?? rows.length);
+  const filtered = rows;
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
@@ -1235,7 +1283,7 @@ function CitiesPanel({ canManage }) {
           <div className="p-4 border-b border-[#D5E3F7] bg-gradient-to-r from-white via-[#F8FAFD] to-white flex items-center justify-between">
             <h2 className="text-base font-bold text-[#0B1B45] flex items-center gap-2">
               <span>Cities Directory</span>
-              <span className="rounded-full bg-[#EDF5FF] border border-[#D5E3F7] px-2.5 py-0.5 text-xs font-bold text-[#2449C6]">{filtered.length} Total</span>
+              <span className="rounded-full bg-[#EDF5FF] border border-[#D5E3F7] px-2.5 py-0.5 text-xs font-bold text-[#2449C6]">{total} Total</span>
             </h2>
 
             <div className="relative">
@@ -1244,7 +1292,7 @@ function CitiesPanel({ canManage }) {
                 type="text"
                 placeholder="Search cities..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
                 className="rounded-xl border border-[#D5E3F7] bg-[#F8FAFD] pl-9 pr-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-400 focus:bg-white focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15 outline-none transition-all w-48"
               />
             </div>
@@ -1266,7 +1314,7 @@ function CitiesPanel({ canManage }) {
                   const rActive = r.is_active === undefined ? true : Boolean(Number(r.is_active));
                   return (
                     <tr key={r.id} className="hover:bg-[#F5F8FF]/80 transition-colors">
-                      <td className="px-3.5 py-2.5 font-semibold text-slate-400">{index + 1}</td>
+                      <td className="px-3.5 py-2.5 font-semibold text-slate-400">{(page - 1) * 10 + index + 1}</td>
                       <td className="px-3.5 py-2.5 font-bold text-[#0B1B45]">{r.name}</td>
                       <td className="px-3.5 py-2.5 font-semibold text-[#2449C6]">{routeMap.get(r.route_id) || '-'}</td>
                       <td className="px-3.5 py-2.5 text-center">
@@ -1309,6 +1357,13 @@ function CitiesPanel({ canManage }) {
               </tbody>
             </table>
           </div>
+          <Pagination
+            page={page}
+            total={total}
+            limit={10}
+            onPageChange={setPage}
+            label="cities"
+          />
         </div>
       </div>
     </div>

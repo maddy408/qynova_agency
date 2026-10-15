@@ -30,6 +30,50 @@ class PurchaseReturnModel
         return $stmt->fetchAll();
     }
 
+    public function paginate(int $branchId, int $page = 1, int $limit = 10, ?string $search = null): array
+    {
+        $whereSql = "WHERE pr.branch_id = :branch_id";
+        $params = ['branch_id' => $branchId];
+
+        if ($search !== null && $search !== '') {
+            $whereSql .= " AND (pr.return_no LIKE :s1 OR s.name LIKE :s2 OR p.grn_no LIKE :s3)";
+            $params['s1'] = "%{$search}%";
+            $params['s2'] = "%{$search}%";
+            $params['s3'] = "%{$search}%";
+        }
+
+        $countStmt = $this->pdo->prepare(
+            "SELECT COUNT(*) FROM purchase_returns pr
+             JOIN suppliers s ON s.id = pr.supplier_id
+             LEFT JOIN purchases p ON p.id = pr.purchase_id
+             {$whereSql}"
+        );
+        $countStmt->execute($params);
+        $total = (int) $countStmt->fetchColumn();
+
+        $totalPages = $limit > 0 ? (int) ceil($total / $limit) : 1;
+        $offset = ($page - 1) * $limit;
+
+        $stmt = $this->pdo->prepare(
+            "SELECT pr.*, s.name AS supplier_name, p.grn_no
+             FROM purchase_returns pr
+             JOIN suppliers s ON s.id = pr.supplier_id
+             LEFT JOIN purchases p ON p.id = pr.purchase_id
+             {$whereSql}
+             ORDER BY pr.id DESC LIMIT {$limit} OFFSET {$offset}"
+        );
+        $stmt->execute($params);
+        $data = $stmt->fetchAll();
+
+        return [
+            'data' => $data,
+            'total' => $total,
+            'page' => $page,
+            'limit' => $limit,
+            'total_pages' => $totalPages,
+        ];
+    }
+
     public function find(int $id): ?array
     {
         $stmt = $this->pdo->prepare(

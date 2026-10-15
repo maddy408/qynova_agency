@@ -86,8 +86,18 @@ class ItemController
         // for the Items screen's Deactivated/All filter (Billing/POS
         // included) only ever sees sellable items.
         $status = in_array($_GET['status'] ?? '', ['active', 'inactive', 'all'], true) ? $_GET['status'] : 'active';
+
+        if (isset($_GET['page'])) {
+            $page = max(1, (int) $_GET['page']);
+            $limit = max(1, min(100, (int) ($_GET['limit'] ?? 10)));
+            $result = $this->items->paginate($search, $branchId, $status, $page, $limit);
+            Response::json($result);
+            return;
+        }
+
         Response::json($this->items->all($search, $branchId, $status));
     }
+
 
     public function show(string $id): void
     {

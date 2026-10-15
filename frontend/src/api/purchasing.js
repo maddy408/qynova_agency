@@ -14,7 +14,7 @@ export const routeSuppliersApi = {
 };
 
 export const customerPrebookingsApi = {
-  list: async () => (await apiClient.get('/customer-prebookings')).data,
+  list: async (params) => (await apiClient.get('/customer-prebookings', { params })).data,
   get: async (id) => (await apiClient.get(`/customer-prebookings/${id}`)).data,
   create: async (data) => (await apiClient.post('/customer-prebookings', data)).data,
   update: async (id, data) => (await apiClient.put(`/customer-prebookings/${id}`, data)).data,
@@ -48,7 +48,7 @@ async function downloadWithServerFilename(res, fallbackName) {
 }
 
 export const purchasesApi = {
-  list: async () => (await apiClient.get('/purchases')).data,
+  list: async (params) => (await apiClient.get('/purchases', { params })).data,
   get: async (id) => (await apiClient.get(`/purchases/${id}`)).data,
   create: async (data) => (await apiClient.post('/purchases', data)).data,
   update: async (id, data) => (await apiClient.put(`/purchases/${id}`, data)).data,
@@ -76,7 +76,7 @@ export const purchasesApi = {
 };
 
 export const supplierPaymentsApi = {
-  list: async () => (await apiClient.get('/supplier-payments')).data,
+  list: async (params) => (await apiClient.get('/supplier-payments', { params })).data,
   unpaidGrns: async (supplierId) => (await apiClient.get(`/suppliers/${supplierId}/unpaid-grns`)).data,
   create: async (data) => (await apiClient.post('/supplier-payments', data)).data,
 

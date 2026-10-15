@@ -1,7 +1,7 @@
 import { apiClient } from './client';
 
 export const dashboardApi = {
-  summary: async () => (await apiClient.get('/dashboard/summary')).data,
+  summary: async (params) => (await apiClient.get('/dashboard/summary', { params })).data,
 };
 
 export const rolesApi = {
@@ -55,6 +55,13 @@ export const reportsApi = {
   profit: async (params) => (await apiClient.get(reportUrl('profit', params))).data,
   profitInvoiceWise: async (params) => (await apiClient.get(reportUrl('profit/invoice-wise', params))).data,
   lowStock: async () => (await apiClient.get('/stock-hub/low-stock')).data,
+  financialSummary: async (params, signal) => (await apiClient.get(reportUrl('financial-summary', params), { signal })).data,
+  profitDetail: async (params, signal) => (await apiClient.get(reportUrl('financial-summary/profit-detail', params), { signal })).data,
+  productLossDetail: async (params, signal) => (await apiClient.get(reportUrl('financial-summary/product-loss-detail', params), { signal })).data,
+  stockPurchaseDetail: async (params, signal) => (await apiClient.get(reportUrl('financial-summary/stock-purchase-detail', params), { signal })).data,
+  stockAdjustmentDetail: async (params, signal) => (await apiClient.get(reportUrl('financial-summary/stock-adjustment-detail', params), { signal })).data,
+  orderManagementDetail: async (params, signal) => (await apiClient.get(reportUrl('financial-summary/order-management-detail', params), { signal })).data,
+  totalSalesDetail: async (params, signal) => (await apiClient.get(reportUrl('financial-summary/total-sales-detail', params), { signal })).data,
 
   /**
    * responseType: 'blob' means even an ERROR response body (JSON) comes

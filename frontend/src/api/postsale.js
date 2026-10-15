@@ -1,14 +1,14 @@
 import { apiClient } from './client';
 
 export const salesReturnsApi = {
-  list: async () => (await apiClient.get('/sales-returns')).data,
+  list: async (params) => (await apiClient.get('/sales-returns', { params })).data,
   create: async (data) => (await apiClient.post('/sales-returns', data)).data,
   approve: async (id) => (await apiClient.post(`/sales-returns/${id}/approve`)).data,
   reject: async (id) => (await apiClient.post(`/sales-returns/${id}/reject`)).data,
 };
 
 export const purchaseReturnsApi = {
-  list: async () => (await apiClient.get('/purchase-returns')).data,
+  list: async (params) => (await apiClient.get('/purchase-returns', { params })).data,
   create: async (data) => (await apiClient.post('/purchase-returns', data)).data,
 };
 
@@ -32,13 +32,13 @@ export const expenseCategoriesApi = {
 };
 
 export const expensesApi = {
-  list: async () => (await apiClient.get('/expenses')).data,
+  list: async (params) => (await apiClient.get('/expenses', { params })).data,
   create: async (data) => (await apiClient.post('/expenses', data)).data,
   remove: async (id) => (await apiClient.delete(`/expenses/${id}`)).data,
 };
 
 export const otherIncomeApi = {
-  list: async () => (await apiClient.get('/other-income')).data,
+  list: async (params) => (await apiClient.get('/other-income', { params })).data,
   create: async (data) => (await apiClient.post('/other-income', data)).data,
   remove: async (id) => (await apiClient.delete(`/other-income/${id}`)).data,
 };

@@ -1,10 +1,12 @@
 import { useMemo, useState, useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { FileSpreadsheet, FileDown } from 'lucide-react';
+import { FileSpreadsheet, FileDown, PieChart } from 'lucide-react';
 import { reportsApi } from '../api/admin';
 import { pricingApi } from '../api/catalog';
 import { Tabs } from '../components/Tabs';
 import { Button } from '../components/Button.jsx';
+import { FinancialSummaryReport } from '../components/FinancialSummaryReport.jsx';
+import { TotalsReportModal } from '../components/TotalsReportModal.jsx';
 import { usePermission } from '../hooks/usePermission';
 import { downloadReportPdf, downloadReportExcel, NUMERIC_REPORT_KEYS } from '../utils/reportPdf';
 
@@ -1310,8 +1312,17 @@ export function Reports() {
   const canCredit = usePermission('credit.view_shopwide_outstanding');
   const canProfit = usePermission('reports.view_profit');
   const canManagePricing = usePermission('catalog.manage_items');
+  const canViewFinancials = usePermission('dashboard.view_financial_summary');
+  const [showTotalsReport, setShowTotalsReport] = useState(false);
 
   const tabs = [];
+  if (canViewFinancials || canAll || canProfit) {
+    tabs.push({
+      key: 'financial-summary',
+      label: 'Financial Summary',
+      content: <FinancialSummaryReport canExport={canExport} canViewCost={canViewCost} canProfit={canProfit} />,
+    });
+  }
   if (canGst) tabs.push({ key: 'gst', label: 'GST Sales Register', content: <GstRegisterPanel canExport={canExport} /> });
   if (canAll) tabs.push({ key: 'purchases', label: 'Purchase Register', content: <PurchaseRegisterPanel canExport={canExport} canViewCost={canViewCost} /> });
   if (canAll) tabs.push({ key: 'sales-reports', label: 'Sales Reports', content: <SalesReportsSection canExport={canExport} /> });
@@ -1338,6 +1349,16 @@ export function Reports() {
             </p>
           </div>
         </div>
+
+        {(canViewFinancials || canAll) && (
+          <button
+            onClick={() => setShowTotalsReport(true)}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-[#CBD5E1] bg-white px-3.5 py-2 text-xs font-bold text-[#0B1B45] shadow-2xs hover:bg-[#EDF5FF] hover:border-[#2449C6] transition-all active:scale-95 shrink-0"
+          >
+            <PieChart size={14} className="text-[#2449C6]" />
+            <span>Totals Report</span>
+          </button>
+        )}
       </div>
 
       {tabs.length === 0 ? (
@@ -1346,6 +1367,13 @@ export function Reports() {
         </div>
       ) : (
         <Tabs tabs={tabs} />
+      )}
+
+      {(canViewFinancials || canAll) && (
+        <TotalsReportModal
+          isOpen={showTotalsReport}
+          onClose={() => setShowTotalsReport(false)}
+        />
       )}
     </div>
   );

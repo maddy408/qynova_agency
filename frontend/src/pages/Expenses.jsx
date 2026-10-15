@@ -7,14 +7,22 @@ import { Tabs } from '../components/Tabs';
 import { usePermission } from '../hooks/usePermission';
 import { Button } from '../components/Button.jsx';
 import { CashHandover } from './CashHandover.jsx';
+import { Pagination } from '../components/Pagination.jsx';
 
 function ExpensesPanel({ canManage }) {
   const queryClient = useQueryClient();
-  const expensesQuery = useQuery({ queryKey: ['expenses'], queryFn: expensesApi.list });
+  const [page, setPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
+  const expensesQuery = useQuery({
+    queryKey: ['expenses', page, searchQuery],
+    queryFn: () => expensesApi.list({ page, limit: 10, search: searchQuery.trim() || undefined }),
+  });
   const categoriesQuery = useQuery({ queryKey: ['expense-categories'], queryFn: expenseCategoriesApi.list });
 
   const categories = categoriesQuery.data || [];
-  const expenses = expensesQuery.data || [];
+  const rawExpenses = expensesQuery.data;
+  const expenses = Array.isArray(rawExpenses) ? rawExpenses : (rawExpenses?.data || []);
+  const totalExpenses = Array.isArray(rawExpenses) ? rawExpenses.length : (rawExpenses?.total ?? expenses.length);
 
   const [categoryId, setCategoryId] = useState('');
   const [amount, setAmount] = useState('');
@@ -22,7 +30,6 @@ function ExpensesPanel({ canManage }) {
   const [description, setDescription] = useState('');
   const [formError, setFormError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['expenses'] });
 
@@ -75,15 +82,7 @@ function ExpensesPanel({ canManage }) {
     });
   };
 
-  const filteredExpenses = expenses.filter((item) => {
-    const catName = categories.find((c) => c.id === item.category_id)?.name || '';
-    return (
-      item.expense_no?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      catName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.payment_mode?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  });
+  const filteredExpenses = expenses;
 
   return (
     <div className="space-y-4">
@@ -199,12 +198,15 @@ function ExpensesPanel({ canManage }) {
                 type="text"
                 placeholder="Search expenses..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setPage(1);
+                }}
                 className="w-full rounded-xl border border-[#D5E3F7] bg-[#F8FAFD] pl-9.5 pr-3.5 py-2 text-xs text-slate-800 transition focus:border-[#2449C6] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2449C6]/20"
               />
             </div>
             <span className="text-xs font-semibold text-slate-500 bg-[#F5F8FF] px-3 py-1.5 rounded-xl border border-[#D5E3F7]">
-              {filteredExpenses.length} expense record(s)
+              {totalExpenses} expense record(s)
             </span>
           </div>
 
@@ -264,6 +266,13 @@ function ExpensesPanel({ canManage }) {
                 </tbody>
               </table>
             </div>
+            <Pagination
+              page={page}
+              total={totalExpenses}
+              limit={10}
+              onPageChange={setPage}
+              label="expenses"
+            />
           </div>
         </div>
       </div>
@@ -273,15 +282,21 @@ function ExpensesPanel({ canManage }) {
 
 function OtherIncomePanel({ canManage }) {
   const queryClient = useQueryClient();
-  const incomeQuery = useQuery({ queryKey: ['other-income'], queryFn: otherIncomeApi.list });
-  const incomes = incomeQuery.data || [];
+  const [page, setPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
+  const incomeQuery = useQuery({
+    queryKey: ['other-income', page, searchQuery],
+    queryFn: () => otherIncomeApi.list({ page, limit: 10, search: searchQuery.trim() || undefined }),
+  });
+  const rawIncomes = incomeQuery.data;
+  const incomes = Array.isArray(rawIncomes) ? rawIncomes : (rawIncomes?.data || []);
+  const totalIncomes = Array.isArray(rawIncomes) ? rawIncomes.length : (rawIncomes?.total ?? incomes.length);
 
   const [amount, setAmount] = useState('');
   const [paymentMode, setPaymentMode] = useState('cash');
   const [description, setDescription] = useState('');
   const [formError, setFormError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['other-income'] });
 
@@ -332,13 +347,7 @@ function OtherIncomePanel({ canManage }) {
     });
   };
 
-  const filteredIncomes = incomes.filter((item) => {
-    return (
-      item.receipt_no?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.payment_mode?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  });
+  const filteredIncomes = incomes;
 
   return (
     <div className="space-y-4">
@@ -436,12 +445,15 @@ function OtherIncomePanel({ canManage }) {
                 type="text"
                 placeholder="Search receipts..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setPage(1);
+                }}
                 className="w-full rounded-xl border border-[#D5E3F7] bg-[#F8FAFD] pl-9.5 pr-3.5 py-2 text-xs text-slate-800 transition focus:border-[#2449C6] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2449C6]/20"
               />
             </div>
             <span className="text-xs font-semibold text-slate-500 bg-[#F5F8FF] px-3 py-1.5 rounded-xl border border-[#D5E3F7]">
-              {filteredIncomes.length} receipt record(s)
+              {totalIncomes} receipt record(s)
             </span>
           </div>
 
@@ -496,6 +508,13 @@ function OtherIncomePanel({ canManage }) {
                 </tbody>
               </table>
             </div>
+            <Pagination
+              page={page}
+              total={totalIncomes}
+              limit={10}
+              onPageChange={setPage}
+              label="receipts"
+            />
           </div>
         </div>
       </div>

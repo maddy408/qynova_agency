@@ -29,6 +29,56 @@ class SimpleCrudModel
         return $stmt->fetchAll();
     }
 
+    public function paginate(
+        array $where = [],
+        int $page = 1,
+        int $limit = 10,
+        ?string $search = null,
+        array $searchColumns = []
+    ): array {
+        $page = max(1, $page);
+        $limit = max(1, min(100, $limit));
+        $offset = ($page - 1) * $limit;
+
+        [$clause, $params] = $this->buildWhere($where);
+
+        if ($search !== null && trim($search) !== '' && !empty($searchColumns)) {
+            $searchClauses = [];
+            foreach ($searchColumns as $idx => $col) {
+                $paramName = "search_{$idx}";
+                $searchClauses[] = "{$col} LIKE :{$paramName}";
+                $params[$paramName] = '%' . trim($search) . '%';
+            }
+            $searchSql = '(' . implode(' OR ', $searchClauses) . ')';
+            $clause = $clause ? ($clause . ' AND ' . $searchSql) : ('WHERE ' . $searchSql);
+        }
+
+        // Count total matching records
+        $countStmt = $this->pdo->prepare("SELECT COUNT(*) FROM {$this->table} {$clause}");
+        $countStmt->execute($params);
+        $total = (int) $countStmt->fetchColumn();
+
+        // Fetch page slice
+        $sql = "SELECT * FROM {$this->table} {$clause} ORDER BY {$this->orderBy} LIMIT :limit OFFSET :offset";
+        $stmt = $this->pdo->prepare($sql);
+        foreach ($params as $k => $v) {
+            $stmt->bindValue($k, $v);
+        }
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+        $rows = $stmt->fetchAll();
+
+        return [
+            'data' => $rows,
+            'total' => $total,
+            'page' => $page,
+            'limit' => $limit,
+            'total_pages' => (int) ceil($total / $limit),
+        ];
+    }
+
+
     public function find(int $id): ?array
     {
         $stmt = $this->pdo->prepare("SELECT * FROM {$this->table} WHERE id = :id LIMIT 1");

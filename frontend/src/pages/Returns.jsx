@@ -11,6 +11,7 @@ import { Tabs } from '../components/Tabs';
 import { usePermission } from '../hooks/usePermission';
 import { Button } from '../components/Button.jsx';
 import { Collections } from './Collections.jsx';
+import { Pagination } from '../components/Pagination.jsx';
 
 function ReturnLineEditor({ lines, setLines, items }) {
   const addLine = () => setLines((prev) => [...prev, { item_id: '', qty: 1, rate: 0 }]);
@@ -165,8 +166,12 @@ function SalesReturnsPanel({ canCreate, canApprove }) {
   const [formError, setFormError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [page, setPage] = useState(1);
 
-  const returnsQuery = useQuery({ queryKey: ['sales-returns'], queryFn: salesReturnsApi.list });
+  const returnsQuery = useQuery({
+    queryKey: ['sales-returns', page, searchQuery],
+    queryFn: () => salesReturnsApi.list({ page, limit: 10, search: searchQuery.trim() || undefined }),
+  });
   const customersQuery = useQuery({ queryKey: ['customers'], queryFn: customersApi.list });
   const itemsQuery = useQuery({ queryKey: ['items', ''], queryFn: () => itemsApi.list('') });
   const returnableQuery = useQuery({
@@ -258,18 +263,13 @@ function SalesReturnsPanel({ canCreate, canApprove }) {
     }
   };
 
-  const returns = returnsQuery.data || [];
+  const rawReturns = returnsQuery.data;
+  const returns = Array.isArray(rawReturns) ? rawReturns : (rawReturns?.data || []);
+  const totalReturns = Array.isArray(rawReturns) ? rawReturns.length : (rawReturns?.total ?? returns.length);
   const customers = customersQuery.data || [];
   const items = itemsQuery.data || [];
 
-  const filteredReturns = returns.filter((r) => {
-    return (
-      r.return_no?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      r.invoice_no?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      r.customer_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      r.status?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  });
+  const filteredReturns = returns;
 
   return (
     <div className="space-y-4">
@@ -401,11 +401,14 @@ function SalesReturnsPanel({ canCreate, canApprove }) {
                 type="text"
                 placeholder="Search returns..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setPage(1);
+                }}
                 className="w-full rounded-xl border border-[#D5E3F7] bg-[#F8FAFD] pl-10 pr-3.5 py-2 text-xs text-slate-800 transition focus:border-[#2449C6] focus:bg-white focus:outline-none"
               />
             </div>
-            <span className="text-xs font-semibold text-slate-500">{filteredReturns.length} return record(s)</span>
+            <span className="text-xs font-semibold text-slate-500">{totalReturns} return record(s)</span>
           </div>
 
           <div className="rounded-2xl border border-[#D5E3F7] bg-white shadow-xs overflow-hidden">
@@ -492,6 +495,13 @@ function SalesReturnsPanel({ canCreate, canApprove }) {
                 </tbody>
               </table>
             </div>
+            <Pagination
+              page={page}
+              total={totalReturns}
+              limit={10}
+              onPageChange={setPage}
+              label="sales returns"
+            />
           </div>
         </div>
       </div>
@@ -512,8 +522,12 @@ function PurchaseReturnsPanel({ canManage }) {
   const [formError, setFormError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [page, setPage] = useState(1);
 
-  const returnsQuery = useQuery({ queryKey: ['purchase-returns'], queryFn: purchaseReturnsApi.list });
+  const returnsQuery = useQuery({
+    queryKey: ['purchase-returns', page, searchQuery],
+    queryFn: () => purchaseReturnsApi.list({ page, limit: 10, search: searchQuery.trim() || undefined }),
+  });
   const suppliersQuery = useQuery({ queryKey: ['suppliers'], queryFn: suppliersApi.list });
   const itemsQuery = useQuery({ queryKey: ['items', ''], queryFn: () => itemsApi.list('') });
   const returnableQuery = useQuery({
@@ -591,18 +605,13 @@ function PurchaseReturnsPanel({ canManage }) {
     }
   };
 
-  const returns = returnsQuery.data || [];
+  const rawReturns = returnsQuery.data;
+  const returns = Array.isArray(rawReturns) ? rawReturns : (rawReturns?.data || []);
+  const totalReturns = Array.isArray(rawReturns) ? rawReturns.length : (rawReturns?.total ?? returns.length);
   const suppliers = suppliersQuery.data || [];
   const items = itemsQuery.data || [];
 
-  const filteredReturns = returns.filter((r) => {
-    return (
-      r.return_no?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      r.grn_no?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      r.supplier_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      r.reason?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  });
+  const filteredReturns = returns;
 
   return (
     <div className="space-y-4">
@@ -723,11 +732,14 @@ function PurchaseReturnsPanel({ canManage }) {
                 type="text"
                 placeholder="Search purchase returns..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setPage(1);
+                }}
                 className="w-full rounded-xl border border-[#D5E3F7] bg-[#F8FAFD] pl-10 pr-3.5 py-2 text-xs text-slate-800 transition focus:border-[#2449C6] focus:bg-white focus:outline-none"
               />
             </div>
-            <span className="text-xs font-semibold text-slate-500">{filteredReturns.length} return record(s)</span>
+            <span className="text-xs font-semibold text-slate-500">{totalReturns} return record(s)</span>
           </div>
 
           <div className="rounded-2xl border border-[#D5E3F7] bg-white shadow-xs overflow-hidden">
@@ -768,6 +780,13 @@ function PurchaseReturnsPanel({ canManage }) {
                 </tbody>
               </table>
             </div>
+            <Pagination
+              page={page}
+              total={totalReturns}
+              limit={10}
+              onPageChange={setPage}
+              label="purchase returns"
+            />
           </div>
         </div>
       </div>

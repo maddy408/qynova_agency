@@ -751,7 +751,7 @@ export function POS() {
             <Link to="/parties">
               <button
                 type="button"
-                className="flex h-10 items-center gap-2 rounded-xl bg-gradient-to-r from-[#446BF5] via-[#355CEE] to-[#2449C6] px-4 text-sm font-bold text-white shadow-[0_4px_12px_rgba(36,73,198,0.28)] hover:opacity-95 transition-all shrink-0"
+                className="flex h-10 items-center gap-2 rounded-xl bg-gradient-to-r from-[#0E7A4A] via-[#0B6B40] to-[#075633] border border-[#075633] px-4 text-sm font-bold text-white shadow-[0_2px_8px_rgba(11,107,64,0.28)] hover:brightness-110 transition-all shrink-0"
               >
                 <UserPlus size={16} />
                 Add Customer

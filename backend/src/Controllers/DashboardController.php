@@ -39,6 +39,10 @@ class DashboardController
             return $stmt->fetchColumn();
         };
 
+        $hasCustomRange = !empty($_GET['from']) && !empty($_GET['to']);
+        $from = $hasCustomRange ? (string) $_GET['from'] : date('Y-m-01');
+        $to = $hasCustomRange ? (string) $_GET['to'] : date('Y-m-d');
+
         $todaySales = (float) $scalar(
             "SELECT COALESCE(SUM(grand_total),0) FROM invoices
              WHERE branch_id = :b AND status = 'completed' AND invoice_date = CURDATE()",
@@ -47,8 +51,8 @@ class DashboardController
         $monthSales = (float) $scalar(
             "SELECT COALESCE(SUM(grand_total),0) FROM invoices
              WHERE branch_id = :b AND status = 'completed'
-               AND YEAR(invoice_date) = YEAR(CURDATE()) AND MONTH(invoice_date) = MONTH(CURDATE())",
-            ['b' => $branchId]
+               AND invoice_date BETWEEN :from AND :to",
+            ['b' => $branchId, 'from' => $from, 'to' => $to]
         );
         $todayPurchases = (float) $scalar(
             "SELECT COALESCE(SUM(grand_total),0) FROM purchases
@@ -58,8 +62,8 @@ class DashboardController
         $monthPurchases = (float) $scalar(
             "SELECT COALESCE(SUM(grand_total),0) FROM purchases
              WHERE branch_id = :b AND status = 'active'
-               AND YEAR(purchase_date) = YEAR(CURDATE()) AND MONTH(purchase_date) = MONTH(CURDATE())",
-            ['b' => $branchId]
+               AND purchase_date BETWEEN :from AND :to",
+            ['b' => $branchId, 'from' => $from, 'to' => $to]
         );
         $inventoryValuation = (float) $scalar(
             "SELECT COALESCE(SUM(sl.quantity_on_hand * i.cost_price),0)
@@ -102,6 +106,117 @@ class DashboardController
             ['b' => $branchId]
         );
 
+        // 1. Profit (Gross Profit)
+        $rangeRevenue = (float) $scalar(
+            "SELECT COALESCE(SUM(CASE WHEN taxable_value > 0 THEN taxable_value ELSE grand_total END), 0)
+             FROM invoices
+             WHERE branch_id = :b AND status = 'completed' AND invoice_date BETWEEN :from AND :to",
+            ['b' => $branchId, 'from' => $from, 'to' => $to]
+        );
+        $rangeReturns = (float) $scalar(
+            "SELECT COALESCE(SUM(return_total), 0)
+             FROM sales_returns
+             WHERE branch_id = :b AND status = 'approved' AND DATE(created_at) BETWEEN :from AND :to",
+            ['b' => $branchId, 'from' => $from, 'to' => $to]
+        );
+        $soldCogs = (float) $scalar(
+            "SELECT COALESCE(SUM(ii.qty * COALESCE(i.cost_price, 0)), 0)
+             FROM invoice_items ii
+             JOIN invoices inv ON inv.id = ii.invoice_id
+             LEFT JOIN items i ON i.id = ii.item_id
+             WHERE inv.branch_id = :b AND inv.status = 'completed' AND inv.invoice_date BETWEEN :from AND :to",
+            ['b' => $branchId, 'from' => $from, 'to' => $to]
+        );
+        $returnCogs = (float) $scalar(
+            "SELECT COALESCE(SUM(sri.qty * COALESCE(i.cost_price, 0)), 0)
+             FROM sales_return_items sri
+             JOIN sales_returns sr ON sr.id = sri.sales_return_id
+             LEFT JOIN items i ON i.id = sri.item_id
+             WHERE sr.branch_id = :b AND sr.status = 'approved' AND DATE(sr.created_at) BETWEEN :from AND :to",
+            ['b' => $branchId, 'from' => $from, 'to' => $to]
+        );
+        $grossProfit = max(0.0, $rangeRevenue - $rangeReturns) - max(0.0, $soldCogs - $returnCogs);
+
+        // 2. Stock Loss (Product Loss from damage / spoilage)
+        $stockLoss = (float) $scalar(
+            "SELECT COALESCE(SUM(sa.qty * COALESCE(i.cost_price, 0)), 0)
+             FROM stock_adjustments sa
+             LEFT JOIN items i ON i.id = sa.item_id
+             WHERE sa.owner_type = 'branch' AND sa.owner_id = :b
+               AND sa.adjustment_type = 'deduction'
+               AND sa.reason IN ('damage', 'spoilage')
+               AND DATE(sa.created_at) BETWEEN :from AND :to",
+            ['b' => $branchId, 'from' => $from, 'to' => $to]
+        );
+        $stockLossQty = (float) $scalar(
+            "SELECT COALESCE(SUM(sa.qty), 0)
+             FROM stock_adjustments sa
+             WHERE sa.owner_type = 'branch' AND sa.owner_id = :b
+               AND sa.adjustment_type = 'deduction'
+               AND sa.reason IN ('damage', 'spoilage')
+               AND DATE(sa.created_at) BETWEEN :from AND :to",
+            ['b' => $branchId, 'from' => $from, 'to' => $to]
+        );
+
+        // 3. Stock Purchase (Net purchases after returns)
+        $stockPurchasesGross = (float) $scalar(
+            "SELECT COALESCE(SUM(grand_total), 0)
+             FROM purchases
+             WHERE branch_id = :b AND status = 'active' AND purchase_date BETWEEN :from AND :to",
+            ['b' => $branchId, 'from' => $from, 'to' => $to]
+        );
+        $purchaseReturns = (float) $scalar(
+            "SELECT COALESCE(SUM(return_total), 0)
+             FROM purchase_returns
+             WHERE branch_id = :b AND DATE(created_at) BETWEEN :from AND :to",
+            ['b' => $branchId, 'from' => $from, 'to' => $to]
+        );
+        $netStockPurchase = max(0.0, $stockPurchasesGross - $purchaseReturns);
+
+        // 4. Stock Adjustment (Net adjustment value on stock)
+        $stockAdjustmentValue = (float) $scalar(
+            "SELECT COALESCE(SUM(
+                CASE
+                    WHEN sa.adjustment_type = 'addition' THEN sa.qty * COALESCE(i.cost_price, 0)
+                    ELSE -1 * (sa.qty * COALESCE(i.cost_price, 0))
+                END
+             ), 0)
+             FROM stock_adjustments sa
+             LEFT JOIN items i ON i.id = sa.item_id
+             WHERE sa.owner_type = 'branch' AND sa.owner_id = :b
+               AND DATE(sa.created_at) BETWEEN :from AND :to",
+            ['b' => $branchId, 'from' => $from, 'to' => $to]
+        );
+        $stockAdjustmentNetQty = (float) $scalar(
+            "SELECT COALESCE(SUM(
+                CASE
+                    WHEN sa.adjustment_type = 'addition' THEN sa.qty
+                    ELSE -1 * sa.qty
+                END
+             ), 0)
+             FROM stock_adjustments sa
+             WHERE sa.owner_type = 'branch' AND sa.owner_id = :b
+               AND DATE(sa.created_at) BETWEEN :from AND :to",
+            ['b' => $branchId, 'from' => $from, 'to' => $to]
+        );
+
+        // 5. Order Management (Active customer prebookings value)
+        $orderManagementValue = (float) $scalar(
+            "SELECT COALESCE(SUM(cpi.qty * cpi.rate * (1 + cpi.tax_percent / 100)), 0)
+             FROM customer_prebookings cp
+             JOIN customer_prebooking_items cpi ON cpi.prebooking_id = cp.id
+             WHERE cp.branch_id = :b AND cp.status != 'cancelled'
+               AND DATE(cp.created_at) BETWEEN :from AND :to",
+            ['b' => $branchId, 'from' => $from, 'to' => $to]
+        );
+        $orderManagementCount = (int) $scalar(
+            "SELECT COUNT(*)
+             FROM customer_prebookings cp
+             WHERE cp.branch_id = :b AND cp.status != 'cancelled'
+               AND DATE(cp.created_at) BETWEEN :from AND :to",
+            ['b' => $branchId, 'from' => $from, 'to' => $to]
+        );
+
         // Unresolved cash-handover shortages never fade quietly off a list —
         // surface them straight on the dashboard until someone re-verifies (section 4.16 / spec item 31).
         $stmt = $this->pdo->prepare(
@@ -126,6 +241,22 @@ class DashboardController
             'extra_income_today' => round($extraIncomeToday, 2),
             'low_stock_count' => $lowStockCount,
             'unresolved_handover_discrepancies' => $discrepancies,
+            // 5 Requested Metrics:
+            'profit' => round($grossProfit, 2),
+            'gross_profit' => round($grossProfit, 2),
+            'stock_loss' => round($stockLoss, 2),
+            'product_loss' => round($stockLoss, 2),
+            'stock_loss_qty' => round($stockLossQty, 2),
+            'stock_purchase' => round($netStockPurchase, 2),
+            'stock_purchases' => round($netStockPurchase, 2),
+            'stock_adjustment' => round($stockAdjustmentValue, 2),
+            'stock_adjustment_qty' => round($stockAdjustmentNetQty, 2),
+            'order_management' => round($orderManagementValue, 2),
+            'order_management_count' => $orderManagementCount,
+            'range' => [
+                'from' => $from,
+                'to' => $to,
+            ],
         ]);
     }
 }
