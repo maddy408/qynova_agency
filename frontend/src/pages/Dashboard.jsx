@@ -200,35 +200,35 @@ export function Dashboard() {
   }, [searchQuery, selectedCategory]);
 
   return (
-    <div className="flex flex-col h-[calc(100vh-6.5rem)] justify-between overflow-hidden gap-3 font-sans">
+    <div className="flex flex-col flex-1 h-full justify-between gap-2 sm:gap-2.5 lg:gap-3 font-sans overflow-hidden">
       {/* Header Bar */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pb-1 shrink-0">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between shrink-0">
         <div>
-          <h1 className="text-2xl font-black text-[#0B1B45] tracking-tight">
+          <h1 className="text-xl sm:text-2xl font-black text-[#0B1B45] tracking-tight">
             Dashboard
           </h1>
-          <p className="text-xs text-[#1E293B] font-semibold mt-0.5">
+          <p className="text-[11px] sm:text-xs text-[#1E293B] font-semibold mt-0.5">
             Distributor Operations &amp; Real-time Counter Management
           </p>
         </div>
 
         {/* Search & Totals Button */}
-        <div className="flex items-center gap-2.5">
-          <div className="relative flex-1 sm:w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#64748B]" size={15} />
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1 sm:w-60">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#64748B]" size={14} />
             <input
               type="text"
               placeholder="Search modules..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-xl border border-[#CBD5E1] bg-white pl-9 pr-3 py-2 text-xs font-semibold text-[#0B1B45] placeholder-[#64748B] shadow-2xs focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/20 focus:outline-none transition-all"
+              className="w-full rounded-xl border border-[#CBD5E1] bg-white pl-8 pr-3 py-1.5 text-xs font-semibold text-[#0B1B45] placeholder-[#64748B] shadow-2xs focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/20 focus:outline-none transition-all"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
                 className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#64748B] hover:text-[#0B1B45]"
               >
-                <X size={14} />
+                <X size={13} />
               </button>
             )}
           </div>
@@ -236,9 +236,9 @@ export function Dashboard() {
           {canViewFinancials && (
             <button
               onClick={() => setShowTotalsReport(true)}
-              className="inline-flex items-center gap-2 rounded-xl border border-[#CBD5E1] bg-white px-4 py-2 text-xs font-bold text-[#0B1B45] shadow-2xs hover:bg-[#EDF5FF] hover:border-[#2449C6] transition-all active:scale-95 shrink-0"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-[#CBD5E1] bg-white px-3.5 py-1.5 text-xs font-bold text-[#0B1B45] shadow-2xs hover:bg-[#EDF5FF] hover:border-[#2449C6] transition-all active:scale-95 shrink-0"
             >
-              <PieChart size={15} className="text-[#2449C6]" />
+              <PieChart size={14} className="text-[#2449C6]" />
               <span className="hidden sm:inline">Totals Report</span>
             </button>
           )}
@@ -246,14 +246,14 @@ export function Dashboard() {
       </div>
 
       {/* Category Pills Bar */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs shrink-0 no-scrollbar">
+      <div className="flex items-center gap-2 overflow-x-auto pb-0.5 text-xs shrink-0 no-scrollbar">
         {CATEGORIES.map((cat) => {
           const isActive = selectedCategory === cat.id;
           return (
             <button
               key={cat.id}
               onClick={() => setSelectedCategory(cat.id)}
-              className={`rounded-xl px-4 py-2 text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 ${
+              className={`rounded-xl px-3.5 py-1.5 text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 ${
                 isActive
                   ? 'bg-gradient-to-r from-[#0B1B45] via-[#142B5C] to-[#1C3675] text-white shadow-md border border-[#0B1B45]'
                   : 'bg-white text-[#334155] border border-[#CBD5E1] hover:text-[#0B1B45] hover:bg-[#EDF5FF] hover:border-[#93C5FD] shadow-2xs'
@@ -268,10 +268,10 @@ export function Dashboard() {
 
       {/* Discrepancy Alert Banner */}
       {canViewFinancials && summary && summary.unresolved_handover_discrepancies?.length > 0 && (
-        <Card className="border border-red-200 bg-red-50 p-2.5 rounded-xl text-red-800 shrink-0 shadow-xs">
+        <Card className="border border-red-200 bg-red-50 p-2 rounded-xl text-red-800 shrink-0 shadow-xs">
           <div className="flex items-center justify-between text-xs">
             <div className="flex items-center gap-2 font-bold text-red-600">
-              <AlertTriangle size={16} />
+              <AlertTriangle size={15} />
               {summary.unresolved_handover_discrepancies.length} unresolved cash handover discrepancy
             </div>
             <Link to="/cash-handover" className="font-bold text-red-700 underline hover:text-red-900">
@@ -282,8 +282,8 @@ export function Dashboard() {
       )}
 
       {/* Module Cards Grid */}
-      <div className="flex-1 flex flex-col justify-center my-auto">
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-6 gap-4">
+      <div className="flex-1 flex flex-col justify-center my-auto min-h-0">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-6 gap-2.5 sm:gap-3 lg:gap-3">
           {/* Standard Module Cards Grid */}
           {filteredModules.map((item) => {
             const allowed = usePermission(item.perm);
@@ -296,36 +296,36 @@ export function Dashboard() {
                 <div
                   key={item.to}
                   onClick={() => navigate(item.to)}
-                  className="group col-span-2 row-span-2 cursor-pointer relative rounded-3xl border-2 border-[#FBCFE8] bg-gradient-to-br from-[#FFFFFF] via-[#FFF5F7] to-[#FDF2F8] p-6 text-[#0B1B45] shadow-[0_8px_24px_rgba(244,63,94,0.08)] transition-all duration-200 hover:shadow-[0_14px_32px_rgba(244,63,94,0.16)] hover:border-[#F472B6] hover:-translate-y-1 flex flex-col justify-between overflow-hidden"
+                  className="group col-span-2 row-span-2 cursor-pointer relative rounded-2xl border-2 border-[#FBCFE8] bg-gradient-to-br from-[#FFFFFF] via-[#FFF5F7] to-[#FDF2F8] p-3.5 sm:p-4 lg:p-4.5 text-[#0B1B45] shadow-[0_6px_20px_rgba(244,63,94,0.08)] transition-all duration-200 hover:shadow-[0_12px_28px_rgba(244,63,94,0.16)] hover:border-[#F472B6] hover:-translate-y-0.5 flex flex-col justify-between overflow-hidden"
                 >
                   {/* Subtle blush pink water glow flourish */}
                   <div className="pointer-events-none absolute -right-12 -bottom-12 w-64 h-64 rounded-full bg-gradient-to-tl from-[#FB7185]/20 via-[#F472B6]/10 to-transparent blur-2xl" />
                   <div className="pointer-events-none absolute right-0 top-0 w-48 h-48 rounded-full bg-gradient-to-br from-white to-transparent blur-lg" />
 
                   <div className="relative z-10 flex items-start justify-between">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#0B1B45] text-[#FB7185] border border-[#1C3675] shadow-md transition-transform group-hover:scale-105">
-                      <ShoppingCart size={22} className="text-[#FB7185]" />
+                    <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-[#0B1B45] text-[#FB7185] border border-[#1C3675] shadow-md transition-transform group-hover:scale-105">
+                      <ShoppingCart size={19} className="text-[#FB7185]" />
                     </div>
-                    <span className="flex items-center gap-1.5 rounded-full bg-[#FFF1F5] border border-[#FBCFE8] px-3.5 py-1 text-[11px] font-extrabold text-[#BE185D] shadow-2xs">
-                      <Sparkles size={12} className="text-[#E11D48]" />
+                    <span className="flex items-center gap-1.5 rounded-full bg-[#FFF1F5] border border-[#FBCFE8] px-2.5 py-0.5 text-[10px] font-extrabold text-[#BE185D] shadow-2xs">
+                      <Sparkles size={11} className="text-[#E11D48]" />
                       Primary Terminal
                     </span>
                   </div>
 
-                  <div className="relative z-10 mt-4">
-                    <div className="text-[11px] font-black uppercase tracking-wider text-[#E11D48]">
+                  <div className="relative z-10 mt-2 sm:mt-2.5">
+                    <div className="text-[10px] font-black uppercase tracking-wider text-[#E11D48]">
                       Counter Terminal
                     </div>
-                    <h3 className="text-2xl font-black text-[#0B1B45] tracking-tight mt-1 group-hover:text-[#BE185D] transition-colors">
+                    <h3 className="text-xl sm:text-2xl font-black text-[#0B1B45] tracking-tight mt-0.5 group-hover:text-[#BE185D] transition-colors">
                       POS &amp; Billing
                     </h3>
-                    <p className="mt-1.5 text-xs text-[#1E293B] font-semibold leading-relaxed max-w-[280px]">
+                    <p className="mt-1 text-xs text-[#1E293B] font-semibold leading-snug max-w-[280px] line-clamp-2">
                       {item.subtitle}
                     </p>
                   </div>
 
-                  <div className="relative z-10 mt-5">
-                    <div className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#BE185D] via-[#E11D48] to-[#FB7185] px-5 py-2.5 text-xs font-bold text-white shadow-[0_4px_14px_rgba(225,29,72,0.3)] hover:brightness-105 active:scale-95 transition-all">
+                  <div className="relative z-10 mt-2.5 sm:mt-3">
+                    <div className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#BE185D] via-[#E11D48] to-[#FB7185] px-4 py-1.5 sm:py-2 text-xs font-bold text-white shadow-[0_4px_12px_rgba(225,29,72,0.28)] hover:brightness-105 active:scale-95 transition-all">
                       <span>Launch Counter Terminal</span>
                       <span className="font-extrabold text-sm">&gt;</span>
                     </div>
@@ -339,20 +339,20 @@ export function Dashboard() {
               <div
                 key={item.to}
                 onClick={() => navigate(item.to)}
-                className="group cursor-pointer rounded-2xl border-2 border-[#D5E3F7] bg-white p-4 sm:p-5 text-[#0B1B45] shadow-[0_3px_10px_rgba(11,27,69,0.06)] transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_12px_24px_rgba(11,27,69,0.12)] hover:border-[#2449C6] flex flex-col justify-between"
+                className="group cursor-pointer rounded-2xl border-2 border-[#D5E3F7] bg-white p-2.5 sm:p-3 lg:p-3 text-[#0B1B45] shadow-[0_2px_8px_rgba(11,27,69,0.05)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(11,27,69,0.1)] hover:border-[#2449C6] flex flex-col justify-between"
               >
                 <div className="flex items-center justify-between">
-                  <div className={`flex h-11 w-11 items-center justify-center rounded-2xl border ${item.iconColor} shadow-2xs transition-transform group-hover:scale-105`}>
-                    <Icon size={21} />
+                  <div className={`flex h-8.5 w-8.5 sm:h-9 sm:w-9 items-center justify-center rounded-xl border ${item.iconColor} shadow-2xs transition-transform group-hover:scale-105`}>
+                    <Icon size={18} />
                   </div>
-                  <ChevronRight size={17} className="text-[#94A3B8] group-hover:text-[#2449C6] group-hover:translate-x-1 transition-all" />
+                  <ChevronRight size={15} className="text-[#94A3B8] group-hover:text-[#2449C6] group-hover:translate-x-0.5 transition-all" />
                 </div>
 
-                <div className="mt-3.5">
-                  <h4 className="text-[15px] font-extrabold text-[#0B1B45] group-hover:text-[#2449C6] transition-colors truncate tracking-tight">
+                <div className="mt-2">
+                  <h4 className="text-xs sm:text-sm font-extrabold text-[#0B1B45] group-hover:text-[#2449C6] transition-colors truncate tracking-tight">
                     {item.label}
                   </h4>
-                  <p className="text-xs font-semibold text-[#1E293B] truncate mt-1">
+                  <p className="text-[11px] font-semibold text-[#1E293B] truncate mt-0.5">
                     {item.subtitle}
                   </p>
                 </div>
