@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  RefreshCw, Plus, Trash2, Eye, Printer, Ban, CheckCircle2, Image as ImageIcon, X, Search, Truck
+  RefreshCw, Plus, Trash2, Eye, Printer, Ban, CheckCircle2, Image as ImageIcon, X, Search, Truck, FileSpreadsheet
 } from 'lucide-react';
 import { itemsApi } from '../api/catalog';
 import { customersApi, suppliersApi, routesApi } from '../api/parties';
@@ -581,7 +581,12 @@ function CustomerPrebookingPanel() {
               />
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="secondary" size="sm" onClick={() => customerPrebookingsApi.downloadExport()}>
+              <Button
+                variant="excel"
+                size="sm"
+                icon={<FileSpreadsheet size={14} className="text-emerald-100" />}
+                onClick={() => customerPrebookingsApi.downloadExport()}
+              >
                 Export Excel
               </Button>
               <span className="rounded-full bg-[#EDF5FF] border border-[#D5E3F7] px-2.5 py-0.5 text-xs font-bold text-[#2449C6]">{rows.length} order(s)</span>

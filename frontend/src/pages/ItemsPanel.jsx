@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Image as ImageIcon, Pencil, Trash2, Upload, X, Plus, RotateCcw, Search } from 'lucide-react';
+import { Image as ImageIcon, Pencil, Trash2, Upload, X, Plus, RotateCcw, Search, FileSpreadsheet } from 'lucide-react';
 import { categoriesApi, brandsApi, productLinesApi, taxCodesApi, stockUnitsApi, itemsApi, categoryBrandsApi } from '../api/catalog';
 import { suppliersApi } from '../api/parties';
 import { branchesApi } from '../api/branches';
@@ -509,9 +509,10 @@ export function ItemsPanel({ canManage }) {
             <button
               type="button"
               onClick={() => itemsApi.downloadExport()}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-[#D5E3F7] bg-white px-3.5 py-1.5 text-xs font-bold text-[#0F1E4A] hover:bg-[#EDF5FF] shadow-2xs transition-all active:scale-95"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#0E7A4A] via-[#0B6B40] to-[#075633] text-white border border-[#075633] px-3.5 py-1.5 text-xs font-bold shadow-[0_2px_8px_rgba(11,107,64,0.28)] hover:brightness-110 active:scale-95 transition-all"
             >
-              Export Excel
+              <FileSpreadsheet size={14} className="text-emerald-100" />
+              <span>Export Excel</span>
             </button>
             {canManage && (
               <button
@@ -687,7 +688,7 @@ export function ItemsPanel({ canManage }) {
               type="button"
               disabled={!importFile || !importResult}
               onClick={handleCommit}
-              className="rounded-xl bg-gradient-to-r from-[#0B1B45] via-[#142B5C] to-[#2449C6] px-4 py-1.5 text-xs font-bold text-white shadow-xs hover:brightness-110 active:scale-95 disabled:opacity-40 transition-all"
+              className="rounded-xl bg-gradient-to-r from-[#0E7A4A] via-[#0B6B40] to-[#075633] text-white border border-[#075633] px-4 py-1.5 text-xs font-bold shadow-[0_2px_8px_rgba(11,107,64,0.28)] hover:brightness-110 active:scale-95 disabled:opacity-40 transition-all"
             >
               Commit Import
             </button>

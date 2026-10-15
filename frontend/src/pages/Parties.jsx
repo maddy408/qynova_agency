@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Users, Truck, MapPin, Building2, CheckCircle2, Power, Edit2, Trash2, Search, Plus, Phone, CreditCard, Tag,
-  ClipboardList, ShoppingBag, Receipt
+  ClipboardList, ShoppingBag, Receipt, FileSpreadsheet, Upload
 } from 'lucide-react';
 import { routesApi, citiesApi, customersApi, suppliersApi } from '../api/parties';
 import { routeSuppliersApi } from '../api/purchasing';
@@ -432,8 +432,8 @@ function CustomersPanel({ canManage }) {
               </select>
               {canManage && (
                 <>
-                  <Button variant="secondary" size="sm" onClick={() => customersApi.downloadExport()}>Export Excel</Button>
-                  <Button variant="secondary" size="sm" onClick={() => setImportOpen((v) => !v)}>Import Excel</Button>
+                  <Button variant="excel" size="sm" icon={<FileSpreadsheet size={14} className="text-emerald-100" />} onClick={() => customersApi.downloadExport()}>Export Excel</Button>
+                  <Button variant="excel" size="sm" icon={<Upload size={14} className="text-emerald-100" />} onClick={() => setImportOpen((v) => !v)}>Import Excel</Button>
                 </>
               )}
             </div>
@@ -459,6 +459,7 @@ function CustomersPanel({ canManage }) {
                 </Button>
                 {importResult && !importResult.committed && (
                   <Button
+                    variant="excel"
                     size="sm"
                     disabled={importResult.valid_rows === 0}
                     onClick={async () => {

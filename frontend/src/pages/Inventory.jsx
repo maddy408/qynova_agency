@@ -141,9 +141,9 @@ function StockHubPanel() {
               <button
                 onClick={handleExportExcel}
                 disabled={exportingExcel}
-                className="flex items-center gap-1.5 rounded-xl border border-[#D5E3F7] bg-white px-3 py-1.5 text-xs font-bold text-slate-700 shadow-2xs hover:bg-[#EDF5FF] hover:text-[#2449C6] transition disabled:opacity-60"
+                className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#0E7A4A] via-[#0B6B40] to-[#075633] text-white border border-[#075633] px-3 py-1.5 text-xs font-bold shadow-[0_2px_8px_rgba(11,107,64,0.28)] hover:brightness-110 active:scale-95 transition disabled:opacity-60"
               >
-                <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-600" />
+                <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-100" />
                 {exportingExcel ? 'Exporting…' : 'Export Excel'}
               </button>
               <button
@@ -868,15 +868,17 @@ function VanStockPanel({ canManage }) {
                 <button
                   onClick={handleExportExcel}
                   disabled={exporting}
-                  className="rounded-xl border border-[#D5E3F7] bg-white px-3 py-1.5 text-xs font-bold text-slate-700 shadow-2xs hover:bg-[#EDF5FF] hover:text-[#2449C6] transition disabled:opacity-60"
+                  className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#0E7A4A] via-[#0B6B40] to-[#075633] text-white border border-[#075633] px-3 py-1.5 text-xs font-bold shadow-[0_2px_8px_rgba(11,107,64,0.28)] hover:brightness-110 active:scale-95 transition disabled:opacity-60"
                 >
+                  <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-100" />
                   {exporting ? 'Exporting…' : 'Export Excel'}
                 </button>
                 <button
                   onClick={handleExportSelectedExcel}
                   disabled={exporting}
-                  className="rounded-xl border border-[#D5E3F7] bg-white px-3 py-1.5 text-xs font-bold text-slate-700 shadow-2xs hover:bg-[#EDF5FF] hover:text-[#2449C6] transition disabled:opacity-60"
+                  className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#0E7A4A] via-[#0B6B40] to-[#075633] text-white border border-[#075633] px-3 py-1.5 text-xs font-bold shadow-[0_2px_8px_rgba(11,107,64,0.28)] hover:brightness-110 active:scale-95 transition disabled:opacity-60"
                 >
+                  <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-100" />
                   Export Selected
                 </button>
                 {selectedItemIds.length > 0 && (
@@ -968,15 +970,17 @@ function VanStockPanel({ canManage }) {
               <button
                 onClick={handleExportIssuesExcel}
                 disabled={issueExporting}
-                className="rounded-xl border border-[#D5E3F7] bg-white px-3 py-1.5 text-xs font-bold text-slate-700 shadow-2xs hover:bg-[#EDF5FF] hover:text-[#2449C6] transition disabled:opacity-60"
+                className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#0E7A4A] via-[#0B6B40] to-[#075633] text-white border border-[#075633] px-3 py-1.5 text-xs font-bold shadow-[0_2px_8px_rgba(11,107,64,0.28)] hover:brightness-110 active:scale-95 transition disabled:opacity-60"
               >
+                <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-100" />
                 {issueExporting ? 'Exporting…' : 'Export Excel'}
               </button>
               <button
                 onClick={handleExportSelectedIssuesExcel}
                 disabled={issueExporting}
-                className="rounded-xl border border-[#D5E3F7] bg-white px-3 py-1.5 text-xs font-bold text-slate-700 shadow-2xs hover:bg-[#EDF5FF] hover:text-[#2449C6] transition disabled:opacity-60"
+                className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#0E7A4A] via-[#0B6B40] to-[#075633] text-white border border-[#075633] px-3 py-1.5 text-xs font-bold shadow-[0_2px_8px_rgba(11,107,64,0.28)] hover:brightness-110 active:scale-95 transition disabled:opacity-60"
               >
+                <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-100" />
                 Export Selected
               </button>
               {selectedIssueIds.length > 0 && (

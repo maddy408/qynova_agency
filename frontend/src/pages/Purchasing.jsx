@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ShoppingBag, Search, Plus, Trash2, CheckCircle2, Pencil, X, DollarSign, CreditCard } from 'lucide-react';
+import { ShoppingBag, Search, Plus, Trash2, CheckCircle2, Pencil, X, DollarSign, CreditCard, FileSpreadsheet } from 'lucide-react';
 import { itemsApi } from '../api/catalog';
 import { suppliersApi } from '../api/parties';
 import { purchasesApi, supplierPaymentsApi } from '../api/purchasing';
@@ -632,10 +632,10 @@ export function GrnPanel({ canManage, canEdit, canViewCost, canDelete }) {
             <div className="flex flex-wrap items-center gap-2">
               <Button variant="secondary" size="sm" onClick={handlePrint}>Print</Button>
               <Button variant="secondary" size="sm" onClick={handleExportPdf}>Download PDF</Button>
-              <Button variant="secondary" size="sm" onClick={handleExportExcel} disabled={exporting}>
+              <Button variant="excel" size="sm" icon={<FileSpreadsheet size={14} className="text-emerald-100" />} onClick={handleExportExcel} disabled={exporting}>
                 {exporting ? 'Exporting…' : 'Export Excel'}
               </Button>
-              <Button variant="secondary" size="sm" onClick={handleExportSelectedExcel} disabled={exporting}>
+              <Button variant="excel" size="sm" onClick={handleExportSelectedExcel} disabled={exporting}>
                 Export Selected
               </Button>
               {selectedIds.length > 0 && <span className="text-xs font-bold text-[#2449C6]">{selectedIds.length} selected</span>}
@@ -1053,10 +1053,10 @@ export function SupplierPaymentsPanel({ canManage }) {
             <div className="flex flex-wrap items-center gap-2">
               <Button variant="secondary" size="sm" onClick={handlePaymentsPrint}>Print</Button>
               <Button variant="secondary" size="sm" onClick={handlePaymentsExportPdf}>Download PDF</Button>
-              <Button variant="secondary" size="sm" onClick={handlePaymentsExportExcel} disabled={exporting}>
+              <Button variant="excel" size="sm" icon={<FileSpreadsheet size={14} className="text-emerald-100" />} onClick={handlePaymentsExportExcel} disabled={exporting}>
                 {exporting ? 'Exporting…' : 'Export Excel'}
               </Button>
-              <Button variant="secondary" size="sm" onClick={handlePaymentsExportSelectedExcel} disabled={exporting}>
+              <Button variant="excel" size="sm" onClick={handlePaymentsExportSelectedExcel} disabled={exporting}>
                 Export Selected
               </Button>
               {selectedPaymentIds.length > 0 && <span className="text-xs font-bold text-[#2449C6]">{selectedPaymentIds.length} selected</span>}

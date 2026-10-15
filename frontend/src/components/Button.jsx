@@ -4,6 +4,7 @@ const VARIANT_CLASSES = {
   danger: 'bg-rose-50 text-rose-600 border border-rose-200/70 hover:bg-rose-100 hover:border-rose-300 disabled:opacity-40',
   ghost: 'text-slate-600 hover:text-[#0B1B45] hover:bg-slate-100/80 disabled:opacity-40',
   gold: 'bg-gradient-to-r from-[#E8C985] to-[#DFB76C] text-[#0B1B45] font-bold hover:brightness-105 shadow-xs disabled:opacity-40',
+  excel: 'bg-gradient-to-r from-[#0E7A4A] via-[#0B6B40] to-[#075633] text-white border border-[#075633] hover:brightness-110 shadow-[0_2px_8px_rgba(11,107,64,0.28)] disabled:opacity-40',
 };
 
 /**

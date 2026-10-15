@@ -167,13 +167,11 @@ function DateRangeBar({ from, to, setFrom, setTo, onApply, onReset, onExport, pd
             <button
               onClick={handleExportExcel}
               disabled={exportingExcel}
-              className={`flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-sm font-bold transition-all shadow-xs disabled:opacity-60 ${
-                selectedCount > 0
-                  ? 'bg-gradient-to-r from-[#2449C6] to-[#0B1B45] text-white ring-1 ring-white/20'
-                  : 'border border-[#D5E3F7] bg-white text-slate-700 hover:bg-[#F5F8FF] hover:border-[#2449C6]/40 hover:text-[#2449C6]'
+              className={`flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-sm font-bold transition-all shadow-[0_2px_8px_rgba(11,107,64,0.28)] bg-gradient-to-r from-[#0E7A4A] via-[#0B6B40] to-[#075633] text-white border border-[#075633] hover:brightness-110 active:scale-95 disabled:opacity-60 ${
+                selectedCount > 0 ? 'ring-2 ring-emerald-300/50' : ''
               }`}
             >
-              <FileSpreadsheet className="h-4 w-4 text-[#E8C985]" />
+              <FileSpreadsheet className="h-4 w-4 text-emerald-100" />
               {exportingExcel ? 'Exporting…' : selectedCount > 0 ? `Export Excel (${selectedCount})` : 'Export Excel'}
             </button>
             <button
@@ -593,13 +591,11 @@ function SalesWiseReportPanel({ report, canExport }) {
               <button
                 onClick={handleExportExcel}
                 disabled={exportingExcel}
-                className={`flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-sm font-bold transition-all shadow-xs disabled:opacity-60 ${
-                  selectedCount > 0
-                    ? 'bg-gradient-to-r from-[#2449C6] to-[#0B1B45] text-white ring-1 ring-white/20'
-                    : 'border border-[#D5E3F7] bg-white text-slate-700 hover:bg-[#F5F8FF] hover:border-[#2449C6]/40 hover:text-[#2449C6]'
+                className={`flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-sm font-bold transition-all shadow-[0_2px_8px_rgba(11,107,64,0.28)] bg-gradient-to-r from-[#0E7A4A] via-[#0B6B40] to-[#075633] text-white border border-[#075633] hover:brightness-110 active:scale-95 disabled:opacity-60 ${
+                  selectedCount > 0 ? 'ring-2 ring-emerald-300/50' : ''
                 }`}
               >
-                <FileSpreadsheet className="h-4 w-4 text-[#E8C985]" />
+                <FileSpreadsheet className="h-4 w-4 text-emerald-100" />
                 {exportingExcel ? 'Exporting…' : selectedCount > 0 ? `Export Excel (${selectedCount})` : 'Export Excel'}
               </button>
               <button
@@ -800,13 +796,11 @@ function SnapshotExportBar({ canExport, onExport, pdfConfig, excelConfig, select
         <button
           onClick={handleExportExcel}
           disabled={exportingExcel}
-          className={`flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-sm font-bold transition-all shadow-xs disabled:opacity-60 ${
-            selectedCount > 0
-              ? 'bg-gradient-to-r from-[#2449C6] to-[#0B1B45] text-white ring-1 ring-white/20'
-              : 'border border-[#D5E3F7] bg-white text-slate-700 hover:bg-[#F5F8FF] hover:border-[#2449C6]/40 hover:text-[#2449C6]'
+          className={`flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-sm font-bold transition-all shadow-[0_2px_8px_rgba(11,107,64,0.28)] bg-gradient-to-r from-[#0E7A4A] via-[#0B6B40] to-[#075633] text-white border border-[#075633] hover:brightness-110 active:scale-95 disabled:opacity-60 ${
+            selectedCount > 0 ? 'ring-2 ring-emerald-300/50' : ''
           }`}
         >
-          <FileSpreadsheet className="h-4 w-4 text-[#E8C985]" />
+          <FileSpreadsheet className="h-4 w-4 text-emerald-100" />
           {exportingExcel ? 'Exporting…' : selectedCount > 0 ? `Export Excel (${selectedCount})` : 'Export Excel'}
         </button>
         <button
@@ -1015,9 +1009,9 @@ function ProfitSummaryPanel({ canExport }) {
             <button
               onClick={handleExportExcel}
               disabled={exportingExcel}
-              className="flex items-center gap-1.5 rounded-xl border border-[#D5E3F7] bg-white px-3.5 py-1.5 text-sm font-bold text-slate-700 shadow-xs hover:border-[#2449C6]/40 hover:bg-[#F5F8FF] hover:text-[#2449C6] disabled:opacity-60 transition"
+              className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#0E7A4A] via-[#0B6B40] to-[#075633] text-white border border-[#075633] px-3.5 py-1.5 text-sm font-bold shadow-[0_2px_8px_rgba(11,107,64,0.28)] hover:brightness-110 active:scale-95 disabled:opacity-60 transition"
             >
-              <FileSpreadsheet className="h-4 w-4 text-[#E8C985]" />
+              <FileSpreadsheet className="h-4 w-4 text-emerald-100" />
               {exportingExcel ? 'Exporting…' : 'Export Excel'}
             </button>
             <button
@@ -1189,13 +1183,11 @@ function PricingPanel({ type, label, canExport }) {
             <button
               onClick={handleExportExcel}
               disabled={rows.length === 0}
-              className={`flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-sm font-bold transition-all shadow-xs disabled:opacity-60 ${
-                selectedCount > 0
-                  ? 'bg-gradient-to-r from-[#2449C6] to-[#0B1B45] text-white ring-1 ring-white/20'
-                  : 'border border-[#D5E3F7] bg-white text-slate-700 hover:bg-[#F5F8FF] hover:border-[#2449C6]/40 hover:text-[#2449C6]'
+              className={`flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-sm font-bold transition-all shadow-[0_2px_8px_rgba(11,107,64,0.28)] bg-gradient-to-r from-[#0E7A4A] via-[#0B6B40] to-[#075633] text-white border border-[#075633] hover:brightness-110 active:scale-95 disabled:opacity-60 ${
+                selectedCount > 0 ? 'ring-2 ring-emerald-300/50' : ''
               }`}
             >
-              <FileSpreadsheet className="h-4 w-4 text-[#E8C985]" />
+              <FileSpreadsheet className="h-4 w-4 text-emerald-100" />
               {selectedCount > 0 ? `Export Excel (${selectedCount})` : 'Export Excel'}
             </button>
             <button
