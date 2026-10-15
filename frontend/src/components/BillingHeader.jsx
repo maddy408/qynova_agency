@@ -71,10 +71,6 @@ export function BillingHeader() {
             </div>
           )}
 
-          <div className="hidden lg:flex flex-col text-right leading-none">
-            <span className="text-xs font-bold text-white">{user?.name && user.name !== 'Super Admin' ? user.name : 'Administrator'}</span>
-            <span className="text-[10px] text-[#E8C985]/80 capitalize">{user?.role && user.role !== 'Super Admin' ? user.role : 'Admin'}</span>
-          </div>
 
           <button
             type="button"

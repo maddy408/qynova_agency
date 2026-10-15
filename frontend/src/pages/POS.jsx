@@ -768,74 +768,79 @@ export function POS() {
               </button>
             </Link>
 
-            <div className="relative min-w-[240px] flex-1">
-              <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#7E92B2]" />
-              <input
-                ref={searchInputRef}
-                autoFocus
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                onKeyDown={handleSearchKeyDown}
-                placeholder="Search product by name, code or barcode…"
-                className="h-10 w-full pl-9 pr-3 rounded-xl border border-[#D5E3F7] bg-white text-sm font-medium text-[#14264F] placeholder-[#7E92B2]/80 shadow-[0_2px_8px_rgba(15,30,65,0.04)] focus:outline-none focus:ring-2 focus:ring-[#315BFF]/30 focus:border-[#315BFF] transition-all"
-              />
-              {filteredItems.length > 0 && (
-                <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-64 overflow-auto rounded-xl border border-[#D5E3F7] bg-white shadow-xl py-1">
-                  {filteredItems.map((item, index) => {
-                    const stock = getItemStock(item);
-                    const outOfStock = isItemOutOfStock(item);
-                    const isHighlighted = index === selectedIndex;
-                    return (
-                      <button
-                        key={item.id}
-                        disabled={outOfStock}
-                        ref={(el) => {
-                          if (isHighlighted && el) {
-                            el.scrollIntoView({ block: 'nearest' });
-                          }
-                        }}
-                        onClick={() => {
-                          if (outOfStock) return;
-                          addItem(item);
-                        }}
-                        onMouseEnter={() => {
-                          if (!outOfStock) setSelectedIndex(index);
-                        }}
-                        className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm transition-colors ${
-                          outOfStock
-                            ? 'opacity-50 cursor-not-allowed bg-slate-50 text-slate-400'
-                            : isHighlighted ? 'bg-[#EDF5FF] text-[#0B1B45] font-semibold' : 'hover:bg-[#F5F8FF]'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <span>{item.item_name} <span className="text-[#334155] font-medium">({item.item_code})</span></span>
-                          {outOfStock && (
-                            <span className="rounded-full bg-rose-100 text-rose-700 text-[10px] font-bold px-1.5 py-0.2">
-                              Out of stock
-                            </span>
-                          )}
-                        </div>
-                        <span className="text-[#0B1B45] font-bold">Rs. {resolveSellingPrice(item, item.base_unit_id, priceType).rate.toFixed(2)}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
+            {/* Unified Product Search with Barcode & Camera Buttons */}
+            <div className="flex items-center gap-2 flex-1 min-w-[260px]">
+              <div className="relative flex-1">
+                <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#7E92B2]" />
+                <input
+                  ref={searchInputRef}
+                  autoFocus
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  onKeyDown={handleSearchKeyDown}
+                  placeholder="Search product by name, code or barcode…"
+                  className="h-10 w-full pl-9 pr-3 rounded-xl border border-[#D5E3F7] bg-white text-sm font-medium text-[#14264F] placeholder-[#7E92B2]/80 shadow-[0_2px_8px_rgba(15,30,65,0.04)] focus:outline-none focus:ring-2 focus:ring-[#315BFF]/30 focus:border-[#315BFF] transition-all"
+                />
+                {filteredItems.length > 0 && (
+                  <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-64 overflow-auto rounded-xl border border-[#D5E3F7] bg-white shadow-xl py-1">
+                    {filteredItems.map((item, index) => {
+                      const stock = getItemStock(item);
+                      const outOfStock = isItemOutOfStock(item);
+                      const isHighlighted = index === selectedIndex;
+                      return (
+                        <button
+                          key={item.id}
+                          disabled={outOfStock}
+                          ref={(el) => {
+                            if (isHighlighted && el) {
+                              el.scrollIntoView({ block: 'nearest' });
+                            }
+                          }}
+                          onClick={() => {
+                            if (outOfStock) return;
+                            addItem(item);
+                          }}
+                          onMouseEnter={() => {
+                            if (!outOfStock) setSelectedIndex(index);
+                          }}
+                          className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm transition-colors ${
+                            outOfStock
+                              ? 'opacity-50 cursor-not-allowed bg-slate-50 text-slate-400'
+                              : isHighlighted ? 'bg-[#EDF5FF] text-[#0B1B45] font-semibold' : 'hover:bg-[#F5F8FF]'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span>{item.item_name} <span className="text-[#334155] font-medium">({item.item_code})</span></span>
+                            {outOfStock && (
+                              <span className="rounded-full bg-rose-100 text-rose-700 text-[10px] font-bold px-1.5 py-0.2">
+                                Out of stock
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[#0B1B45] font-bold">Rs. {resolveSellingPrice(item, item.base_unit_id, priceType).rate.toFixed(2)}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => searchInputRef.current?.focus()}
+                title="Focus search to scan a barcode"
+                className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-b from-[#FDE8B5] via-[#F6D389] to-[#E5BE6C] border border-[#DEB660] text-[#0B1B45] shadow-[0_2px_8px_rgba(229,190,108,0.35)] shrink-0 transition-all hover:brightness-105 active:scale-95 cursor-pointer"
+              >
+                <ScanBarcode size={18} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowImageSearch(true)}
+                title="Find an item from a photo"
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#D5E3F7] bg-white text-[#315BFF] shadow-[0_2px_8px_rgba(15,30,65,0.04)] hover:bg-[#EDF5FF] shrink-0 transition-all active:scale-95 cursor-pointer"
+              >
+                <Camera size={18} />
+              </button>
             </div>
-            <button
-              onClick={() => searchInputRef.current?.focus()}
-              title="Focus search to scan a barcode"
-              className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-b from-[#FDE8B5] via-[#F6D389] to-[#E5BE6C] border border-[#DEB660] text-[#0B1B45] shadow-[0_2px_8px_rgba(229,190,108,0.35)] shrink-0 transition-all hover:brightness-105 active:scale-95"
-            >
-              <ScanBarcode size={18} />
-            </button>
-            <button
-              onClick={() => setShowImageSearch(true)}
-              title="Find an item from a photo"
-              className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#D5E3F7] bg-white text-[#315BFF] shadow-[0_2px_8px_rgba(15,30,65,0.04)] hover:bg-[#EDF5FF] shrink-0 transition-all active:scale-95"
-            >
-              <Camera size={18} />
-            </button>
           </div>
 
           {/* Products List Toolbar (All option retained, specific categories omitted per request) */}
