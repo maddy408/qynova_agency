@@ -205,3 +205,36 @@
     @apply rounded-2xl border border-pos-border bg-white shadow-sm;
   }
 }
+
+/* ==========================================================================
+   Table Typography & Readability - Consistent 12px Standard Across All Tables
+   ========================================================================== */
+table:not(.thermal-invoice table):not(.a4-invoice table) {
+  font-size: 12px !important;
+}
+
+table:not(.thermal-invoice table):not(.a4-invoice table) th,
+table:not(.thermal-invoice table):not(.a4-invoice table) td {
+  font-size: 12px !important;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+table:not(.thermal-invoice table):not(.a4-invoice table) th {
+  font-size: 12px !important;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+table:not(.thermal-invoice table):not(.a4-invoice table) .text-sm,
+table:not(.thermal-invoice table):not(.a4-invoice table) .text-base {
+  font-size: 12px !important;
+  line-height: 1.45 !important;
+}
+
+table:not(.thermal-invoice table):not(.a4-invoice table) input:not([type="checkbox"]):not([type="radio"]),
+table:not(.thermal-invoice table):not(.a4-invoice table) select {
+  font-size: 12px !important;
+}
+
