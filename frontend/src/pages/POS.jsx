@@ -603,99 +603,89 @@ export function POS() {
   return (
     <div className="w-full min-h-[calc(100vh-54px)] bg-[#EDF5FF] px-4 sm:px-6 lg:px-8 py-5 sm:py-6">
       {/* Top POS Control Bar */}
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white border border-[#D5E3F7] p-2.5 sm:p-3 shadow-[0_2px_10px_rgba(15,30,65,0.04)]">
-        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
-          {/* GST Billing Toggle */}
-          <div className="flex overflow-hidden rounded-xl border border-[#D5E3F7] bg-white p-0.5 shadow-2xs gap-0.5">
-            <button
-              type="button"
-              disabled={!canGst}
-              onClick={() => setBillType('gst')}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all cursor-pointer ${
-                billType === 'gst'
-                  ? 'bg-gradient-to-r from-[#0F1E4A] via-[#14275E] to-[#1C3372] text-white shadow-[0_2px_8px_rgba(15,30,65,0.28)]'
-                  : 'text-[#14264F] hover:bg-[#EDF5FF]'
-              } disabled:opacity-40`}
-            >
-              <ShieldCheck size={14} className={billType === 'gst' ? 'text-white' : 'text-[#315BFF]'} />
-              GST Billing
-            </button>
-            <button
-              type="button"
-              disabled={!canNonGst}
-              onClick={() => setBillType('non_gst')}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all cursor-pointer ${
-                billType === 'non_gst'
-                  ? 'bg-gradient-to-r from-[#0F1E4A] via-[#14275E] to-[#1C3372] text-white shadow-[0_2px_8px_rgba(15,30,65,0.28)]'
-                  : 'text-[#14264F] hover:bg-[#EDF5FF]'
-              } disabled:opacity-40`}
-            >
-              Non-GST / Estimate
-            </button>
-          </div>
-
-          {/* Billing Format Toggle */}
-          <div className="flex overflow-hidden rounded-xl border border-[#D5E3F7] bg-white p-0.5 shadow-2xs gap-0.5">
-            <button
-              type="button"
-              onClick={() => setBillingFormat('local')}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all cursor-pointer ${
-                billingFormat === 'local'
-                  ? 'bg-gradient-to-r from-[#0F1E4A] via-[#14275E] to-[#1C3372] text-white shadow-[0_2px_8px_rgba(15,30,65,0.28)]'
-                  : 'text-[#14264F] hover:bg-[#EDF5FF]'
-              }`}
-            >
-              <MapPin size={14} className={billingFormat === 'local' ? 'text-white' : 'text-[#315BFF]'} />
-              Local Billing
-            </button>
-            <button
-              type="button"
-              onClick={() => setBillingFormat('outstation')}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all cursor-pointer ${
-                billingFormat === 'outstation'
-                  ? 'bg-gradient-to-r from-[#0F1E4A] via-[#14275E] to-[#1C3372] text-white shadow-[0_2px_8px_rgba(15,30,65,0.28)]'
-                  : 'text-[#14264F] hover:bg-[#EDF5FF]'
-              }`}
-            >
-              Distance Billing
-            </button>
-          </div>
-
-          {/* Price Tier Toggle */}
-          <div className="flex overflow-hidden rounded-xl border border-[#D5E3F7] bg-white p-0.5 shadow-2xs gap-0.5">
-            {[
-              { key: 'normal', label: 'Normal', icon: Tag },
-              { key: 'retail', label: 'Retail' },
-              { key: 'wholesale', label: 'Wholesale' },
-            ].map((opt) => (
-              <button
-                key={opt.key}
-                type="button"
-                onClick={() => changePriceType(opt.key)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm font-bold rounded-lg transition-all cursor-pointer ${
-                  priceType === opt.key
-                    ? 'bg-gradient-to-r from-[#0F1E4A] via-[#14275E] to-[#1C3372] text-white shadow-[0_2px_8px_rgba(15,30,65,0.28)]'
-                    : 'text-[#14264F] hover:bg-[#EDF5FF]'
-                }`}
-              >
-                {opt.icon && <opt.icon size={13} className={priceType === opt.key ? 'text-white' : 'text-[#315BFF]'} />}
-                {opt.label}
-              </button>
-            ))}
-          </div>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2.5">
+        <div className="flex overflow-hidden rounded-xl border border-[#D5E3F7] bg-white p-1 shadow-[0_2px_8px_rgba(15,30,65,0.04)] gap-1">
+          <button
+            type="button"
+            disabled={!canGst}
+            onClick={() => setBillType('gst')}
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-bold rounded-lg transition-all cursor-pointer ${
+              billType === 'gst'
+                ? 'bg-gradient-to-r from-[#0F1E4A] via-[#14275E] to-[#1C3372] text-white shadow-[0_2px_8px_rgba(15,30,65,0.28)]'
+                : 'text-[#14264F] hover:bg-[#EDF5FF]'
+            } disabled:opacity-40`}
+          >
+            <ShieldCheck size={14} className={billType === 'gst' ? 'text-white' : 'text-[#315BFF]'} />
+            GST Billing
+          </button>
+          <button
+            type="button"
+            disabled={!canNonGst}
+            onClick={() => setBillType('non_gst')}
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-semibold rounded-lg transition-all cursor-pointer ${
+              billType === 'non_gst'
+                ? 'bg-gradient-to-r from-[#0F1E4A] via-[#14275E] to-[#1C3372] text-white shadow-[0_2px_8px_rgba(15,30,65,0.28)]'
+                : 'text-[#14264F] hover:bg-[#EDF5FF]'
+            } disabled:opacity-40`}
+          >
+            Non-GST / Estimate
+          </button>
         </div>
 
-        {/* Hold Bills & Status Alert */}
-        <div className="flex items-center gap-2.5">
-          {message && (
-            <span className="rounded-xl bg-emerald-50 border border-emerald-200/80 px-3 py-1 text-xs font-bold text-emerald-700 shadow-2xs animate-in fade-in">
-              {message}
-            </span>
-          )}
+        <div className="flex overflow-hidden rounded-xl border border-[#D5E3F7] bg-white p-1 shadow-[0_2px_8px_rgba(15,30,65,0.04)] gap-1">
+          <button
+            type="button"
+            onClick={() => setBillingFormat('local')}
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-bold rounded-lg transition-all cursor-pointer ${
+              billingFormat === 'local'
+                ? 'bg-gradient-to-r from-[#0F1E4A] via-[#14275E] to-[#1C3372] text-white shadow-[0_2px_8px_rgba(15,30,65,0.28)]'
+                : 'text-[#14264F] hover:bg-[#EDF5FF]'
+            }`}
+          >
+            <MapPin size={14} className={billingFormat === 'local' ? 'text-white' : 'text-[#315BFF]'} />
+            Local Billing
+          </button>
+          <button
+            type="button"
+            onClick={() => setBillingFormat('outstation')}
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-semibold rounded-lg transition-all cursor-pointer ${
+              billingFormat === 'outstation'
+                ? 'bg-gradient-to-r from-[#0F1E4A] via-[#14275E] to-[#1C3372] text-white shadow-[0_2px_8px_rgba(15,30,65,0.28)]'
+                : 'text-[#14264F] hover:bg-[#EDF5FF]'
+            }`}
+          >
+            Distance Billing
+          </button>
+        </div>
+
+        <div className="flex overflow-hidden rounded-xl border border-[#D5E3F7] bg-white p-1 shadow-[0_2px_8px_rgba(15,30,65,0.04)] gap-1">
+          {[
+            { key: 'normal', label: 'Normal', icon: Tag },
+            { key: 'retail', label: 'Retail' },
+            { key: 'wholesale', label: 'Wholesale' },
+          ].map((opt) => (
+            <button
+              key={opt.key}
+              type="button"
+              onClick={() => changePriceType(opt.key)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-bold rounded-lg transition-all cursor-pointer ${
+                priceType === opt.key
+                  ? 'bg-gradient-to-r from-[#0F1E4A] via-[#14275E] to-[#1C3372] text-white shadow-[0_2px_8px_rgba(15,30,65,0.28)]'
+                  : 'text-[#14264F] hover:bg-[#EDF5FF]'
+              }`}
+            >
+              {opt.icon && <opt.icon size={13} className={priceType === opt.key ? 'text-white' : 'text-[#315BFF]'} />}
+              {opt.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex items-center gap-2">
+          {message && <span className="text-sm font-semibold text-emerald-600">{message}</span>}
           <button
             type="button"
             onClick={() => setShowHeldList((v) => !v)}
-            className="flex items-center gap-2 rounded-xl border border-[#D5E3F7] bg-white shadow-2xs px-3.5 py-1.5 text-xs sm:text-sm font-bold text-[#14264F] hover:bg-[#EDF5FF] transition-all cursor-pointer"
+            className="flex items-center gap-2 rounded-xl border border-[#D5E3F7] bg-white shadow-[0_2px_8px_rgba(15,30,65,0.04)] px-3.5 py-1.5 text-sm font-bold text-[#14264F] hover:bg-[#EDF5FF] transition-all cursor-pointer"
           >
             <FileText size={15} className="text-[#315BFF]" />
             <span>Hold Bills</span>
