@@ -290,33 +290,33 @@ export function Dashboard() {
             if (!allowed) return null;
             const Icon = item.icon;
 
-            // Hero POS Card: Navy Blue + Blush Pink
+            // Hero POS Card: Navy Blue + Royal Blue
             if (item.isHero) {
               return (
                 <div
                   key={item.to}
                   onClick={() => navigate(item.to)}
-                  className="group col-span-2 row-span-2 cursor-pointer relative rounded-2xl border-2 border-[#FBCFE8] bg-gradient-to-br from-[#FFFFFF] via-[#FFF5F7] to-[#FDF2F8] p-3.5 sm:p-4 lg:p-4.5 text-[#0B1B45] shadow-[0_6px_20px_rgba(244,63,94,0.08)] transition-all duration-200 hover:shadow-[0_12px_28px_rgba(244,63,94,0.16)] hover:border-[#F472B6] hover:-translate-y-0.5 flex flex-col justify-between overflow-hidden"
+                  className="group col-span-2 row-span-2 cursor-pointer relative rounded-2xl border-2 border-[#BFDBFE] bg-gradient-to-br from-[#FFFFFF] via-[#F0F5FF] to-[#E0EEFD] p-3.5 sm:p-4 lg:p-4.5 text-[#0B1B45] shadow-[0_6px_20px_rgba(37,99,235,0.08)] transition-all duration-200 hover:shadow-[0_12px_28px_rgba(37,99,235,0.16)] hover:border-[#2563EB] hover:-translate-y-0.5 flex flex-col justify-between overflow-hidden"
                 >
-                  {/* Subtle blush pink water glow flourish */}
-                  <div className="pointer-events-none absolute -right-12 -bottom-12 w-64 h-64 rounded-full bg-gradient-to-tl from-[#FB7185]/20 via-[#F472B6]/10 to-transparent blur-2xl" />
+                  {/* Subtle royal blue water glow flourish */}
+                  <div className="pointer-events-none absolute -right-12 -bottom-12 w-64 h-64 rounded-full bg-gradient-to-tl from-[#3B82F6]/20 via-[#60A5FA]/10 to-transparent blur-2xl" />
                   <div className="pointer-events-none absolute right-0 top-0 w-48 h-48 rounded-full bg-gradient-to-br from-white to-transparent blur-lg" />
 
                   <div className="relative z-10 flex items-start justify-between">
-                    <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-[#0B1B45] text-[#FB7185] border border-[#1C3675] shadow-md transition-transform group-hover:scale-105">
-                      <ShoppingCart size={19} className="text-[#FB7185]" />
+                    <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-[#0B1B45] text-[#38BDF8] border border-[#1C3675] shadow-md transition-transform group-hover:scale-105">
+                      <ShoppingCart size={19} className="text-[#38BDF8]" />
                     </div>
-                    <span className="flex items-center gap-1.5 rounded-full bg-[#FFF1F5] border border-[#FBCFE8] px-2.5 py-0.5 text-[10px] font-extrabold text-[#BE185D] shadow-2xs">
-                      <Sparkles size={11} className="text-[#E11D48]" />
+                    <span className="flex items-center gap-1.5 rounded-full bg-[#EFF6FF] border border-[#BFDBFE] px-2.5 py-0.5 text-[10px] font-extrabold text-[#1D4ED8] shadow-2xs">
+                      <Sparkles size={11} className="text-[#2563EB]" />
                       Primary Terminal
                     </span>
                   </div>
 
                   <div className="relative z-10 mt-2 sm:mt-2.5">
-                    <div className="text-[10px] font-black uppercase tracking-wider text-[#E11D48]">
+                    <div className="text-[10px] font-black uppercase tracking-wider text-[#2563EB]">
                       Counter Terminal
                     </div>
-                    <h3 className="text-xl sm:text-2xl font-black text-[#0B1B45] tracking-tight mt-0.5 group-hover:text-[#BE185D] transition-colors">
+                    <h3 className="text-xl sm:text-2xl font-black text-[#0B1B45] tracking-tight mt-0.5 group-hover:text-[#1D4ED8] transition-colors">
                       POS &amp; Billing
                     </h3>
                     <p className="mt-1 text-xs text-[#1E293B] font-semibold leading-snug max-w-[280px] line-clamp-2">
@@ -325,7 +325,7 @@ export function Dashboard() {
                   </div>
 
                   <div className="relative z-10 mt-2.5 sm:mt-3">
-                    <div className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#BE185D] via-[#E11D48] to-[#FB7185] px-4 py-1.5 sm:py-2 text-xs font-bold text-white shadow-[0_4px_12px_rgba(225,29,72,0.28)] hover:brightness-105 active:scale-95 transition-all">
+                    <div className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-[#0B1B45] via-[#142B5C] to-[#2449C6] px-4 py-1.5 sm:py-2 text-xs font-bold text-white shadow-[0_4px_12px_rgba(11,27,69,0.25)] hover:brightness-110 active:scale-95 transition-all">
                       <span>Launch Counter Terminal</span>
                       <span className="font-extrabold text-sm">&gt;</span>
                     </div>
@@ -334,12 +334,12 @@ export function Dashboard() {
               );
             }
 
-            // Standard Module Card: High contrast, highlighted text & cards
+            // Standard Module Card: High contrast, highlighted text & matching background
             return (
               <div
                 key={item.to}
                 onClick={() => navigate(item.to)}
-                className="group cursor-pointer rounded-2xl border-2 border-[#D5E3F7] bg-white p-2.5 sm:p-3 lg:p-3 text-[#0B1B45] shadow-[0_2px_8px_rgba(11,27,69,0.05)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(11,27,69,0.1)] hover:border-[#2449C6] flex flex-col justify-between"
+                className="group cursor-pointer rounded-2xl border-2 border-[#BFDBFE] bg-gradient-to-br from-[#FFFFFF] via-[#F0F5FF] to-[#E0EEFD] p-2.5 sm:p-3 lg:p-3 text-[#0B1B45] shadow-[0_2px_8px_rgba(37,99,235,0.06)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(37,99,235,0.12)] hover:border-[#2563EB] flex flex-col justify-between"
               >
                 <div className="flex items-center justify-between">
                   <div className={`flex h-8.5 w-8.5 sm:h-9 sm:w-9 items-center justify-center rounded-xl border ${item.iconColor} shadow-2xs transition-transform group-hover:scale-105`}>
