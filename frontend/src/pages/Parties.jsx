@@ -206,7 +206,7 @@ function CustomersPanel({ canManage }) {
 
           <form onSubmit={handleSubmit} className="space-y-3.5">
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
+              <label className="block text-xs font-bold uppercase tracking-wider text-[#0B1B45] mb-1">
                 Customer Name / Ledger <span className="text-rose-500">*</span>
               </label>
               <input
@@ -220,7 +220,7 @@ function CustomersPanel({ canManage }) {
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Phone Number</label>
+              <label className="block text-xs font-bold uppercase tracking-wider text-[#0B1B45] mb-1">Phone Number</label>
               <input
                 type="text"
                 value={phone}
@@ -233,7 +233,7 @@ function CustomersPanel({ canManage }) {
 
             <div className="grid grid-cols-2 gap-2.5">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Route</label>
+                <label className="block text-xs font-bold uppercase tracking-wider text-[#0B1B45] mb-1">Route</label>
                 <select value={routeId} onChange={(e) => setRouteId(e.target.value)} disabled={!canManage} className="w-full rounded-xl border border-[#D5E3F7] bg-white px-3 py-2 text-sm font-medium text-[#0B1B45] shadow-xs outline-none transition focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15">
                   <option value="">-- Select Route --</option>
                   {routes.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
@@ -241,7 +241,7 @@ function CustomersPanel({ canManage }) {
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">City</label>
+                <label className="block text-xs font-bold uppercase tracking-wider text-[#0B1B45] mb-1">City</label>
                 <select value={cityId} onChange={(e) => setCityId(e.target.value)} disabled={!canManage} className="w-full rounded-xl border border-[#D5E3F7] bg-white px-3 py-2 text-sm font-medium text-[#0B1B45] shadow-xs outline-none transition focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15">
                   <option value="">-- Select City --</option>
                   {cities.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -251,7 +251,7 @@ function CustomersPanel({ canManage }) {
 
             <div className="grid grid-cols-2 gap-2.5">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Credit Limit (Rs.)</label>
+                <label className="block text-xs font-bold uppercase tracking-wider text-[#0B1B45] mb-1">Credit Limit (Rs.)</label>
                 <input
                   type="number"
                   value={creditLimit}
@@ -263,7 +263,7 @@ function CustomersPanel({ canManage }) {
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Opening Balance (Rs.)</label>
+                <label className="block text-xs font-bold uppercase tracking-wider text-[#0B1B45] mb-1">Opening Balance (Rs.)</label>
                 <input
                   type="number"
                   value={openingBalance}
@@ -277,7 +277,7 @@ function CustomersPanel({ canManage }) {
 
             <div className="grid grid-cols-2 gap-2.5">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Customer Type</label>
+                <label className="block text-xs font-bold uppercase tracking-wider text-[#0B1B45] mb-1">Customer Type</label>
                 <select value={isLocalCustomer} onChange={(e) => setIsLocalCustomer(e.target.value)} disabled={!canManage} className="w-full rounded-xl border border-[#D5E3F7] bg-white px-3 py-2 text-sm font-medium text-[#0B1B45] shadow-xs outline-none transition focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15">
                   <option value="1">Local Customer</option>
                   <option value="0">Outstation Customer</option>
@@ -285,7 +285,7 @@ function CustomersPanel({ canManage }) {
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Pricing Type</label>
+                <label className="block text-xs font-bold uppercase tracking-wider text-[#0B1B45] mb-1">Pricing Type</label>
                 <select value={pricingType} onChange={(e) => setPricingType(e.target.value)} disabled={!canManage} className="w-full rounded-xl border border-[#D5E3F7] bg-white px-3 py-2 text-sm font-medium text-[#0B1B45] shadow-xs outline-none transition focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15">
                   <option value="normal">Normal</option>
                   <option value="retail">Retail</option>
@@ -296,7 +296,7 @@ function CustomersPanel({ canManage }) {
 
             <div className="grid grid-cols-2 gap-2.5">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">GST No / GSTIN</label>
+                <label className="block text-xs font-bold uppercase tracking-wider text-[#0B1B45] mb-1">GST No / GSTIN</label>
                 <input
                   type="text"
                   value={gstin}
@@ -308,7 +308,7 @@ function CustomersPanel({ canManage }) {
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Group</label>
+                <label className="block text-xs font-bold uppercase tracking-wider text-[#0B1B45] mb-1">Group</label>
                 <input
                   type="text"
                   value={customerGroup}
@@ -321,7 +321,7 @@ function CustomersPanel({ canManage }) {
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Address</label>
+              <label className="block text-xs font-bold uppercase tracking-wider text-[#0B1B45] mb-1">Address</label>
               <textarea
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
@@ -334,7 +334,7 @@ function CustomersPanel({ canManage }) {
 
             <div className="grid grid-cols-2 gap-2.5">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Date of Joining</label>
+                <label className="block text-xs font-bold uppercase tracking-wider text-[#0B1B45] mb-1">Date of Joining</label>
                 <input
                   type="date"
                   value={doj}
@@ -344,7 +344,7 @@ function CustomersPanel({ canManage }) {
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Date of Birth</label>
+                <label className="block text-xs font-bold uppercase tracking-wider text-[#0B1B45] mb-1">Date of Birth</label>
                 <input
                   type="date"
                   value={dob}
@@ -356,7 +356,7 @@ function CustomersPanel({ canManage }) {
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">Status</label>
+              <label className="block text-xs font-bold uppercase tracking-wider text-[#0B1B45] mb-1.5">Status</label>
               <div className="flex items-center gap-4 bg-[#F8FAFD] p-3 rounded-xl border border-[#D5E3F7]">
                 <label className="flex items-center gap-2 text-sm font-bold cursor-pointer text-[#0B1B45]">
                   <input
@@ -403,38 +403,38 @@ function CustomersPanel({ canManage }) {
       {/* RIGHT TABLE */}
       <div className="lg:col-span-7">
         <div className="rounded-2xl border border-[#D5E3F7] bg-white shadow-xs overflow-hidden">
-          <div className="p-4 border-b border-[#D5E3F7] bg-gradient-to-r from-white via-[#F8FAFD] to-white flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <h2 className="text-base font-bold text-[#0B1B45] flex items-center gap-2">
+          <div className="px-3.5 py-3 border-b border-[#D5E3F7] bg-gradient-to-r from-white via-[#F8FAFD] to-white flex flex-col gap-2.5 xl:flex-row xl:items-center xl:justify-between">
+            <h2 className="text-sm font-bold text-[#0B1B45] flex items-center gap-1.5 shrink-0 whitespace-nowrap">
               <span>Customer Directory</span>
-              <span className="rounded-full bg-[#EDF5FF] border border-[#D5E3F7] px-2.5 py-0.5 text-xs font-bold text-[#2449C6]">{filtered.length} Total</span>
+              <span className="rounded-full bg-[#EDF5FF] border border-[#D5E3F7] px-2 py-0.5 text-[11px] font-bold text-[#2449C6]">{filtered.length} Total</span>
             </h2>
 
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+            <div className="flex items-center gap-1.5 flex-nowrap overflow-x-auto no-scrollbar">
+              <div className="relative shrink-0">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={13} />
                 <input
                   type="text"
                   placeholder="Search customers..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="rounded-xl border border-[#D5E3F7] bg-[#F8FAFD] pl-9 pr-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-400 focus:bg-white focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15 outline-none transition-all w-44 sm:w-52"
+                  className="rounded-xl border border-[#D5E3F7] bg-[#F8FAFD] pl-8 pr-2.5 py-1.5 text-xs text-slate-800 placeholder:text-slate-400 focus:bg-white focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15 outline-none transition-all w-32 sm:w-40 md:w-44"
                 />
               </div>
 
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="rounded-xl border border-[#D5E3F7] bg-[#F8FAFD] px-3 py-1.5 text-xs font-medium text-slate-800 focus:bg-white focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15 outline-none transition-all w-28"
+                className="rounded-xl border border-[#D5E3F7] bg-[#F8FAFD] px-2 py-1.5 text-xs font-medium text-slate-800 focus:bg-white focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15 outline-none transition-all w-24 shrink-0"
               >
                 <option value="all">All Status</option>
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
               </select>
               {canManage && (
-                <>
-                  <Button variant="excel" size="sm" icon={<FileSpreadsheet size={14} className="text-emerald-100" />} onClick={() => customersApi.downloadExport()}>Export Excel</Button>
-                  <Button variant="excel" size="sm" icon={<Upload size={14} className="text-emerald-100" />} onClick={() => setImportOpen((v) => !v)}>Import Excel</Button>
-                </>
+                <div className="flex items-center gap-1.5 shrink-0 whitespace-nowrap">
+                  <Button variant="excel" size="sm" icon={<FileSpreadsheet size={13} className="text-emerald-100" />} onClick={() => customersApi.downloadExport()}>Export Excel</Button>
+                  <Button variant="excel" size="sm" icon={<Upload size={13} className="text-emerald-100" />} onClick={() => setImportOpen((v) => !v)}>Import Excel</Button>
+                </div>
               )}
             </div>
           </div>
@@ -689,7 +689,7 @@ function SuppliersPanel({ canManage }) {
 
           <form onSubmit={handleSubmit} className="space-y-3.5">
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Supplier Name <span className="text-red-500">*</span></label>
+              <label className="block text-xs font-bold uppercase tracking-wider text-[#0B1B45] mb-1">Supplier Name <span className="text-red-500">*</span></label>
               <input
                 type="text"
                 value={name}
@@ -701,7 +701,7 @@ function SuppliersPanel({ canManage }) {
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Phone Number</label>
+              <label className="block text-xs font-bold uppercase tracking-wider text-[#0B1B45] mb-1">Phone Number</label>
               <input
                 type="text"
                 value={phone}
@@ -713,7 +713,7 @@ function SuppliersPanel({ canManage }) {
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">GSTIN Number</label>
+              <label className="block text-xs font-bold uppercase tracking-wider text-[#0B1B45] mb-1">GSTIN Number</label>
               <input
                 type="text"
                 value={gstin}
@@ -725,7 +725,7 @@ function SuppliersPanel({ canManage }) {
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Opening Balance (Rs.)</label>
+              <label className="block text-xs font-bold uppercase tracking-wider text-[#0B1B45] mb-1">Opening Balance (Rs.)</label>
               <input
                 type="number"
                 value={openingBalance}
@@ -737,7 +737,7 @@ function SuppliersPanel({ canManage }) {
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Status</label>
+              <label className="block text-xs font-bold uppercase tracking-wider text-[#0B1B45] mb-1.5">Status</label>
               <div className="flex items-center gap-4 bg-[#F8FAFD] p-2.5 rounded-xl border border-[#D5E3F7]">
                 <label className="flex items-center gap-2 text-sm font-bold cursor-pointer text-slate-800">
                   <input type="radio" name="sup_status" checked={isActive} onChange={() => setIsActive(true)} disabled={!canManage} className="accent-[#2449C6] h-4 w-4" />
@@ -766,9 +766,9 @@ function SuppliersPanel({ canManage }) {
       <div className="lg:col-span-8">
         <div className="rounded-2xl border border-[#D5E3F7] bg-white shadow-xs overflow-hidden">
           <div className="p-4 border-b border-[#D5E3F7] bg-gradient-to-r from-white via-[#F8FAFD] to-white flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <h2 className="text-base font-bold text-[#0B1B45] flex items-center gap-2">
+            <h2 className="text-sm font-bold text-[#0B1B45] flex items-center gap-1.5 shrink-0 whitespace-nowrap">
               <span>Supplier Directory</span>
-              <span className="rounded-full bg-[#EDF5FF] border border-[#D5E3F7] px-2.5 py-0.5 text-xs font-bold text-[#2449C6]">{filtered.length} Total</span>
+              <span className="rounded-full bg-[#EDF5FF] border border-[#D5E3F7] px-2 py-0.5 text-[11px] font-bold text-[#2449C6]">{filtered.length} Total</span>
             </h2>
 
             <div className="flex items-center gap-2">

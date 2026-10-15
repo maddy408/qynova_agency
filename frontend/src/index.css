@@ -238,3 +238,18 @@ table:not(.thermal-invoice table):not(.a4-invoice table) select {
   font-size: 12px !important;
 }
 
+/* ==========================================================================
+   Form Labels - Dark Color Highlighted Standard Across All Forms
+   ========================================================================== */
+label:not(.thermal-invoice *):not(.a4-invoice *):not([class*="bg-"]):not([class*="badge"]) {
+  color: #0B1B45 !important;
+  font-weight: 700 !important;
+}
+
+label:not(.thermal-invoice *):not(.a4-invoice *) span.text-rose-500,
+label:not(.thermal-invoice *):not(.a4-invoice *) span.text-red-500,
+label:not(.thermal-invoice *):not(.a4-invoice *) span.text-rose-600,
+label:not(.thermal-invoice *):not(.a4-invoice *) span.text-red-600 {
+  color: #E11D48 !important;
+}
+

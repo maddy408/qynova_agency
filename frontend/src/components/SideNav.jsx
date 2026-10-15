@@ -25,7 +25,7 @@ function SideNavItem({ to, label, icon: Icon, end, activePaths, badge, onClick }
       onClick={onClick}
       className={({ isActive }) => {
         const active = isCustomActive !== undefined ? isCustomActive : isActive;
-        return `group relative flex items-center justify-between rounded-xl px-3 py-2 text-xs font-semibold transition-all select-none ${
+        return `group relative flex items-center justify-between rounded-xl px-3 py-2 text-sm font-semibold transition-all select-none ${
           active
             ? 'bg-gradient-to-r from-[#FFF5DE] via-[#FCE9BD] to-[#E8C985] text-[#0B1B45] font-extrabold shadow-[0_4px_14px_rgba(232,201,133,0.35)]'
             : 'text-white/85 hover:bg-white/10 hover:text-[#FFF5DE]'
@@ -37,17 +37,17 @@ function SideNavItem({ to, label, icon: Icon, end, activePaths, badge, onClick }
         return (
           <>
             <div className="flex items-center gap-2.5 min-w-0">
-              <span className={`flex h-6.5 w-6.5 shrink-0 items-center justify-center rounded-lg transition-colors ${
+              <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-colors ${
                 active
                   ? 'bg-[#0B1B45]/15 text-[#0B1B45]'
                   : 'bg-white/5 text-[#E8C985] group-hover:text-[#FFF5DE] group-hover:bg-[#E8C985]/15'
               }`}>
-                <Icon size={14} />
+                <Icon size={16} />
               </span>
               <span className="truncate">{label}</span>
             </div>
             {badge && (
-              <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-black tracking-wider uppercase ${
+              <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-black tracking-wider uppercase ${
                 active ? 'bg-[#0B1B45] text-[#E8C985]' : 'bg-[#E8C985]/20 text-[#FCE9BD] border border-[#E8C985]/30'
               }`}>
                 {badge}
@@ -181,7 +181,7 @@ export function SideNav({ isOpen, onToggle, onClose }) {
 
         {/* Navigation Items (Full Length with smooth whole-sidebar scrolling when needed) */}
         <nav className="flex-1 px-2.5 py-2 space-y-1">
-          <div className="px-3 pb-1 pt-2 text-[10px] font-extrabold uppercase tracking-widest text-[#E8C985]">
+          <div className="px-3 pb-1 pt-2 text-[11px] font-extrabold uppercase tracking-widest text-[#E8C985]">
             Main Navigation
           </div>
 
@@ -224,7 +224,7 @@ export function SideNav({ isOpen, onToggle, onClose }) {
             />
           )}
 
-          <div className="pt-3 px-3 pb-1 text-[10px] font-extrabold uppercase tracking-widest text-[#E8C985]">
+          <div className="pt-3 px-3 pb-1 text-[11px] font-extrabold uppercase tracking-widest text-[#E8C985]">
             Operations &amp; Reports
           </div>
 

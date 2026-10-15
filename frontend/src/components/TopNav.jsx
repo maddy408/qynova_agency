@@ -47,7 +47,7 @@ function NavItem({ to, label, icon: Icon, end, activePaths, onClick }) {
       onClick={onClick}
       className={({ isActive }) => {
         const active = isCustomActive !== undefined ? isCustomActive : isActive;
-        return `flex shrink-0 items-center gap-1.5 rounded-xl px-2 py-1 text-xs font-semibold transition-all whitespace-nowrap ${
+        return `flex shrink-0 items-center gap-1.5 rounded-xl px-2.5 py-1 text-sm font-semibold transition-all whitespace-nowrap ${
           active
             ? 'bg-gradient-to-b from-[#1D4ED8] via-[#2563EB] to-[#3B82F6] text-white shadow-md font-bold'
             : 'text-white/85 hover:bg-white/10 hover:text-white'
