@@ -838,13 +838,26 @@ export function POS() {
             </button>
           </div>
 
-          {/* Products List Toolbar (Categories removed per client requirement) */}
-          <div className="mb-4 flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <span className="text-sm sm:text-base font-extrabold text-[#0B1B45] tracking-tight">Products Catalog</span>
-              <span className="rounded-full bg-white border border-[#D5E3F7] px-2.5 py-0.5 text-xs font-black text-[#2449C6] shadow-2xs">
-                {gridItems.length} items
-              </span>
+          {/* Products List Toolbar (All option retained, specific categories omitted per request) */}
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setActiveCategory('all')}
+                className={`rounded-full px-5 py-1.5 text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+                  activeCategory === 'all'
+                    ? 'bg-gradient-to-r from-[#446BF5] via-[#355CEE] to-[#2449C6] text-white shadow-[0_3px_10px_rgba(36,73,198,0.3)]'
+                    : 'border border-[#D5E3F7] bg-white text-[#64789D] hover:text-[#14264F] hover:bg-[#F8FAFF] shadow-2xs'
+                }`}
+              >
+                All
+              </button>
+              <div className="flex items-center gap-2">
+                <span className="text-sm sm:text-base font-extrabold text-[#0B1B45] tracking-tight">Products Catalog</span>
+                <span className="rounded-full bg-white border border-[#D5E3F7] px-2.5 py-0.5 text-xs font-black text-[#2449C6] shadow-2xs">
+                  {gridItems.length} items
+                </span>
+              </div>
             </div>
             <div className="flex overflow-hidden rounded-xl border border-[#D5E3F7] bg-white p-0.5 shadow-[0_2px_6px_rgba(15,30,65,0.04)] gap-0.5">
               <button
