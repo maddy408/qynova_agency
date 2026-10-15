@@ -254,29 +254,19 @@ export function SideNav({ isOpen, onToggle, onClose }) {
           )}
         </nav>
 
-        {/* Footer Area: Branch Context + User Info + Logout */}
+        {/* Footer Area: Branch Context + Logout */}
         <div className="p-3 border-t border-[#1C3675]/70 bg-[#071333]/70 space-y-2 shrink-0 mt-auto">
           <SidebarBranchSwitcher />
 
-          <div className="flex items-center justify-between gap-2 pt-1">
-            <div className="flex items-center gap-2 min-w-0">
-              <div className="flex h-7.5 w-7.5 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#2449C6] to-[#0B1B45] text-white font-bold text-xs ring-1 ring-white/20">
-                {user?.name && user.name !== 'Super Admin' ? user.name.charAt(0).toUpperCase() : 'A'}
-              </div>
-              <div className="flex flex-col leading-tight min-w-0">
-                <span className="text-xs font-bold text-white truncate">{user?.name && user.name !== 'Super Admin' ? user.name : 'Administrator'}</span>
-                <span className="text-[10px] text-[#E8C985] font-semibold capitalize truncate">{user?.role && user.role !== 'Super Admin' ? user.role : 'Admin'}</span>
-              </div>
-            </div>
-
+          <div className="pt-1">
             <button
               type="button"
               onClick={logout}
-              className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-semibold text-white/85 hover:bg-rose-500/20 hover:text-rose-200 hover:border-rose-500/30 transition-all cursor-pointer shadow-xs"
+              className="w-full flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-white/85 hover:bg-rose-500/20 hover:text-rose-200 hover:border-rose-500/30 transition-all cursor-pointer shadow-xs"
               title="Logout of session"
             >
-              <LogOut size={13} className="text-white/85" />
-              <span className="hidden sm:inline">Logout</span>
+              <LogOut size={14} className="text-white/85" />
+              <span>Logout</span>
             </button>
           </div>
         </div>
