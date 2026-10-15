@@ -59,9 +59,33 @@ export function PreviousWeekPriceModal({ isOpen, onClose, data, loading, error }
 
   if (!isOpen) return null;
 
-  const prevWeek = data?.previous_week;
   const lastSale = data?.last_sale;
-  const yearlyPrices = Array.isArray(data?.yearly_prices) ? data.yearly_prices : [];
+  const prevWeek = data?.previous_week;
+
+  // Collect distinct past selling amounts
+  const previousAmounts = [];
+  if (lastSale?.price) {
+    previousAmounts.push(lastSale.price);
+  }
+  if (Array.isArray(data?.yearly_prices)) {
+    data.yearly_prices.forEach((yp) => {
+      if (yp.price && !previousAmounts.includes(yp.price)) {
+        previousAmounts.push(yp.price);
+      }
+    });
+  }
+  if (prevWeek?.single_price && !previousAmounts.includes(prevWeek.single_price)) {
+    previousAmounts.push(prevWeek.single_price);
+  }
+  if (Array.isArray(prevWeek?.prices)) {
+    prevWeek.prices.forEach((p) => {
+      if (p.price && !previousAmounts.includes(p.price)) {
+        previousAmounts.push(p.price);
+      }
+    });
+  }
+
+  const primaryLastAmount = previousAmounts[0] ?? null;
 
   return (
     <div
@@ -80,11 +104,11 @@ export function PreviousWeekPriceModal({ isOpen, onClose, data, loading, error }
         <div className="flex items-center justify-between border-b border-[#1C3675] bg-gradient-to-r from-[#0B1B45] via-[#142B5C] to-[#1C3675] px-5 py-4 text-white shrink-0">
           <div className="flex items-center gap-2.5">
             <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/10 text-[#E8C985] shadow-xs">
-              <Calendar size={18} />
+              <Tag size={18} />
             </span>
             <div>
               <h2 id="prev-week-price-title" className="text-sm font-bold text-white tracking-tight">
-                Selling Price History & Rates
+                Last Amount Details
               </h2>
               {data && (
                 <p className="text-xs text-white/70 font-medium">
@@ -117,7 +141,7 @@ export function PreviousWeekPriceModal({ isOpen, onClose, data, loading, error }
               <div className="flex items-start gap-2.5 rounded-2xl bg-amber-50 p-3.5 text-amber-900 border border-amber-200/80 mb-4 text-xs font-medium">
                 <AlertCircle size={18} className="mt-0.5 shrink-0 text-amber-600" />
                 <div>
-                  <p className="font-bold">Could not fetch selling price history</p>
+                  <p className="font-bold">Could not fetch selling price</p>
                   <p className="mt-0.5 text-amber-800">{error}</p>
                 </div>
               </div>
@@ -151,127 +175,56 @@ export function PreviousWeekPriceModal({ isOpen, onClose, data, loading, error }
                 </div>
               </div>
 
-              {/* Price Comparison Grid */}
+              {/* Price Cards Grid: Current Rate & Last Amount */}
               <div className="grid grid-cols-2 gap-3">
-                {/* Previous Week Price Box */}
-                <div className="rounded-2xl border border-[#D5E3F7] p-3.5 bg-white shadow-2xs">
-                  <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                    Previous Week Rate
-                  </div>
-                  <div className="mt-1 text-base sm:text-lg font-black text-[#0B1B45]">
-                    {prevWeek?.has_data ? (
-                      prevWeek.single_price ? (
-                        `₹${prevWeek.single_price}`
-                      ) : (
-                        <span className="text-xs sm:text-sm font-bold text-[#0B1B45]">
-                          ₹{prevWeek.lowest} – ₹{prevWeek.highest}
-                        </span>
-                      )
-                    ) : (
-                      <span className="text-xs font-normal text-slate-400 italic">No Sales</span>
-                    )}
-                  </div>
-                  <div className="mt-1 text-[11px] font-medium text-slate-400">
-                    {prevWeek?.has_data && prevWeek.sales_count > 0 ? (
-                      `${prevWeek.sales_count} bill${prevWeek.sales_count > 1 ? 's' : ''}`
-                    ) : (
-                      'None'
-                    )}
-                  </div>
-                </div>
-
                 {/* Current Price Box */}
                 <div className="rounded-2xl border border-[#D5E3F7] p-3.5 bg-gradient-to-br from-[#EDF5FF] to-[#E3EEFC] shadow-2xs">
                   <div className="text-[11px] font-bold uppercase tracking-wider text-[#2449C6]">
-                    Current Selling Rate
+                    Current Rate
                   </div>
-                  <div className="mt-1 text-base sm:text-lg font-black text-[#0B1B45]">
+                  <div className="mt-1 text-base sm:text-xl font-black text-[#0B1B45]">
                     ₹{data.current_price}
                   </div>
                   <div className="mt-1 text-[11px] font-semibold text-slate-600">
                     {data.offer_active ? `Normal: ₹${data.normal_price}` : 'Effective Rate'}
                   </div>
                 </div>
+
+                {/* Last Amount Box */}
+                <div className="rounded-2xl border border-[#D5E3F7] p-3.5 bg-white shadow-2xs">
+                  <div className="text-[11px] font-bold uppercase tracking-wider text-[#0B1B45]">
+                    Last Amount
+                  </div>
+                  <div className="mt-1 text-base sm:text-xl font-black text-[#0B1B45]">
+                    {primaryLastAmount ? (
+                      `₹${primaryLastAmount}`
+                    ) : (
+                      <span className="text-xs font-normal text-slate-400 italic">No Sales</span>
+                    )}
+                  </div>
+                  <div className="mt-1 text-[11px] font-semibold text-slate-500">
+                    {lastSale?.sold_on ? formatDate(lastSale.sold_on) : (primaryLastAmount ? 'Previous rate' : 'No previous sale')}
+                  </div>
+                </div>
               </div>
 
-              {/* Last Selling Price Section */}
-              <div className="rounded-2xl border border-[#EAF1FA] bg-[#F8FAFD] p-3.5">
-                <div className="flex items-center justify-between">
-                  <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                    Last Selling Price
+              {/* All Previous Amounts (if multiple rates were recorded) */}
+              {previousAmounts.length > 1 && (
+                <div className="rounded-2xl border border-[#D5E3F7] bg-white p-3.5 shadow-2xs">
+                  <div className="text-[11px] font-bold uppercase tracking-wider text-slate-700 mb-2">
+                    Last Amounts
                   </div>
-                  {lastSale?.sold_on && (
-                    <span className="text-[11px] font-medium text-slate-500">
-                      {formatDate(lastSale.sold_on)}
-                    </span>
-                  )}
-                </div>
-                <div className="mt-1 text-base sm:text-lg font-black text-[#0B1B45]">
-                  {lastSale?.price ? (
-                    `₹${lastSale.price}`
-                  ) : (
-                    <span className="text-xs font-normal text-slate-400 italic">No previous sale found.</span>
-                  )}
-                </div>
-                {lastSale && (
-                  <div className="mt-0.5 text-[11px] text-slate-500 font-medium">
-                    Qty: {lastSale.quantity} {data.unit || 'PCS'}
-                  </div>
-                )}
-              </div>
-
-              {/* 1-Year Rate Changes Card */}
-              <div className="rounded-2xl border border-[#D5E3F7] bg-white p-3.5 shadow-2xs">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[#2449C6]">
-                    <History size={13} className="text-[#2449C6]" />
-                    <span>1-Year Rate Changes</span>
-                  </div>
-                  <span className="text-[10px] font-semibold text-slate-500 bg-[#EDF5FF] px-2 py-0.5 rounded-full border border-[#D5E3F7]">
-                    Past 365 Days
-                  </span>
-                </div>
-
-                {yearlyPrices.length > 0 ? (
-                  <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                    {yearlyPrices.map((yp, idx) => (
-                      <div
+                  <div className="flex flex-wrap gap-2">
+                    {previousAmounts.map((price, idx) => (
+                      <span
                         key={idx}
-                        className="flex items-center justify-between rounded-xl bg-[#F8FAFD] p-2.5 border border-[#EAF1FA] text-xs hover:border-[#D5E3F7] transition"
+                        className="rounded-xl border border-[#D5E3F7] bg-[#F8FAFD] px-3.5 py-1.5 text-sm font-black text-[#0B1B45] shadow-2xs"
                       >
-                        <div className="flex flex-col">
-                          <span className="font-bold text-[#0B1B45] text-sm">
-                            ₹{yp.price}
-                          </span>
-                          <span className="text-[11px] text-slate-500 font-medium">
-                            {yp.first_sold_date === yp.last_sold_date
-                              ? `Rate recorded: ${formatDate(yp.last_sold_date)}`
-                              : `Rate changed: ${formatDate(yp.first_sold_date)} → ${formatDate(yp.last_sold_date)}`}
-                          </span>
-                        </div>
-                        <div className="text-right">
-                          <span className="font-semibold text-slate-700 text-xs">
-                            {yp.quantity} {data.unit || 'PCS'}
-                          </span>
-                          <span className="block text-[10px] text-slate-500">
-                            {yp.bills} {yp.bills === 1 ? 'bill' : 'bills'}
-                          </span>
-                        </div>
-                      </div>
+                        ₹{price}
+                      </span>
                     ))}
                   </div>
-                ) : (
-                  <p className="text-xs text-slate-400 italic py-1">
-                    No rate changes recorded in the past 1 year.
-                  </p>
-                )}
-              </div>
-
-              {/* Missing data or Ambiguity message */}
-              {data.message && (
-                <p className="text-xs text-slate-600 bg-[#F8FAFD] rounded-xl p-2.5 border border-[#EAF1FA] font-medium">
-                  {data.message}
-                </p>
+                </div>
               )}
 
               {/* Dismiss / Close Action */}

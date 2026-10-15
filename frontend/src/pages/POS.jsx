@@ -175,6 +175,23 @@ export function POS() {
     return map;
   }, [stockQuery.data]);
 
+  const getItemStock = (item) => {
+    if (!item) return 0;
+    if (stockByItemId[item.id] !== undefined) {
+      return Number(stockByItemId[item.id]);
+    }
+    return Number(item.opening_stock ?? 0);
+  };
+
+  const isItemOutOfStock = (item) => {
+    if (!item) return false;
+    if (stockQuery.isLoading) return false;
+    if (canViewStock) {
+      return getItemStock(item) <= 0;
+    }
+    return false;
+  };
+
   const activeCategories = useMemo(
     () => categories.filter((c) => c.is_active === undefined || c.is_active === null || Number(c.is_active) === 1),
     [categories]
@@ -278,7 +295,13 @@ export function POS() {
       } else if (e.key === 'Enter' && !isInput) {
         if (selectedGridIndex >= 0 && selectedGridIndex < gridItems.length) {
           e.preventDefault();
-          addItem(gridItems[selectedGridIndex]);
+          const itemToAdd = gridItems[selectedGridIndex];
+          if (!isItemOutOfStock(itemToAdd)) {
+            addItem(itemToAdd);
+          } else {
+            setMessage(`${itemToAdd.item_name} is out of stock.`);
+            setTimeout(() => setMessage(''), 3000);
+          }
         }
       }
     };
@@ -360,6 +383,12 @@ export function POS() {
   };
 
   const addItem = (item) => {
+    if (isItemOutOfStock(item)) {
+      setMessage(`${item.item_name} is out of stock.`);
+      setTimeout(() => setMessage(''), 3000);
+      return;
+    }
+
     const isAlreadyInCart = cart.some((l) => l.item.id === item.id && l.unit_id === item.base_unit_id);
     setCart((prev) => {
       const existing = prev.find((l) => l.item.id === item.id && l.unit_id === item.base_unit_id);
@@ -406,23 +435,39 @@ export function POS() {
     } else if (e.key === 'Enter') {
       e.preventDefault();
       if (selectedIndex >= 0 && selectedIndex < filteredItems.length) {
-        addItem(filteredItems[selectedIndex]);
+        const itemToAdd = filteredItems[selectedIndex];
+        if (!isItemOutOfStock(itemToAdd)) {
+          addItem(itemToAdd);
+        }
         return;
       }
       const term = search.trim().toLowerCase();
       if (term) {
         const exact = items.find((i) => (i.barcode || '').toLowerCase() === term || (i.item_code || '').toLowerCase() === term);
         if (exact) {
-          addItem(exact);
+          if (!isItemOutOfStock(exact)) {
+            addItem(exact);
+          } else {
+            setMessage(`${exact.item_name} is out of stock.`);
+            setTimeout(() => setMessage(''), 3000);
+          }
           return;
         }
         if (filteredItems.length === 1) {
-          addItem(filteredItems[0]);
+          if (!isItemOutOfStock(filteredItems[0])) {
+            addItem(filteredItems[0]);
+          } else {
+            setMessage(`${filteredItems[0].item_name} is out of stock.`);
+            setTimeout(() => setMessage(''), 3000);
+          }
           return;
         }
       }
       if (selectedGridIndex >= 0 && selectedGridIndex < gridItems.length) {
-        addItem(gridItems[selectedGridIndex]);
+        const itemToAdd = gridItems[selectedGridIndex];
+        if (!isItemOutOfStock(itemToAdd)) {
+          addItem(itemToAdd);
+        }
         return;
       }
     } else if (e.key === 'Escape') {
@@ -713,23 +758,40 @@ export function POS() {
               {filteredItems.length > 0 && (
                 <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-64 overflow-auto rounded-xl border border-[#D5E3F7] bg-white shadow-xl py-1">
                   {filteredItems.map((item, index) => {
+                    const stock = getItemStock(item);
+                    const outOfStock = isItemOutOfStock(item);
                     const isHighlighted = index === selectedIndex;
                     return (
                       <button
                         key={item.id}
+                        disabled={outOfStock}
                         ref={(el) => {
                           if (isHighlighted && el) {
                             el.scrollIntoView({ block: 'nearest' });
                           }
                         }}
-                        onClick={() => addItem(item)}
-                        onMouseEnter={() => setSelectedIndex(index)}
+                        onClick={() => {
+                          if (outOfStock) return;
+                          addItem(item);
+                        }}
+                        onMouseEnter={() => {
+                          if (!outOfStock) setSelectedIndex(index);
+                        }}
                         className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm transition-colors ${
-                          isHighlighted ? 'bg-[#EDF5FF] text-[#0B1B45] font-semibold' : 'hover:bg-[#F5F8FF]'
+                          outOfStock
+                            ? 'opacity-50 cursor-not-allowed bg-slate-50 text-slate-400'
+                            : isHighlighted ? 'bg-[#EDF5FF] text-[#0B1B45] font-semibold' : 'hover:bg-[#F5F8FF]'
                         }`}
                       >
-                        <span>{item.item_name} <span className="text-[#64789D]">({item.item_code})</span></span>
-                        <span className="text-[#64789D]">Rs. {resolveSellingPrice(item, item.base_unit_id, priceType).rate.toFixed(2)}</span>
+                        <div className="flex items-center gap-2">
+                          <span>{item.item_name} <span className="text-[#334155] font-medium">({item.item_code})</span></span>
+                          {outOfStock && (
+                            <span className="rounded-full bg-rose-100 text-rose-700 text-[10px] font-bold px-1.5 py-0.2">
+                              Out of stock
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-[#0B1B45] font-bold">Rs. {resolveSellingPrice(item, item.base_unit_id, priceType).rate.toFixed(2)}</span>
                       </button>
                     );
                   })}
@@ -806,31 +868,38 @@ export function POS() {
           {viewMode === 'grid' ? (
             <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-3 lg:grid-cols-4">
               {gridItems.map((item, index) => {
-                const stock = stockByItemId[item.id] ?? 0;
-                const outOfStock = canViewStock && stock <= 0;
+                const stock = getItemStock(item);
+                const outOfStock = isItemOutOfStock(item);
                 const lowStock = canViewStock && stock > 0 && stock <= Number(item.min_stock_threshold || 0);
                 const isSelected = index === selectedGridIndex;
                 return (
                   <button
                     key={item.id}
+                    disabled={outOfStock}
+                    aria-disabled={outOfStock}
                     ref={(el) => {
                       if (isSelected && el) {
                         el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
                       }
                     }}
                     onClick={() => {
+                      if (outOfStock) return;
                       addItem(item);
                       setSelectedGridIndex(index);
                     }}
-                    onMouseEnter={() => setSelectedGridIndex(index)}
-                    className={`group relative flex flex-col rounded-2xl border bg-white p-3 text-left transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_8px_24px_rgba(15,30,65,0.08)] active:translate-y-0 cursor-pointer ${
-                      isSelected
-                        ? 'border-[#315BFF]/60 shadow-[0_4px_16px_rgba(49,91,255,0.12)] -translate-y-0.5'
-                        : 'border-[#D8E6F7] shadow-[0_2px_10px_rgba(15,30,65,0.04)]'
+                    onMouseEnter={() => {
+                      if (!outOfStock) setSelectedGridIndex(index);
+                    }}
+                    className={`group relative flex flex-col rounded-2xl border p-3 text-left transition-all duration-200 select-none ${
+                      outOfStock
+                        ? 'opacity-50 cursor-not-allowed bg-slate-50/90 border-slate-200 shadow-none'
+                        : isSelected
+                        ? 'bg-white border-[#315BFF]/60 shadow-[0_4px_16px_rgba(49,91,255,0.12)] -translate-y-0.5 cursor-pointer'
+                        : 'bg-white border-[#D8E6F7] shadow-[0_2px_10px_rgba(15,30,65,0.04)] hover:-translate-y-1 hover:shadow-[0_8px_24px_rgba(15,30,65,0.08)] cursor-pointer'
                     }`}
                   >
                     <div className="relative mb-2">
-                      <ProductThumb item={item} size="h-20 w-full" />
+                      <ProductThumb item={item} size="h-20 w-full" className={outOfStock ? 'opacity-70 grayscale-[30%]' : ''} />
                       {outOfStock && (
                         <span className="absolute right-2 top-2 rounded-full bg-gradient-to-r from-[#F75A7B] to-[#EE3A5F] px-2.5 py-0.5 text-[10px] font-bold text-white shadow-[0_2px_6px_rgba(238,58,95,0.35)]">
                           Out of stock
@@ -873,6 +942,8 @@ export function POS() {
                 </thead>
                 <tbody>
                   {gridItems.map((item, index) => {
+                    const stock = getItemStock(item);
+                    const outOfStock = isItemOutOfStock(item);
                     const isSelected = index === selectedGridIndex;
                     return (
                       <tr
@@ -883,31 +954,38 @@ export function POS() {
                           }
                         }}
                         onClick={() => {
+                          if (outOfStock) return;
                           addItem(item);
                           setSelectedGridIndex(index);
                         }}
-                        onMouseEnter={() => setSelectedGridIndex(index)}
-                        className={`border-b border-[#D7E5FF] last:border-0 transition-colors cursor-pointer ${
-                          isSelected ? 'bg-[#EDF5FF] font-semibold text-[#0B1B45]' : 'hover:bg-[#F5F8FF]'
+                        onMouseEnter={() => {
+                          if (!outOfStock) setSelectedGridIndex(index);
+                        }}
+                        className={`border-b border-[#D7E5FF] last:border-0 transition-colors ${
+                          outOfStock
+                            ? 'opacity-50 cursor-not-allowed bg-slate-50/60'
+                            : isSelected ? 'bg-[#EDF5FF] font-semibold text-[#0B1B45] cursor-pointer' : 'hover:bg-[#F5F8FF] cursor-pointer'
                         }`}
                       >
-                        <td className="px-4 py-2"><ProductThumb item={item} size="h-9 w-9" /></td>
+                        <td className="px-4 py-2"><ProductThumb item={item} size="h-9 w-9" className={outOfStock ? 'grayscale-[30%]' : ''} /></td>
                         <td className="px-4 py-2 font-bold text-[#14264F]">{item.item_name}</td>
                         <td className="px-4 py-2 font-semibold text-[#14264F]">Rs. {resolveSellingPrice(item, item.base_unit_id, priceType).rate.toFixed(2)}</td>
                         <td className="px-4 py-2">{taxBadge(item)}</td>
-                        <td className="px-4 py-2 text-[#64789D]">{canViewStock ? stockByItemId[item.id] ?? 0 : item.item_code}</td>
+                        <td className="px-4 py-2 font-semibold text-[#334155]">{canViewStock ? `${stock}` : item.item_code}</td>
                         <td className="px-4 py-2 text-right">
                           <Button
                             size="sm"
                             variant="secondary"
-                            icon={<Plus size={14} />}
+                            disabled={outOfStock}
+                            icon={!outOfStock && <Plus size={14} />}
                             onClick={(e) => {
                               e.stopPropagation();
+                              if (outOfStock) return;
                               addItem(item);
                               setSelectedGridIndex(index);
                             }}
                           >
-                            Add
+                            {outOfStock ? 'Out of stock' : 'Add'}
                           </Button>
                         </td>
                       </tr>
