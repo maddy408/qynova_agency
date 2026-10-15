@@ -197,15 +197,6 @@ export function SideNav({ isOpen, onToggle, onClose }) {
             <SideNavItem to="/catalog" label="Catalog" icon={Package} activePaths={['/catalog']} />
           )}
 
-          {(canSettings || canCatalog || canStaff) && (
-            <SideNavItem
-              to="/settings"
-              label="Settings"
-              icon={SettingsIcon}
-              activePaths={['/settings', '/price-adjustment', '/staff']}
-            />
-          )}
-
           {(canCustomers || canSuppliers || canGrn) && (
             <SideNavItem
               to="/parties"
@@ -251,6 +242,15 @@ export function SideNav({ isOpen, onToggle, onClose }) {
 
           {canReports && (
             <SideNavItem to="/reports" label="Reports" icon={BarChart3} activePaths={['/reports']} />
+          )}
+
+          {(canSettings || canCatalog || canStaff) && (
+            <SideNavItem
+              to="/settings"
+              label="Settings"
+              icon={SettingsIcon}
+              activePaths={['/settings', '/price-adjustment', '/staff']}
+            />
           )}
         </nav>
 
