@@ -51,7 +51,7 @@ export function AppShell({ children }) {
 
   // Regular Pages: Sidebar on the left + TopHeader + Main Content
   return (
-    <div className={`flex min-h-screen ${isDashboard ? 'h-screen overflow-hidden' : ''} bg-[#F0F4FA] w-full overflow-x-hidden relative`}>
+    <div className={`flex min-h-screen ${isDashboard ? 'h-screen overflow-hidden bg-white' : 'bg-[#F0F4FA]'} w-full overflow-x-hidden relative`}>
       {/* Side Navbar: toggles open/closed via 3-lines icon */}
       <SideNav
         isOpen={sidebarOpen}
@@ -60,12 +60,12 @@ export function AppShell({ children }) {
       />
 
       {/* Main Content Area */}
-      <div className={`flex-1 flex flex-col min-w-0 ${isDashboard ? 'h-screen overflow-hidden' : ''} transition-all duration-300 ease-in-out`}>
+      <div className={`flex-1 flex flex-col min-w-0 ${isDashboard ? 'h-screen overflow-hidden bg-white' : ''} transition-all duration-300 ease-in-out`}>
         <TopHeader
           onToggleSidebar={toggleSidebar}
           sidebarOpen={sidebarOpen}
         />
-        <main className={`flex-1 w-full ${isDashboard ? 'p-2 sm:p-3 lg:px-6 lg:py-2.5 flex flex-col overflow-hidden' : 'p-3 sm:p-5 lg:p-6'}`}>
+        <main className={`flex-1 w-full ${isDashboard ? 'p-2 sm:p-3 lg:px-6 lg:py-2.5 flex flex-col overflow-hidden bg-white' : 'p-3 sm:p-5 lg:p-6'}`}>
           {children}
         </main>
         <StatusFooter />

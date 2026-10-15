@@ -200,7 +200,7 @@ export function Dashboard() {
   }, [searchQuery, selectedCategory]);
 
   return (
-    <div className="flex flex-col flex-1 h-full justify-between gap-2 sm:gap-2.5 lg:gap-3 font-sans overflow-hidden">
+    <div className="flex flex-col flex-1 h-full justify-between gap-2 sm:gap-2.5 lg:gap-3 font-sans overflow-hidden bg-white">
       {/* Header Bar */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between shrink-0">
         <div>
