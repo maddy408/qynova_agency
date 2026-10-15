@@ -70,9 +70,16 @@ export default function Users({ embedded = false }) {
                     {u.active ? t('common.active') : t('common.inactive')}
                   </span>
                 </td>
-                <td>
-                  <button className="text-brand-700 hover:text-brand-800 underline font-medium" onClick={() => setForm({ ...u, password: '', pin: '' })}>
-                    {t('common.edit')}
+                <td className="py-2 px-3 whitespace-nowrap">
+                  <button
+                    className="p-1.5 text-amber-600 hover:text-amber-800 hover:bg-amber-50 rounded transition-colors inline-flex items-center justify-center"
+                    onClick={() => setForm({ ...u, password: '', pin: '' })}
+                    title={t('common.edit')}
+                    type="button"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
                   </button>
                 </td>
               </tr>

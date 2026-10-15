@@ -111,6 +111,9 @@ export default function SurandaiInvoice({ bill, settings = {}, isCommissionView,
   const prevBal = Number(bill.previous_balance !== undefined ? bill.previous_balance : (bill.prev_balance !== undefined ? bill.prev_balance : 0));
   const todayBillTotal = Math.max(0, itemsTotal - discountVal);
   const paidVal = Number(bill.paid_amount || 0);
+  const munPartru = prevBal;
+  const varavu = paidVal;
+  const formatIndian = (num) => Number(num || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const paidForOldBalance = prevBal > 0 ? Math.max(0, Math.min(prevBal, paidVal - todayBillTotal)) : 0;
   const todayDueVal = Math.max(0, todayBillTotal - paidVal);
   const grandTotalVal = Number(bill.grand_total !== undefined ? bill.grand_total : (todayBillTotal + prevBal));
@@ -171,8 +174,6 @@ export default function SurandaiInvoice({ bill, settings = {}, isCommissionView,
             </div>
           </div>
 
-          <div className="border-t-[1.5px] border-[#0e6037] my-1" />
-
           {/* Deity Header & Shop Number Bar */}
           <div className="text-center font-bold text-[#0e6037] text-xs tracking-wide">
             {god1}
@@ -203,9 +204,6 @@ export default function SurandaiInvoice({ bill, settings = {}, isCommissionView,
 
             {/* Center Brand Title & Oval Logo */}
             <div className="text-center flex-1 px-1">
-              <div className="text-[9px] font-bold text-slate-800 leading-tight">
-                {god1}
-              </div>
               <div className="text-[9px] font-bold text-slate-800 leading-tight">
                 {god2}
               </div>
@@ -266,16 +264,15 @@ export default function SurandaiInvoice({ bill, settings = {}, isCommissionView,
             </div>
           </div>
 
-          {/* Mandi Items Table matching user request: Separate columns for Rate, Item, Kg, Nos, Rs, Paisa, no horizontal row lines */}
+          {/* Mandi Items Table matching user slip photo: விலை, பொருள் விபரம், எடை, பை, தொகை */}
           <table className="w-full border-collapse text-xs border border-[#0e6037]">
             <thead>
               <tr className="bg-[#e6f4ea] text-[#0e6037] border-b border-[#0e6037] text-center font-bold">
-                <th className="border-r border-[#0e6037] py-1.5 px-2 w-[16%] text-center">விலை (₹)</th>
-                <th className="border-r border-[#0e6037] py-1.5 px-3 w-[36%] text-left">விவரம்</th>
-                <th className="border-r border-[#0e6037] py-1.5 px-2 w-[16%] text-center">எடை (kg)</th>
-                <th className="border-r border-[#0e6037] py-1.5 px-2 w-[12%] text-center">எண்ணம்</th>
-                <th className="border-r border-[#0e6037] py-1.5 px-2 w-[12%] text-center">ரூ.</th>
-                <th className="py-1.5 px-2 w-[8%] text-center">பை</th>
+                <th className="border-r border-[#0e6037] py-1.5 px-2 w-[15%] text-right pr-2">விலை</th>
+                <th className="border-r border-[#0e6037] py-1.5 px-2 w-[37%] text-left pl-2">பொருள் விபரம்</th>
+                <th className="border-r border-[#0e6037] py-1.5 px-1 w-[18%] text-center">எடை</th>
+                <th className="border-r border-[#0e6037] py-1.5 px-1 w-[12%] text-center">பை</th>
+                <th className="py-1.5 px-2 w-[18%] text-right pr-2">தொகை</th>
               </tr>
             </thead>
             <tbody>
@@ -283,7 +280,6 @@ export default function SurandaiInvoice({ bill, settings = {}, isCommissionView,
                 if (l.is_empty) {
                   return (
                     <tr key={`empty-${index}`} className="h-6 border-none" style={{ border: 'none', borderBottom: 'none' }}>
-                      <td className="border-r border-[#0e6037] px-2">&nbsp;</td>
                       <td className="border-r border-[#0e6037] px-2">&nbsp;</td>
                       <td className="border-r border-[#0e6037] px-2">&nbsp;</td>
                       <td className="border-r border-[#0e6037] px-2">&nbsp;</td>
@@ -296,31 +292,30 @@ export default function SurandaiInvoice({ bill, settings = {}, isCommissionView,
                 const itemName = l.item_name_ta || l.item_name_en || l.item_name || '';
                 const rateVal = l.rate ? Number(l.rate) : 0;
                 const weightNum = parseFloat(l.weight !== undefined && l.weight !== null ? l.weight : (l.qty !== undefined ? l.qty : 0));
-                const weightDisplay = weightNum > 0 ? (Number.isInteger(weightNum) ? `${weightNum} kg` : `${weightNum.toFixed(2)} kg`) : '—';
-                const nosNum = parseFloat(l.nos !== undefined && l.nos !== null ? l.nos : (l.bags !== undefined ? l.bags : 0));
-                const nosDisplay = nosNum > 0 ? nosNum : '—';
+                const weightDisplay = weightNum > 0 ? weightNum.toFixed(2) : '—';
+                const bagNum = (l.bag_count !== null && l.bag_count !== undefined && l.bag_count !== '')
+                  ? Number(l.bag_count)
+                  : (parseFloat(l.nos !== undefined && l.nos !== null ? l.nos : (l.bags !== undefined ? l.bags : 0)) || 0);
+                const bagDisplay = bagNum > 0 ? bagNum : '';
 
                 const amountVal = l.amount !== undefined ? Number(l.amount) : (l.line_total !== undefined ? Number(l.line_total) : 0);
 
                 return (
                   <tr key={l.id || l.key || index} className="border-none font-medium" style={{ border: 'none', borderBottom: 'none' }}>
-                    <td className="border-r border-[#0e6037] py-2 px-2 text-right font-mono font-bold text-xs">
+                    <td className="border-r border-[#0e6037] py-2 px-2 text-right font-mono font-bold text-xs pr-2">
                       {rateVal > 0 ? rateVal.toFixed(2) : '—'}
                     </td>
-                    <td className="border-r border-[#0e6037] py-2 px-3 text-left font-bold text-xs truncate">
+                    <td className="border-r border-[#0e6037] py-2 px-2 text-left font-bold text-xs truncate pl-2">
                       {itemName}
                     </td>
-                    <td className="border-r border-[#0e6037] py-2 px-2 text-center font-mono font-bold text-xs">
+                    <td className="border-r border-[#0e6037] py-2 px-1 text-center font-mono font-bold text-xs">
                       {weightDisplay}
                     </td>
-                    <td className="border-r border-[#0e6037] py-2 px-2 text-center font-bold text-xs text-slate-700">
-                      {nosDisplay}
+                    <td className="border-r border-[#0e6037] py-2 px-1 text-center font-mono font-bold text-xs text-slate-800">
+                      {bagDisplay || ''}
                     </td>
-                    <td className="border-r border-[#0e6037] py-2 px-2 text-right font-mono font-bold text-xs">
+                    <td className="py-2 px-2 text-right font-mono font-bold text-xs pr-2">
                       {amountVal > 0 ? amountVal.toFixed(2) : '—'}
-                    </td>
-                    <td className="py-2 px-2 text-center font-mono font-bold text-xs">
-                      {amountVal > 0 ? '00' : '&nbsp;'}
                     </td>
                   </tr>
                 );
@@ -329,127 +324,137 @@ export default function SurandaiInvoice({ bill, settings = {}, isCommissionView,
               {/* If deductions exist, show items subtotal, deductions breakdown, deduction total, and final net total */}
               {totalDeductionsVal > 0 ? (
                 <>
-                  {/* Gross Items Subtotal Row: virpanai thogai text removed, field total numbers displayed */}
+                  {/* Gross Items Subtotal Row */}
                   <tr className="border-t-2 border-[#0e6037] font-bold bg-[#f7faf8]">
                     <td className="border-r border-[#0e6037] py-1 px-3 text-right font-bold text-xs" colSpan={4}>
-                      &nbsp;
+                      விற்பனை தொகை &nbsp;:
                     </td>
-                    <td className="border-r border-[#0e6037] py-1 px-2 text-right font-mono font-bold text-xs">
+                    <td className="py-1 px-2 text-right font-mono font-bold text-xs pr-2">
                       {itemsTotal.toFixed(2)}
-                    </td>
-                    <td className="py-1 px-2 text-center font-mono font-bold text-xs">
-                      00
                     </td>
                   </tr>
 
                   {/* Commission Mandi Breakdown Rows */}
                   <tr className="border-none" style={{ border: 'none', borderBottom: 'none' }}>
-                    <td className="border-r border-[#0e6037]" colSpan={1}></td>
+                    <td className="border-r border-[#0e6037]"></td>
                     <td className="border-r border-[#0e6037] py-0.5 px-3 text-right font-bold text-red-700">
                       கமிஷன்
                     </td>
                     <td className="border-r border-[#0e6037] py-0.5 px-2 text-right font-mono font-bold text-xs" colSpan={2}>
                       {commissionVal > 0 ? commissionVal.toFixed(2) : '0.00'}
                     </td>
-                    <td className="border-r border-[#0e6037]"></td>
                     <td></td>
                   </tr>
 
                   <tr className="border-none" style={{ border: 'none', borderBottom: 'none' }}>
-                    <td className="border-r border-[#0e6037]" colSpan={1}></td>
+                    <td className="border-r border-[#0e6037]"></td>
                     <td className="border-r border-[#0e6037] py-0.5 px-3 text-right font-bold text-red-700">
                       பற்று
                     </td>
                     <td className="border-r border-[#0e6037] py-0.5 px-2 text-right font-mono font-bold text-xs" colSpan={2}>
                       {patthuVal > 0 ? patthuVal.toFixed(2) : '0.00'}
                     </td>
-                    <td className="border-r border-[#0e6037]"></td>
                     <td></td>
                   </tr>
 
                   <tr className="border-none" style={{ border: 'none', borderBottom: 'none' }}>
-                    <td className="border-r border-[#0e6037]" colSpan={1}></td>
+                    <td className="border-r border-[#0e6037]"></td>
                     <td className="border-r border-[#0e6037] py-0.5 px-3 text-right font-bold text-red-700">
                       கூலி
                     </td>
                     <td className="border-r border-[#0e6037] py-0.5 px-2 text-right font-mono font-bold text-xs" colSpan={2}>
                       {cooliVal > 0 ? cooliVal.toFixed(2) : '0.00'}
                     </td>
-                    <td className="border-r border-[#0e6037]"></td>
                     <td></td>
                   </tr>
 
                   <tr className="border-none" style={{ border: 'none', borderBottom: 'none' }}>
-                    <td className="border-r border-[#0e6037]" colSpan={1}></td>
+                    <td className="border-r border-[#0e6037]"></td>
                     <td className="border-r border-[#0e6037] py-0.5 px-3 text-right font-bold text-red-700">
                       வாடகை
                     </td>
                     <td className="border-r border-[#0e6037] py-0.5 px-2 text-right font-mono font-bold text-xs" colSpan={2}>
                       {vadagaiVal > 0 ? vadagaiVal.toFixed(2) : '0.00'}
                     </td>
-                    <td className="border-r border-[#0e6037]"></td>
                     <td></td>
                   </tr>
 
                   {otherDeductionVal > 0 && (
                     <tr className="border-none" style={{ border: 'none', borderBottom: 'none' }}>
-                      <td className="border-r border-[#0e6037]" colSpan={1}></td>
+                      <td className="border-r border-[#0e6037]"></td>
                       <td className="border-r border-[#0e6037] py-0.5 px-3 text-right font-bold text-red-700">
                         இதர கழிவு
                       </td>
                       <td className="border-r border-[#0e6037] py-0.5 px-2 text-right font-mono font-bold text-xs" colSpan={2}>
                         {otherDeductionVal.toFixed(2)}
                       </td>
-                      <td className="border-r border-[#0e6037]"></td>
                       <td></td>
                     </tr>
                   )}
 
-                  {/* Deductions Total Row: kalivugal moththam text removed, field totals displayed */}
+                  {/* Deductions Total Row */}
                   <tr className="border-t border-b-2 border-[#0e6037] bg-rose-50/50 font-bold">
                     <td className="border-r border-[#0e6037] py-1 px-3 text-right font-bold text-xs" colSpan={2}>
-                      &nbsp;
+                      கழிவுகள் மொத்தம் &nbsp;:
                     </td>
                     <td className="border-r border-[#0e6037] py-1 px-2 text-right font-mono font-bold text-xs text-rose-800" colSpan={2}>
                       {totalDeductionsVal.toFixed(2)}
                     </td>
-                    <td className="border-r border-[#0e6037] py-1 px-2 text-right font-mono font-bold text-rose-700 text-xs">
+                    <td className="py-1 px-2 text-right font-mono font-bold text-rose-700 text-xs pr-2">
                       - {totalDeductionsVal.toFixed(2)}
-                    </td>
-                    <td className="py-1 px-2 text-center font-mono font-bold text-rose-700 text-xs">
-                      00
                     </td>
                   </tr>
 
-                  {/* Net Grand Total Row: Right side end under ரூ. and பை */}
+                  {/* Net Grand Total Row */}
                   <tr className="font-black bg-[#e6f4ea] border-t-2 border-[#0e6037]">
                     <td className="border-r border-[#0e6037] py-1.5 px-3 text-right font-black text-sm text-[#0e6037]" colSpan={4}>
-                      மொத்தம்
+                      மொத்தம் &nbsp;&nbsp;:
                     </td>
-                    <td className="border-r border-[#0e6037] py-1.5 px-2 text-right font-mono font-black text-sm text-[#0e6037]">
+                    <td className="py-1.5 px-2 text-right font-mono font-black text-sm text-[#0e6037] pr-2">
                       {netTotalVal.toFixed(2)}
-                    </td>
-                    <td className="py-1.5 px-2 text-center font-mono font-black text-sm text-[#0e6037]">
-                      00
                     </td>
                   </tr>
                 </>
               ) : (
-                /* No Deductions: Simple Grand Total row at the right side end */
+                /* No Deductions: Simple Grand Total row matching user photo */
                 <tr className="font-black bg-[#e6f4ea] border-t-2 border-[#0e6037]">
                   <td className="border-r border-[#0e6037] py-1.5 px-3 text-right font-black text-sm text-[#0e6037]" colSpan={4}>
-                    மொத்தம்
+                    மொத்தம் &nbsp;&nbsp;:
                   </td>
-                  <td className="border-r border-[#0e6037] py-1.5 px-2 text-right font-mono font-black text-sm text-[#0e6037]">
+                  <td className="py-1.5 px-2 text-right font-mono font-black text-sm text-[#0e6037] pr-2">
                     {itemsTotal.toFixed(2)}
-                  </td>
-                  <td className="py-1.5 px-2 text-center font-mono font-black text-sm text-[#0e6037]">
-                    00
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
+
+          {/* Mandi Balance Summary Box matching user receipt photo: முன் பற்று, வரவு, மொத்த பற்று */}
+          <div className="border border-[#0e6037] mt-1.5 p-2 bg-white text-xs">
+            <div className="grid grid-cols-12 gap-y-1 items-center font-bold">
+              <div className="col-span-5 text-right pr-2 text-slate-800">முன் பற்று:</div>
+              <div className="col-span-1 text-center font-mono">:</div>
+              <div className="col-span-6 text-right font-mono font-bold pr-2 text-slate-900">
+                {munPartru.toFixed(2)}
+              </div>
+
+              <div className="col-span-5 text-right pr-2 text-slate-800">வரவு</div>
+              <div className="col-span-1 text-center font-mono">:</div>
+              <div className="col-span-6 text-right font-mono font-bold pr-2 text-slate-900">
+                {varavu.toFixed(2)}
+              </div>
+
+              <div className="col-span-5 text-right pr-2 text-sm text-[#0e6037] font-black pt-1 border-t border-[#0e6037]">
+                மொத்த பற்று:
+              </div>
+              <div className="col-span-1 text-center font-mono text-sm text-[#0e6037] font-black pt-1 border-t border-[#0e6037]">
+                :
+              </div>
+              <div className="col-span-6 text-right font-mono font-black text-sm text-[#0e6037] pr-2 pt-1 border-t border-[#0e6037]">
+                {formatIndian((totalDeductionsVal > 0 ? netTotalVal : itemsTotal) + munPartru - varavu)}
+              </div>
+            </div>
+          </div>
 
           {/* Footer Section matching user image */}
           <div className="mt-2 flex items-center justify-between text-[9px] gap-2">
@@ -469,10 +474,9 @@ export default function SurandaiInvoice({ bill, settings = {}, isCommissionView,
 
           </div>
 
-          {/* Bottom Inquiries & Terms */}
+          {/* Bottom Terms */}
           <div className="mt-1 text-center text-[8.5px] text-slate-600 border-t border-gray-200 pt-1">
             <div>Terms: Goods once sold will not be taken back.</div>
-            {phones.length > 0 && <div>• For inquiries: {phones.join(' / ')}</div>}
           </div>
 
         </div>
@@ -502,8 +506,6 @@ export default function SurandaiInvoice({ bill, settings = {}, isCommissionView,
             <div className="font-mono pl-7">{phone3}</div>
           </div>
         </div>
-
-        <div className="border-t-[1.5px] border-[#0e6037] my-1" />
 
         {/* Deity Header & Shop Number Bar */}
         <div className="text-center font-bold text-[#0e6037] text-xs tracking-wide">
@@ -535,9 +537,6 @@ export default function SurandaiInvoice({ bill, settings = {}, isCommissionView,
 
           {/* Center Brand Title & Oval Logo */}
           <div className="text-center flex-1 px-1">
-            <div className="text-[9px] font-bold text-slate-800 leading-tight">
-              {god1}
-            </div>
             <div className="text-[9px] font-bold text-slate-800 leading-tight">
               {god2}
             </div>
@@ -599,20 +598,23 @@ export default function SurandaiInvoice({ bill, settings = {}, isCommissionView,
         </div>
 
         {/* Normal Bill Items Table (Order: Rate -> Item -> Kg -> Amount, No Middle Empty Rows) */}
+        {/* Normal Bill Items Table matching user slip photo: விலை, பொருள் விபரம், எடை, பை, தொகை */}
         <table className="w-full border-collapse text-xs border border-[#0e6037]">
           <thead>
             <tr className="bg-[#e6f4ea] text-[#0e6037] border-b border-[#0e6037] text-center font-bold">
-              <th className="border-r border-[#0e6037] py-1 px-1.5 w-[18%] text-right pr-2">விலை (₹)</th>
-              <th className="border-r border-[#0e6037] py-1 px-2 w-[46%] text-left">விவரம் (Item)</th>
-              <th className="border-r border-[#0e6037] py-1 px-1 w-[18%] text-center">எடை / அளவு (kg)</th>
-              <th className="py-1 px-1.5 w-[18%] text-right pr-2">தொகை (₹)</th>
+              <th className="border-r border-[#0e6037] py-1.5 px-2 w-[15%] text-right pr-2">விலை</th>
+              <th className="border-r border-[#0e6037] py-1.5 px-2 w-[37%] text-left pl-2">பொருள் விபரம்</th>
+              <th className="border-r border-[#0e6037] py-1.5 px-1 w-[18%] text-center">எடை</th>
+              <th className="border-r border-[#0e6037] py-1.5 px-1 w-[12%] text-center">பை</th>
+              <th className="py-1.5 px-2 w-[18%] text-right pr-2">தொகை</th>
             </tr>
           </thead>
           <tbody>
             {lines.map((l, index) => {
               if (l.is_empty) {
                 return (
-                  <tr key={`empty-${index}`} className="h-6 border-b border-[#0e6037]/20">
+                  <tr key={`empty-${index}`} className="h-6 border-none" style={{ border: 'none', borderBottom: 'none' }}>
+                    <td className="border-r border-[#0e6037]">&nbsp;</td>
                     <td className="border-r border-[#0e6037]">&nbsp;</td>
                     <td className="border-r border-[#0e6037]">&nbsp;</td>
                     <td className="border-r border-[#0e6037]">&nbsp;</td>
@@ -623,22 +625,27 @@ export default function SurandaiInvoice({ bill, settings = {}, isCommissionView,
 
               const itemName = l.item_name_ta || l.item_name_en || l.item_name || '';
               const weightNum = parseFloat(l.weight !== undefined && l.weight !== null ? l.weight : (l.qty || 1));
-              const qtyDisplay = l.is_charge_item 
-                ? `${l.nos || 1} nos` 
-                : `${isNaN(weightNum) ? '1' : weightNum} kg`;
+              const weightDisplay = weightNum > 0 ? weightNum.toFixed(2) : '—';
+              const bagNum = (l.bag_count !== null && l.bag_count !== undefined && l.bag_count !== '')
+                ? Number(l.bag_count)
+                : (parseFloat(l.nos !== undefined && l.nos !== null ? l.nos : (l.bags !== undefined ? l.bags : 0)) || 0);
+              const bagDisplay = bagNum > 0 ? bagNum : '';
               const rateVal = Number(l.rate || 0).toFixed(2);
               const amountVal = l.amount !== undefined ? Number(l.amount) : (l.line_total !== undefined ? Number(l.line_total) : 0);
 
               return (
-                <tr key={l.id || l.key || index} className="font-medium hover:bg-transparent">
+                <tr key={l.id || l.key || index} className="font-medium hover:bg-transparent border-none" style={{ border: 'none', borderBottom: 'none' }}>
                   <td className="border-r border-[#0e6037] py-1 px-1.5 text-right font-mono font-bold text-xs pr-2">
                     {rateVal}
                   </td>
-                  <td className="border-r border-[#0e6037] py-1 px-2 text-left font-bold text-xs truncate">
+                  <td className="border-r border-[#0e6037] py-1 px-2 text-left font-bold text-xs truncate pl-2">
                     {itemName}
                   </td>
                   <td className="border-r border-[#0e6037] py-1 px-1 text-center font-mono font-bold text-xs">
-                    {qtyDisplay}
+                    {weightDisplay}
+                  </td>
+                  <td className="border-r border-[#0e6037] py-1 px-1 text-center font-mono font-bold text-xs text-slate-800">
+                    {bagDisplay || ''}
                   </td>
                   <td className="py-1 px-1.5 text-right font-mono font-bold text-xs pr-2">
                     {amountVal.toFixed(2)}
@@ -646,43 +653,61 @@ export default function SurandaiInvoice({ bill, settings = {}, isCommissionView,
                 </tr>
               );
             })}
+
+            {discountVal > 0 && (
+              <tr className="border-t border-[#0e6037] text-red-600 font-bold">
+                <td className="border-r border-[#0e6037] py-1 px-3 text-right text-xs" colSpan={4}>
+                  தள்ளுபடி &nbsp;:
+                </td>
+                <td className="py-1 px-2 text-right font-mono font-bold text-xs pr-2">
+                  - {discountVal.toFixed(2)}
+                </td>
+              </tr>
+            )}
+
+            <tr className="font-black bg-[#e6f4ea] border-t-2 border-[#0e6037]">
+              <td className="border-r border-[#0e6037] py-1.5 px-3 text-right font-black text-sm text-[#0e6037]" colSpan={4}>
+                மொத்தம் &nbsp;&nbsp;:
+              </td>
+              <td className="py-1.5 px-2 text-right font-mono font-black text-sm text-[#0e6037] pr-2">
+                {todayBillTotal.toFixed(2)}
+              </td>
+            </tr>
           </tbody>
         </table>
 
-        {/* Normal Bill Bottom Summary (Clean 2-Column Layout) */}
-        <div className="border-t-2 border-[#0e6037] mt-1 pt-1 flex flex-row justify-between items-start text-xs">
-          
-          {/* Left: Old Balance & Notes */}
-          <div className="w-[45%] text-[10px] space-y-1">
-            {prevBal > 0 && (
-              <div>
-                <span className="font-bold text-amber-900 text-xs">பழைய பாக்கி: </span>
-                <span className="font-mono font-bold text-slate-800 text-xs">₹{prevBal.toFixed(2)}</span>
-              </div>
-            )}
-            {bill.notes && (
-              <div className="text-gray-600 italic">
-                குறிப்பு: {bill.notes}
-              </div>
-            )}
-          </div>
+        {/* Mandi Balance Summary Box matching user receipt photo: முன் பற்று, வரவு, மொத்த பற்று */}
+        <div className="border border-[#0e6037] mt-1.5 p-2 bg-white text-xs">
+          <div className="grid grid-cols-12 gap-y-1 items-center font-bold">
+            <div className="col-span-5 text-right pr-2 text-slate-800">முன் பற்று:</div>
+            <div className="col-span-1 text-center font-mono">:</div>
+            <div className="col-span-6 text-right font-mono font-bold pr-2 text-slate-900">
+              {munPartru.toFixed(2)}
+            </div>
 
-          {/* Right: Totals Breakdown (Only Discount & Moththam, no virpanai thogai, no seluthiyathu) */}
-          <div className="w-[50%] font-bold text-xs space-y-1">
-            {discountVal > 0 && (
-              <div className="flex justify-between text-red-600">
-                <span>தள்ளுபடி:</span>
-                <span className="font-mono">- ₹{discountVal.toFixed(2)}</span>
-              </div>
-            )}
+            <div className="col-span-5 text-right pr-2 text-slate-800">வரவு</div>
+            <div className="col-span-1 text-center font-mono">:</div>
+            <div className="col-span-6 text-right font-mono font-bold pr-2 text-slate-900">
+              {varavu.toFixed(2)}
+            </div>
 
-            <div className="flex justify-between border-t border-b border-[#0e6037] py-1 bg-[#e6f4ea] text-sm text-[#0e6037] font-black px-1.5 rounded-xs">
-              <span>மொத்தம்:</span>
-              <span className="font-mono">₹{todayBillTotal.toFixed(2)}</span>
+            <div className="col-span-5 text-right pr-2 text-sm text-[#0e6037] font-black pt-1 border-t border-[#0e6037]">
+              மொத்த பற்று:
+            </div>
+            <div className="col-span-1 text-center font-mono text-sm text-[#0e6037] font-black pt-1 border-t border-[#0e6037]">
+              :
+            </div>
+            <div className="col-span-6 text-right font-mono font-black text-sm text-[#0e6037] pr-2 pt-1 border-t border-[#0e6037]">
+              {formatIndian((todayBillTotal + munPartru) - varavu)}
             </div>
           </div>
-
         </div>
+
+        {bill.notes && (
+          <div className="mt-1 text-[10px] text-gray-600 italic px-1">
+            குறிப்பு: {bill.notes}
+          </div>
+        )}
 
         {/* Footer Section */}
         <div className="mt-2 flex items-center justify-between text-[9px] gap-2">
@@ -702,10 +727,9 @@ export default function SurandaiInvoice({ bill, settings = {}, isCommissionView,
 
         </div>
 
-        {/* Bottom Inquiries & Terms */}
+        {/* Bottom Terms */}
         <div className="mt-1 text-center text-[8.5px] text-slate-600 border-t border-gray-200 pt-1">
           <div>Terms: Goods once sold will not be taken back.</div>
-          {phones.length > 0 && <div>• For inquiries: {phones.join(' / ')}</div>}
         </div>
 
       </div>

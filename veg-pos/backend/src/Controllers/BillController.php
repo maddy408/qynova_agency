@@ -232,8 +232,8 @@ class BillController
         $itemsTotal = 0.0;
         $order = 0;
         $insertLine = $this->pdo->prepare(
-            'INSERT INTO bill_lines (bill_id, item_id, item_name_ta, item_name_en, unit, is_charge_item, rate, nos, weight, amount, line_order)
-             VALUES (:bill_id, :item_id, :item_name_ta, :item_name_en, :unit, :is_charge_item, :rate, :nos, :weight, :amount, :line_order)'
+            'INSERT INTO bill_lines (bill_id, item_id, item_name_ta, item_name_en, unit, is_charge_item, rate, nos, weight, amount, line_order, bag_count)
+             VALUES (:bill_id, :item_id, :item_name_ta, :item_name_en, :unit, :is_charge_item, :rate, :nos, :weight, :amount, :line_order, :bag_count)'
         );
 
         foreach ($lines as $line) {
@@ -247,6 +247,13 @@ class BillController
             $amount = round($isCharge ? $rate * $nos : $rate * $weight, 2);
             $itemsTotal += $amount;
 
+            $bagCount = null;
+            if (isset($line['bag_count']) && $line['bag_count'] !== '' && $line['bag_count'] !== null) {
+                $bagCount = (int) $line['bag_count'];
+            } elseif (isset($line['nos']) && $line['nos'] !== '' && $line['nos'] !== null && (float) $line['nos'] > 0) {
+                $bagCount = (int) $line['nos'];
+            }
+
             $insertLine->execute([
                 'bill_id' => $billId,
                 'item_id' => $line['item_id'] ?? null,
@@ -259,6 +266,7 @@ class BillController
                 'weight' => $weight,
                 'amount' => $amount,
                 'line_order' => $order++,
+                'bag_count' => $bagCount,
             ]);
         }
         $itemsTotal = round($itemsTotal, 2);

@@ -128,7 +128,8 @@ export default function Billing() {
             unit: match.unit || 'kg',
             is_charge_item: !!match.is_charge_item,
             rate: match.default_rate !== null && match.default_rate !== undefined ? Number(match.default_rate) : 0,
-            nos: match.is_charge_item ? initialQty : 0,
+            nos: match.is_charge_item ? initialQty : '',
+            bag_count: '',
             weight: match.is_charge_item ? 0 : initialQty,
           },
         ],
@@ -234,6 +235,7 @@ export default function Billing() {
         is_charge_item: l.is_charge_item,
         rate: Number(l.rate) || 0,
         nos: Number(l.nos) || 0,
+        bag_count: l.nos !== '' && l.nos !== null && l.nos !== undefined ? Number(l.nos) : null,
         weight: Number(l.weight) || 0,
         amount: lineAmount(l),
       })),
@@ -253,15 +255,13 @@ export default function Billing() {
     };
   }
 
-  async function handleSave(andPrint = false) {
+  async function handleSave(andPrint = true) {
     if (!canSave) return;
     setSaving(true);
     try {
       const bill = await createBill(buildPayload());
       resetCart();
-      if (andPrint) {
-        navigate(`/print/bill/${bill.id}`);
-      }
+      navigate(`/print/bill/${bill.id}`);
     } catch (err) {
       alert(err?.response?.data?.error || 'Save failed');
     } finally {
@@ -512,7 +512,7 @@ export default function Billing() {
                           className="w-16 h-6.5 px-1 text-xs text-center font-mono border border-gray-300 rounded focus:ring-1 focus:ring-blue-600"
                           type="number"
                           step="any"
-                          value={l.nos}
+                          value={l.nos === 0 || l.nos === '0' ? '' : (l.nos ?? '')}
                           onChange={(e) => updateLine(l.key, 'nos', e.target.value)}
                         />
                       </td>
@@ -874,7 +874,7 @@ export default function Billing() {
                 <button
                   type="button"
                   className="btn-secondary h-7 py-0.5 px-2 text-xs font-bold rounded flex-1"
-                  onClick={() => handleSave(false)}
+                  onClick={() => handleSave(true)}
                   disabled={saving || !canSave || cart.lines.length === 0}
                 >
                   {t('billing.save')}
@@ -923,12 +923,19 @@ export default function Billing() {
                         <div className="font-bold text-slate-900">{row.label || t('common.walkin')}</div>
                         <div className="text-[11px] text-gray-500">{row.cart?.lines?.length || 0} items</div>
                       </div>
-                      <div className="space-x-2">
+                      <div className="flex items-center gap-1.5">
                         <button className="btn-secondary py-0.5 px-2 text-xs font-semibold" onClick={() => resumeHeld(row)}>
                           {t('billing.resume')}
                         </button>
-                        <button className="text-red-600 hover:text-red-800 underline text-xs" onClick={() => removeHeld(row.id)}>
-                          {t('common.delete')}
+                        <button
+                          className="p-1.5 text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors inline-flex items-center justify-center"
+                          onClick={() => removeHeld(row.id)}
+                          title={t('common.delete')}
+                          type="button"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
                         </button>
                       </div>
                     </div>

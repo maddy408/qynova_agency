@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { listBills, getBill, updateBill, deleteBill, getBillPrint } from '../api/bills';
 import { listItems } from '../api/items';
 import { listPaymentMethods } from '../api/payments';
@@ -10,6 +10,7 @@ import SurandaiInvoice from '../components/SurandaiInvoice';
 
 export default function Invoices() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [bills, setBills] = useState([]);
   const [filters, setFilters] = useState({ from: '', to: '', bill_no: '', location_type: '', bill_type: '', payment_status: '' });
@@ -39,7 +40,11 @@ export default function Invoices() {
       ...bill,
       commission_mode: bill.commission_mode || (bill.commission_percent !== null ? 'percentage' : 'fixed'),
       other_deduction_amount: bill.other_deduction_amount || 0,
-      lines: bill.lines.map((l) => ({ ...l, key: l.id })),
+      lines: bill.lines.map((l) => ({
+        ...l,
+        key: l.id,
+        nos: (l.bag_count !== null && l.bag_count !== undefined) ? l.bag_count : (l.nos === 0 ? '' : l.nos),
+      })),
     });
   }
 
@@ -92,7 +97,8 @@ export default function Invoices() {
         unit: l.unit || 'kg',
         is_charge_item: !!l.is_charge_item,
         rate: Number(l.rate),
-        nos: Number(l.nos),
+        nos: Number(l.nos) || 0,
+        bag_count: l.nos !== '' && l.nos !== null && l.nos !== undefined ? Number(l.nos) : null,
         weight: Number(l.weight),
       })),
       paid_amount: Number(editing.paid_amount) || 0,
@@ -184,23 +190,61 @@ export default function Invoices() {
                 <td>{formatINR(b.paid_amount)}</td>
                 <td>{formatINR(b.balance_due)}</td>
                 <td>{statusLabel(b)}</td>
-                <td className="space-x-2 whitespace-nowrap">
-                  <button className="text-blue-700 font-semibold underline" onClick={() => openPreview(b.id)}>
-                    View
-                  </button>
-                  <Link className="text-brand-700 underline" to={`/print/bill/${b.id}`}>
-                    {t('common.print')}
-                  </Link>
-                  {canManage && (
-                    <>
-                      <button className="text-brand-700 underline" onClick={() => openEdit(b.id)}>
-                        {t('common.edit')}
-                      </button>
-                      <button className="text-red-600 underline" onClick={() => handleDelete(b.id)}>
-                        {t('common.delete')}
-                      </button>
-                    </>
-                  )}
+                <td className="py-2 px-3 whitespace-nowrap">
+                  <div className="flex items-center gap-1">
+                    {/* View Icon */}
+                    <button
+                      className="p-1.5 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors inline-flex items-center justify-center"
+                      onClick={() => openPreview(b.id)}
+                      title="பார்வை (View)"
+                      type="button"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                    </button>
+
+                    {/* Print Icon */}
+                    <button
+                      className="p-1.5 text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 rounded transition-colors inline-flex items-center justify-center"
+                      onClick={() => navigate(`/print/bill/${b.id}`)}
+                      title="அச்சிடு (Print)"
+                      type="button"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 002-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                      </svg>
+                    </button>
+
+                    {canManage && (
+                      <>
+                        {/* Edit Icon */}
+                        <button
+                          className="p-1.5 text-amber-600 hover:text-amber-800 hover:bg-amber-50 rounded transition-colors inline-flex items-center justify-center"
+                          onClick={() => openEdit(b.id)}
+                          title="திருத்து (Edit)"
+                          type="button"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
+
+                        {/* Delete Icon */}
+                        <button
+                          className="p-1.5 text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors inline-flex items-center justify-center"
+                          onClick={() => handleDelete(b.id)}
+                          title="அழி (Delete)"
+                          type="button"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}
@@ -244,14 +288,21 @@ export default function Invoices() {
                       <input className="input w-20" type="number" value={l.rate} onChange={(e) => updateLine(l.key, 'rate', e.target.value)} />
                     </td>
                     <td>
-                      <input className="input w-16" type="number" value={l.nos} onChange={(e) => updateLine(l.key, 'nos', e.target.value)} />
+                      <input className="input w-16" type="number" value={l.nos === 0 || l.nos === '0' ? '' : (l.nos ?? '')} onChange={(e) => updateLine(l.key, 'nos', e.target.value)} />
                     </td>
                     <td>
                       <input className="input w-20" type="number" value={l.weight} onChange={(e) => updateLine(l.key, 'weight', e.target.value)} />
                     </td>
                     <td>
-                      <button className="text-red-600" onClick={() => removeLine(l.key)}>
-                        ✕
+                      <button
+                        className="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors inline-flex items-center justify-center"
+                        onClick={() => removeLine(l.key)}
+                        title={t('common.delete')}
+                        type="button"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
                       </button>
                     </td>
                   </tr>
@@ -355,13 +406,16 @@ export default function Invoices() {
             </div>
 
             <div className="flex justify-between items-center pt-2 border-t">
-              <Link
-                to={`/print/bill/${previewPayload.bill.id}`}
+              <button
+                type="button"
+                onClick={() => navigate(`/print/bill/${previewPayload.bill.id}`)}
                 className="btn-primary text-sm flex items-center gap-1.5"
-                target="_blank"
               >
-                🖨️ Full Page / Print
-              </Link>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 002-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                </svg>
+                <span>Full Page / Print</span>
+              </button>
               <button
                 className="btn-secondary text-sm"
                 onClick={() => setPreviewPayload(null)}

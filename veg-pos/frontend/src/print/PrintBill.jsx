@@ -20,6 +20,16 @@ export default function PrintBill() {
     });
   }, [id]);
 
+  // Automatically trigger print dialog when invoice is ready
+  useEffect(() => {
+    if (payload) {
+      const timer = setTimeout(() => {
+        window.print();
+      }, 350);
+      return () => clearTimeout(timer);
+    }
+  }, [payload]);
+
   if (!payload) return <div className="p-8 text-center text-gray-500 font-bold">Loading Invoice...</div>;
 
   const { bill, settings } = payload;
@@ -80,8 +90,8 @@ export default function PrintBill() {
           {/* Back Button */}
           <button
             className="bg-slate-800 hover:bg-slate-900 text-white font-bold px-3.5 py-1.5 rounded-lg text-xs flex items-center gap-1.5 shadow transition-all"
-            onClick={() => navigate('/invoices')}
-            title="Return to Invoices list"
+            onClick={() => window.history.length > 1 ? navigate(-1) : navigate('/invoices')}
+            title="Return to previous page"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
