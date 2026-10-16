@@ -5,6 +5,7 @@ import { listParties } from '../api/parties';
 import { listPaymentMethods } from '../api/payments';
 import { listPurchases, createPurchase, deletePurchase } from '../api/purchases';
 import { formatINR, formatDateDMY, todayISO } from '../utils/format';
+import Pagination from '../components/Pagination';
 
 export default function Purchases() {
   const { t } = useTranslation();
@@ -12,6 +13,8 @@ export default function Purchases() {
   const [parties, setParties] = useState([]);
   const [methods, setMethods] = useState([]);
   const [purchases, setPurchases] = useState([]);
+  const [totalPurchases, setTotalPurchases] = useState(0);
+  const [purchasePage, setPurchasePage] = useState(1);
   const [partyId, setPartyId] = useState('');
   const [date, setDate] = useState(todayISO());
   const [lines, setLines] = useState([]);
@@ -41,8 +44,17 @@ export default function Purchases() {
     listParties({ type: 'supplier' }).then(setParties);
   }
 
-  function reload() {
-    listPurchases().then(setPurchases);
+  function reload(p = purchasePage) {
+    listPurchases({ page: p, limit: 10 }).then((res) => {
+      if (res && res.data) {
+        setPurchases(res.data);
+        setTotalPurchases(res.total);
+        setPurchasePage(res.page);
+      } else if (Array.isArray(res)) {
+        setPurchases(res);
+        setTotalPurchases(res.length);
+      }
+    });
     loadParties();
   }
 
@@ -54,7 +66,12 @@ export default function Purchases() {
   // Add item by shortcut code
   function addByCode() {
     if (!code.trim()) return;
-    const match = items.find((i) => i.code?.toLowerCase() === code.trim().toLowerCase());
+    const raw = code.trim().toLowerCase();
+    const clean = raw.replace(/[^a-z0-9]/g, '');
+    const match = items.find((i) => {
+      const icode = (i.code || '').toLowerCase();
+      return icode === raw || icode.replace(/[^a-z0-9]/g, '') === clean;
+    });
     if (!match) {
       setErrorMsg(`குறியீடு '${code}' கொண்ட பொருள் கிடைக்கவில்லை (Item not found for code '${code}')`);
       setTimeout(() => setErrorMsg(''), 3000);
@@ -487,12 +504,13 @@ export default function Purchases() {
       </div>
 
       {/* Purchases History List */}
-      <div className="card overflow-x-auto shadow-sm border border-gray-200 space-y-2">
-        <div className="flex items-center justify-between px-1 py-1">
-          <h2 className="text-lg font-bold text-gray-900">சமீபத்திய கொள்முதல் பட்டியல் (Recent Purchases)</h2>
-          <span className="text-xs font-bold text-gray-500">{purchases.length} பதிவுகள் (Records)</span>
+      <div className="card overflow-hidden p-0 shadow-sm border border-gray-200">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+          <h2 className="text-base font-bold text-gray-900">சமீபத்திய கொள்முதல் பட்டியல் (Recent Purchases)</h2>
+          <span className="text-xs font-bold text-gray-500">{totalPurchases} பதிவுகள் (Records)</span>
         </div>
 
+        <div className="overflow-x-auto">
         <table className="data-table w-full">
           <thead>
             <tr className="bg-slate-100 text-slate-700 font-bold text-xs uppercase">
@@ -545,6 +563,18 @@ export default function Purchases() {
             )}
           </tbody>
         </table>
+        </div>
+
+        <Pagination
+          page={purchasePage}
+          total={totalPurchases}
+          limit={10}
+          onPageChange={(p) => {
+            setPurchasePage(p);
+            reload(p);
+          }}
+          label={t('nav.purchases')}
+        />
       </div>
     </div>
   );

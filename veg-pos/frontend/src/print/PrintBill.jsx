@@ -23,10 +23,17 @@ export default function PrintBill() {
   // Automatically trigger print dialog when invoice is ready
   useEffect(() => {
     if (payload) {
-      const timer = setTimeout(() => {
-        window.print();
-      }, 350);
-      return () => clearTimeout(timer);
+      const runPrint = () => {
+        const timer = setTimeout(() => {
+          window.print();
+        }, 400);
+        return () => clearTimeout(timer);
+      };
+      if (document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(runPrint);
+      } else {
+        runPrint();
+      }
     }
   }, [payload]);
 
@@ -43,18 +50,23 @@ export default function PrintBill() {
       {/* Strict Single-Page Print Styles */}
       <style>{`
         @page {
-          size: ${paperFormat === 'a4' ? 'A4 portrait' : paperFormat === 'slip' ? 'auto' : 'A5 portrait'};
+          size: ${paperFormat === 'a4' ? 'A4 portrait' : paperFormat === 'slip' ? '80mm auto' : 'A5 portrait'};
           margin: 3mm;
         }
         @media print {
           html, body {
-            height: 100% !important;
+            height: auto !important;
             margin: 0 !important;
             padding: 0 !important;
-            overflow: hidden !important;
             background: #ffffff !important;
+            overflow: visible !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
           }
-          .no-print {
+          .no-print,
+          #goog-gt-tt,
+          .goog-te-banner-frame,
+          div[style*="position: fixed"] {
             display: none !important;
           }
           .print-page-wrapper {
@@ -68,17 +80,18 @@ export default function PrintBill() {
             padding: 0 !important;
             margin: 0 auto !important;
             max-width: 100% !important;
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
-            page-break-after: avoid !important;
           }
           .surandai-bhavani-template {
             page-break-inside: avoid !important;
             break-inside: avoid !important;
             page-break-after: avoid !important;
+            break-after: avoid !important;
             margin: 0 auto !important;
             box-shadow: none !important;
-            max-height: 98vh !important;
+            box-sizing: border-box !important;
+            ${paperFormat === 'slip'
+              ? 'width: 76mm !important; max-width: 76mm !important; min-height: 0 !important;'
+              : 'width: 142mm !important; max-width: 142mm !important; min-height: 196mm !important; max-height: 202mm !important; overflow: hidden !important;'}
           }
         }
       `}</style>
@@ -179,6 +192,7 @@ export default function PrintBill() {
           settings={settings}
           isCommissionView={activeIsCommission}
           lang={language}
+          paperFormat={paperFormat}
         />
       </div>
     </div>

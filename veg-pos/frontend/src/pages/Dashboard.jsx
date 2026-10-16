@@ -158,7 +158,7 @@ export default function Dashboard() {
     : chartMetrics?.highestPoint;
 
   return (
-    <div className="space-y-6 w-full max-w-full px-1 sm:px-3 lg:px-4">
+    <div className="space-y-6 w-full max-w-full px-1 sm:px-3 lg:px-4 pb-10">
       {/* 4 Top KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Card 1: Today's Sales */}

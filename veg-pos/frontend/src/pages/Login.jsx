@@ -40,7 +40,7 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen relative flex items-center justify-center p-4 overflow-hidden bg-gradient-to-br from-[#ebf5ff] via-[#f4f9fd] to-[#e6f0fa] select-none font-sans">
+    <div className="min-h-screen relative flex items-center justify-center p-4 overflow-y-auto bg-gradient-to-br from-[#ebf5ff] via-[#f4f9fd] to-[#e6f0fa] select-none font-sans">
       {/* Liquid background glow effects */}
       <div className="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-cyan-200/50 filter blur-[90px] pointer-events-none animate-pulse" />
       <div className="absolute -bottom-32 -right-32 w-96 h-96 rounded-full bg-blue-300/40 filter blur-[100px] pointer-events-none" />

@@ -6,6 +6,11 @@ html, body, #root {
   min-height: 100%;
 }
 
+html {
+  overflow-y: auto;
+  scroll-behavior: smooth;
+}
+
 body {
   font-family: 'Noto Sans Tamil', 'Noto Sans', sans-serif;
   background: #f8fafc;
@@ -13,6 +18,7 @@ body {
   font-size: 13.5px;
   line-height: 1.5;
   -webkit-tap-highlight-color: transparent;
+  overflow-x: hidden;
 }
 
 .input {

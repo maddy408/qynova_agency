@@ -114,7 +114,7 @@ export default function Settings() {
   if (!settings) return <div className="p-4">{t('common.loading')}</div>;
 
   return (
-    <div className="flex flex-col md:flex-row gap-6 items-start">
+    <div className="flex flex-col md:flex-row gap-6 items-start pb-10">
       {/* Side Navigation Bar */}
       <aside className="w-full md:w-64 shrink-0 bg-white rounded-xl shadow-sm border border-gray-200 p-2 md:sticky md:top-4">
         <div className="px-3 py-3 border-b border-gray-100 mb-2">

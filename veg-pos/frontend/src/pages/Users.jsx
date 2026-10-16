@@ -89,8 +89,8 @@ export default function Users({ embedded = false }) {
       </div>
 
       {form && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 no-print p-4">
-          <form onSubmit={handleSave} className="card w-full max-w-md space-y-3">
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 no-print p-4 overflow-y-auto">
+          <form onSubmit={handleSave} className="card w-full max-w-md space-y-3 my-auto max-h-[90vh] overflow-y-auto shadow-xl">
             <h2 className="font-bold text-lg text-gray-900">{form.id ? t('common.edit') : t('common.add')}</h2>
             <div>
               <label className="label">{t('common.name')}</label>

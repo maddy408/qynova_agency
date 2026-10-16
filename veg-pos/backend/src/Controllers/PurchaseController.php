@@ -20,22 +20,51 @@ class PurchaseController
     public function index(): void
     {
         AuthMiddleware::authenticate();
-        $sql = 'SELECT pu.*, p.name AS party_name FROM purchases pu
-                LEFT JOIN parties p ON p.id = pu.party_id WHERE 1=1';
+        $where = "WHERE pu.status != 'cancelled'";
         $params = [];
         if (!empty($_GET['party_id'])) {
-            $sql .= ' AND pu.party_id = :party_id';
+            $where .= ' AND pu.party_id = :party_id';
             $params['party_id'] = $_GET['party_id'];
         }
         if (!empty($_GET['from'])) {
-            $sql .= ' AND pu.purchase_date >= :from';
+            $where .= ' AND pu.purchase_date >= :from';
             $params['from'] = $_GET['from'];
         }
         if (!empty($_GET['to'])) {
-            $sql .= ' AND pu.purchase_date <= :to';
+            $where .= ' AND pu.purchase_date <= :to';
             $params['to'] = $_GET['to'];
         }
-        $sql .= " AND pu.status != 'cancelled' ORDER BY pu.purchase_date DESC, pu.id DESC LIMIT 500";
+
+        $page = isset($_GET['page']) ? max(1, (int) $_GET['page']) : null;
+        $limit = isset($_GET['limit']) ? max(1, (int) $_GET['limit']) : 10;
+
+        if ($page !== null) {
+            $countStmt = $this->pdo->prepare("SELECT COUNT(*) FROM purchases pu {$where}");
+            $countStmt->execute($params);
+            $total = (int) $countStmt->fetchColumn();
+
+            $offset = ($page - 1) * $limit;
+            $sql = "SELECT pu.*, p.name AS party_name FROM purchases pu
+                    LEFT JOIN parties p ON p.id = pu.party_id
+                    {$where}
+                    ORDER BY pu.purchase_date DESC, pu.id DESC LIMIT {$limit} OFFSET {$offset}";
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute($params);
+            $rows = $stmt->fetchAll();
+
+            Response::json([
+                'data' => $rows,
+                'total' => $total,
+                'page' => $page,
+                'limit' => $limit,
+                'total_pages' => (int) ceil($total / $limit),
+            ]);
+        }
+
+        $sql = "SELECT pu.*, p.name AS party_name FROM purchases pu
+                LEFT JOIN parties p ON p.id = pu.party_id
+                {$where}
+                ORDER BY pu.purchase_date DESC, pu.id DESC LIMIT 500";
 
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute($params);

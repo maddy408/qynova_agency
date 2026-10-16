@@ -3,12 +3,15 @@ import { useTranslation } from 'react-i18next';
 import { listParties, getUnpaidDocuments } from '../api/parties';
 import { listPaymentMethods, createPayment, listPayments } from '../api/payments';
 import { formatINR, formatDateDMY, todayISO } from '../utils/format';
+import Pagination from '../components/Pagination';
 
 export default function Payments() {
   const { t } = useTranslation();
   const [parties, setParties] = useState([]);
   const [methods, setMethods] = useState([]);
   const [history, setHistory] = useState([]);
+  const [totalHistory, setTotalHistory] = useState(0);
+  const [historyPage, setHistoryPage] = useState(1);
   const [direction, setDirection] = useState('in');
   const [partyId, setPartyId] = useState('');
   const [amount, setAmount] = useState('');
@@ -26,12 +29,22 @@ export default function Payments() {
     loadHistory();
   }, []);
 
-  function loadHistory() {
-    listPayments({ direction }).then(setHistory);
+  function loadHistory(p = historyPage) {
+    listPayments({ direction, page: p, limit: 10 }).then((res) => {
+      if (res && res.data) {
+        setHistory(res.data);
+        setTotalHistory(res.total);
+        setHistoryPage(res.page);
+      } else if (Array.isArray(res)) {
+        setHistory(res);
+        setTotalHistory(res.length);
+      }
+    });
   }
 
   useEffect(() => {
-    loadHistory();
+    setHistoryPage(1);
+    loadHistory(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [direction]);
 
@@ -223,30 +236,53 @@ export default function Payments() {
         </button>
       </div>
 
-      <div className="card">
-        <h3 className="font-semibold mb-2">{t('payments.receipt')} History</h3>
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>{t('payments.receipt')}</th>
-              <th>{t('common.date')}</th>
-              <th>{t('common.party')}</th>
-              <th>{t('common.amount')}</th>
-              <th>{t('common.method')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {history.map((h) => (
-              <tr key={h.id}>
-                <td>{h.receipt_no}</td>
-                <td>{formatDateDMY(h.payment_date)}</td>
-                <td>{h.party_name}</td>
-                <td>{formatINR(h.amount)}</td>
-                <td>{h.payment_method_name}</td>
+      <div className="card overflow-hidden p-0">
+        <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+          <h3 className="font-semibold text-sm text-slate-800">{t('payments.receipt')} History</h3>
+          <span className="text-xs font-bold text-gray-500">{totalHistory} records</span>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>{t('payments.receipt')}</th>
+                <th>{t('common.date')}</th>
+                <th>{t('common.party')}</th>
+                <th>{t('common.amount')}</th>
+                <th>{t('common.method')}</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {history.map((h) => (
+                <tr key={h.id}>
+                  <td className="font-mono font-bold text-blue-900">{h.receipt_no}</td>
+                  <td>{formatDateDMY(h.payment_date)}</td>
+                  <td className="font-semibold">{h.party_name}</td>
+                  <td className="font-mono font-bold">{formatINR(h.amount)}</td>
+                  <td>{h.payment_method_name}</td>
+                </tr>
+              ))}
+              {history.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="py-6 text-center text-gray-400">
+                    No payment records found
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <Pagination
+          page={historyPage}
+          total={totalHistory}
+          limit={10}
+          onPageChange={(p) => {
+            setHistoryPage(p);
+            loadHistory(p);
+          }}
+          label={t('payments.receipt')}
+        />
       </div>
     </div>
   );

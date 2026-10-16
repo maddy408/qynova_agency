@@ -7,12 +7,16 @@ import { listPaymentMethods } from '../api/payments';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { formatINR, formatDateDMY, todayISO } from '../utils/format';
 import SurandaiInvoice from '../components/SurandaiInvoice';
+import Pagination from '../components/Pagination';
 
 export default function Invoices() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [bills, setBills] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState({ from: '', to: '', bill_no: '', location_type: '', bill_type: '', payment_status: '' });
   const [editing, setEditing] = useState(null);
   const [previewPayload, setPreviewPayload] = useState(null);
@@ -23,15 +27,30 @@ export default function Invoices() {
   useEffect(() => {
     listItems({ active_only: '1' }).then(setItems);
     listPaymentMethods().then(setMethods);
-    load();
+    load(1);
   }, []);
 
-  function load() {
-    const params = {};
+  function load(p = page) {
+    setLoading(true);
+    const params = { page: p, limit: 10 };
     Object.entries(filters).forEach(([k, v]) => {
       if (v) params[k] = v;
     });
-    listBills(params).then(setBills);
+    listBills(params)
+      .then((res) => {
+        if (res && res.data) {
+          setBills(res.data);
+          setTotal(res.total);
+          setPage(res.page);
+        } else if (Array.isArray(res)) {
+          setBills(res);
+          setTotal(res.length);
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to load bills:', err);
+      })
+      .finally(() => setLoading(false));
   }
 
   async function openEdit(id) {
@@ -99,6 +118,7 @@ export default function Invoices() {
         rate: Number(l.rate),
         nos: Number(l.nos) || 0,
         bag_count: l.nos !== '' && l.nos !== null && l.nos !== undefined ? Number(l.nos) : null,
+        bag_weights: l.bag_weights || null,
         weight: Number(l.weight),
       })),
       paid_amount: Number(editing.paid_amount) || 0,
@@ -157,12 +177,13 @@ export default function Invoices() {
           <option value="partial">Partial</option>
           <option value="unpaid">Unpaid</option>
         </select>
-        <button className="btn-primary col-span-full md:col-span-1" onClick={load}>
+        <button className="btn-primary col-span-full md:col-span-1" onClick={() => { setPage(1); load(1); }}>
           {t('common.search')}
         </button>
       </div>
 
-      <div className="card overflow-x-auto">
+      <div className="card overflow-hidden p-0">
+        <div className="overflow-x-auto">
         <table className="data-table">
           <thead>
             <tr>
@@ -257,11 +278,23 @@ export default function Invoices() {
             )}
           </tbody>
         </table>
+        </div>
+
+        <Pagination
+          page={page}
+          total={total}
+          limit={10}
+          onPageChange={(p) => {
+            setPage(p);
+            load(p);
+          }}
+          label={t('nav.invoices')}
+        />
       </div>
 
       {editing && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 no-print p-4">
-          <div className="card w-full max-w-3xl max-h-[85vh] overflow-y-auto space-y-3">
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 no-print p-4 overflow-y-auto">
+          <div className="card w-full max-w-3xl max-h-[90vh] my-auto overflow-y-auto space-y-3 shadow-2xl">
             <div className="flex justify-between items-center">
               <h2 className="font-bold text-lg">{t('common.edit')} — {editing.bill_no}</h2>
               <button className="btn-secondary" onClick={() => setEditing(null)}>

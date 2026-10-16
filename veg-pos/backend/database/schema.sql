@@ -123,6 +123,7 @@ CREATE TABLE IF NOT EXISTS bill_lines (
     amount DECIMAL(12,2) NOT NULL DEFAULT 0,
     line_order INT NOT NULL DEFAULT 0,
     bag_count INT NULL DEFAULT NULL,
+    bag_weights TEXT NULL DEFAULT NULL,
     FOREIGN KEY (bill_id) REFERENCES bills(id) ON DELETE CASCADE,
     FOREIGN KEY (item_id) REFERENCES items(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

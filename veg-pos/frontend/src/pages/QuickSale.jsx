@@ -35,7 +35,13 @@ export default function QuickSale({ embedded = false }) {
   }, []);
 
   function handleCodeEnter() {
-    const match = items.find((i) => i.code.toLowerCase() === code.trim().toLowerCase() && !i.is_charge_item);
+    const raw = code.trim().toLowerCase();
+    const clean = raw.replace(/[^a-z0-9]/g, '');
+    const match = items.find((i) => {
+      if (i.is_charge_item) return false;
+      const icode = (i.code || '').toLowerCase();
+      return icode === raw || icode.replace(/[^a-z0-9]/g, '') === clean;
+    });
     if (!match) return;
     setMatchedItem(match);
     setRate(match.default_rate || '');
@@ -141,23 +147,35 @@ export default function QuickSale({ embedded = false }) {
             <input
               ref={weightRef}
               className="input w-28"
-              type="number"
-              step="0.01"
+              type="text"
+              inputMode="decimal"
               placeholder="kg"
               value={weight}
-              onChange={(e) => setWeight(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && rateRef.current?.focus()}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === '' || /^\d*\.?\d*$/.test(val)) setWeight(val);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'ArrowUp' || e.key === 'ArrowDown') e.preventDefault();
+                if (e.key === 'Enter') rateRef.current?.focus();
+              }}
             />
             <span>×</span>
             <input
               ref={rateRef}
               className="input w-28"
-              type="number"
-              step="0.01"
+              type="text"
+              inputMode="decimal"
               placeholder="₹"
               value={rate}
-              onChange={(e) => setRate(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && addLine()}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === '' || /^\d*\.?\d*$/.test(val)) setRate(val);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'ArrowUp' || e.key === 'ArrowDown') e.preventDefault();
+                if (e.key === 'Enter') addLine();
+              }}
             />
             <span>= {formatINR(liveAmount)}</span>
           </div>

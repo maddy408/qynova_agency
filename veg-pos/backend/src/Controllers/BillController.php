@@ -21,52 +21,81 @@ class BillController
     public function index(): void
     {
         AuthMiddleware::authenticate();
-        $sql = 'SELECT b.*, p.name AS party_name, pm.name_ta AS payment_method_name
-                FROM bills b
-                LEFT JOIN parties p ON p.id = b.party_id
-                LEFT JOIN payment_methods pm ON pm.id = b.payment_method_id
-                WHERE 1=1';
+        $where = 'WHERE 1=1';
         $params = [];
 
         foreach (['location_type', 'bill_type'] as $f) {
             if (!empty($_GET[$f])) {
-                $sql .= " AND b.$f = :$f";
+                $where .= " AND b.$f = :$f";
                 $params[$f] = $_GET[$f];
             }
         }
         if (!empty($_GET['party_id'])) {
-            $sql .= ' AND b.party_id = :party_id';
+            $where .= ' AND b.party_id = :party_id';
             $params['party_id'] = $_GET['party_id'];
         }
         if (!empty($_GET['bill_no'])) {
-            $sql .= ' AND b.bill_no LIKE :bill_no';
+            $where .= ' AND b.bill_no LIKE :bill_no';
             $params['bill_no'] = '%' . $_GET['bill_no'] . '%';
         }
         if (!empty($_GET['from'])) {
-            $sql .= ' AND b.bill_date >= :from';
+            $where .= ' AND b.bill_date >= :from';
             $params['from'] = $_GET['from'];
         }
         if (!empty($_GET['to'])) {
-            $sql .= ' AND b.bill_date <= :to';
+            $where .= ' AND b.bill_date <= :to';
             $params['to'] = $_GET['to'];
         }
         if (!empty($_GET['status'])) {
-            $sql .= ' AND b.status = :status';
+            $where .= ' AND b.status = :status';
             $params['status'] = $_GET['status'];
         } else {
-            $sql .= " AND b.status != 'cancelled'";
+            $where .= " AND b.status != 'cancelled'";
         }
         if (!empty($_GET['payment_status'])) {
             if ($_GET['payment_status'] === 'paid') {
-                $sql .= ' AND b.balance_due <= 0.009';
+                $where .= ' AND b.balance_due <= 0.009';
             } elseif ($_GET['payment_status'] === 'unpaid') {
-                $sql .= ' AND b.paid_amount <= 0.009 AND b.balance_due > 0.009';
+                $where .= ' AND b.paid_amount <= 0.009 AND b.balance_due > 0.009';
             } elseif ($_GET['payment_status'] === 'partial') {
-                $sql .= ' AND b.paid_amount > 0.009 AND b.balance_due > 0.009';
+                $where .= ' AND b.paid_amount > 0.009 AND b.balance_due > 0.009';
             }
         }
 
-        $sql .= ' ORDER BY b.bill_date DESC, b.id DESC LIMIT 500';
+        $page = isset($_GET['page']) ? max(1, (int) $_GET['page']) : null;
+        $limit = isset($_GET['limit']) ? max(1, (int) $_GET['limit']) : 10;
+
+        if ($page !== null) {
+            $countStmt = $this->pdo->prepare("SELECT COUNT(*) FROM bills b {$where}");
+            $countStmt->execute($params);
+            $total = (int) $countStmt->fetchColumn();
+
+            $offset = ($page - 1) * $limit;
+            $sql = "SELECT b.*, p.name AS party_name, pm.name_ta AS payment_method_name
+                    FROM bills b
+                    LEFT JOIN parties p ON p.id = b.party_id
+                    LEFT JOIN payment_methods pm ON pm.id = b.payment_method_id
+                    {$where}
+                    ORDER BY b.bill_date DESC, b.id DESC LIMIT {$limit} OFFSET {$offset}";
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute($params);
+            $rows = $stmt->fetchAll();
+
+            Response::json([
+                'data' => $rows,
+                'total' => $total,
+                'page' => $page,
+                'limit' => $limit,
+                'total_pages' => (int) ceil($total / $limit),
+            ]);
+        }
+
+        $sql = "SELECT b.*, p.name AS party_name, pm.name_ta AS payment_method_name
+                FROM bills b
+                LEFT JOIN parties p ON p.id = b.party_id
+                LEFT JOIN payment_methods pm ON pm.id = b.payment_method_id
+                {$where}
+                ORDER BY b.bill_date DESC, b.id DESC LIMIT 500";
 
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute($params);
@@ -232,8 +261,8 @@ class BillController
         $itemsTotal = 0.0;
         $order = 0;
         $insertLine = $this->pdo->prepare(
-            'INSERT INTO bill_lines (bill_id, item_id, item_name_ta, item_name_en, unit, is_charge_item, rate, nos, weight, amount, line_order, bag_count)
-             VALUES (:bill_id, :item_id, :item_name_ta, :item_name_en, :unit, :is_charge_item, :rate, :nos, :weight, :amount, :line_order, :bag_count)'
+            'INSERT INTO bill_lines (bill_id, item_id, item_name_ta, item_name_en, unit, is_charge_item, rate, nos, weight, amount, line_order, bag_count, bag_weights)
+             VALUES (:bill_id, :item_id, :item_name_ta, :item_name_en, :unit, :is_charge_item, :rate, :nos, :weight, :amount, :line_order, :bag_count, :bag_weights)'
         );
 
         foreach ($lines as $line) {
@@ -244,15 +273,48 @@ class BillController
             if ($rate < 0 || $nos < 0 || $weight < 0) {
                 throw new ValidationException('Item rate/quantity cannot be negative');
             }
+
+            // Process individual bag weights if provided
+            $bagWeights = [];
+            $rawBagWeights = $line['bag_weights'] ?? null;
+            if (is_string($rawBagWeights) && trim($rawBagWeights) !== '') {
+                $decoded = json_decode($rawBagWeights, true);
+                if (is_array($decoded)) {
+                    $rawBagWeights = $decoded;
+                }
+            }
+            if (is_array($rawBagWeights)) {
+                foreach ($rawBagWeights as $bw) {
+                    if ($bw !== '' && $bw !== null) {
+                        $wVal = (float) $bw;
+                        if ($wVal < 0) {
+                            throw new ValidationException('Individual bag weights cannot be negative');
+                        }
+                        if ($wVal > 0) {
+                            $bagWeights[] = round($wVal, 3);
+                        }
+                    }
+                }
+            }
+
+            $bagWeightsJson = null;
+            if (!empty($bagWeights) && !$isCharge) {
+                $weight = round(array_sum($bagWeights), 3);
+                $bagWeightsJson = json_encode(array_values($bagWeights));
+                $explicitBags = (int) ($line['bag_count'] ?? ($line['nos'] ?? 0));
+                $bagCount = max($explicitBags, count($bagWeights));
+                $nos = (float) $bagCount;
+            } else {
+                $bagCount = null;
+                if (isset($line['bag_count']) && $line['bag_count'] !== '' && $line['bag_count'] !== null) {
+                    $bagCount = (int) $line['bag_count'];
+                } elseif (isset($line['nos']) && $line['nos'] !== '' && $line['nos'] !== null && (float) $line['nos'] > 0) {
+                    $bagCount = (int) $line['nos'];
+                }
+            }
+
             $amount = round($isCharge ? $rate * $nos : $rate * $weight, 2);
             $itemsTotal += $amount;
-
-            $bagCount = null;
-            if (isset($line['bag_count']) && $line['bag_count'] !== '' && $line['bag_count'] !== null) {
-                $bagCount = (int) $line['bag_count'];
-            } elseif (isset($line['nos']) && $line['nos'] !== '' && $line['nos'] !== null && (float) $line['nos'] > 0) {
-                $bagCount = (int) $line['nos'];
-            }
 
             $insertLine->execute([
                 'bill_id' => $billId,
@@ -267,6 +329,7 @@ class BillController
                 'amount' => $amount,
                 'line_order' => $order++,
                 'bag_count' => $bagCount,
+                'bag_weights' => $bagWeightsJson,
             ]);
         }
         $itemsTotal = round($itemsTotal, 2);
@@ -423,7 +486,16 @@ class BillController
 
         $lines = $this->pdo->prepare('SELECT * FROM bill_lines WHERE bill_id = :id ORDER BY line_order ASC');
         $lines->execute(['id' => $id]);
-        $bill['lines'] = $lines->fetchAll();
+        $rawLines = $lines->fetchAll();
+        foreach ($rawLines as &$l) {
+            if (!empty($l['bag_weights'])) {
+                $decoded = json_decode((string) $l['bag_weights'], true);
+                $l['bag_weights'] = is_array($decoded) ? $decoded : [];
+            } else {
+                $l['bag_weights'] = [];
+            }
+        }
+        $bill['lines'] = $rawLines;
 
         return $bill;
     }

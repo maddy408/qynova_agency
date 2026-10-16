@@ -101,7 +101,7 @@ export default function Reports() {
   }
 
   return (
-    <div className="space-y-4 w-full">
+    <div className="space-y-4 w-full pb-10">
       {/* Title & Print */}
       <div className="flex flex-wrap items-center justify-between gap-3 no-print">
         <div>
@@ -197,8 +197,8 @@ export default function Reports() {
 
       {/* Customer Unpaid Bills Modal / Drawer */}
       {selectedPartyDocs && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6 space-y-4 my-auto max-h-[90vh] overflow-y-auto">
             <div className="flex items-start justify-between border-b pb-3">
               <div>
                 <h3 className="text-lg font-black text-gray-900">

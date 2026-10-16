@@ -21,19 +21,45 @@ class PartyController
         $q = trim((string) ($_GET['q'] ?? ''));
         $type = trim((string) ($_GET['type'] ?? ''));
 
-        $sql = 'SELECT p.*, COALESCE((SELECT SUM(amount) FROM ledger_entries l WHERE l.party_id = p.id), 0) AS balance
-                FROM parties p WHERE p.active = 1';
+        $where = 'WHERE p.active = 1';
         $params = [];
         if ($q !== '') {
-            $sql .= ' AND (p.name LIKE :q OR p.phone LIKE :q OR p.place LIKE :q)';
-            $params['q'] = "%{$q}%";
+            $where .= ' AND (p.name LIKE :q1 OR p.phone LIKE :q2 OR p.place LIKE :q3)';
+            $params['q1'] = "%{$q}%";
+            $params['q2'] = "%{$q}%";
+            $params['q3'] = "%{$q}%";
         }
         if ($type !== '') {
-            $sql .= ' AND (p.type = :type OR p.type = \'both\')';
+            $where .= ' AND (p.type = :type OR p.type = \'both\')';
             $params['type'] = $type;
         }
-        $sql .= ' ORDER BY p.name ASC';
 
+        $page = isset($_GET['page']) ? max(1, (int) $_GET['page']) : null;
+        $limit = isset($_GET['limit']) ? max(1, (int) $_GET['limit']) : 10;
+
+        if ($page !== null) {
+            $countStmt = $this->pdo->prepare("SELECT COUNT(*) FROM parties p {$where}");
+            $countStmt->execute($params);
+            $total = (int) $countStmt->fetchColumn();
+
+            $offset = ($page - 1) * $limit;
+            $sql = "SELECT p.*, COALESCE((SELECT SUM(amount) FROM ledger_entries l WHERE l.party_id = p.id), 0) AS balance
+                    FROM parties p {$where} ORDER BY p.name ASC LIMIT {$limit} OFFSET {$offset}";
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute($params);
+            $rows = $stmt->fetchAll();
+
+            Response::json([
+                'data' => $rows,
+                'total' => $total,
+                'page' => $page,
+                'limit' => $limit,
+                'total_pages' => (int) ceil($total / $limit),
+            ]);
+        }
+
+        $sql = "SELECT p.*, COALESCE((SELECT SUM(amount) FROM ledger_entries l WHERE l.party_id = p.id), 0) AS balance
+                FROM parties p {$where} ORDER BY p.name ASC";
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute($params);
         Response::json($stmt->fetchAll());
