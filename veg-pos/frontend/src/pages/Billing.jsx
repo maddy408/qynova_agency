@@ -831,13 +831,8 @@ export default function Billing() {
     }
     if (e.key === 'ArrowDown' || e.key === 'Enter') {
       e.preventDefault();
-      if (cart.billType === 'commission') {
-        notesRef.current?.focus();
-        notesRef.current?.select();
-      } else {
-        paidAmountRef.current?.focus();
-        paidAmountRef.current?.select();
-      }
+      otherDeductionRef.current?.focus();
+      otherDeductionRef.current?.select();
       return;
     }
     if (e.key === 'ArrowRight') {
@@ -859,6 +854,43 @@ export default function Billing() {
     }
   }
 
+  function handleOtherDeductionKeyDown(e) {
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      vadagaiRef.current?.focus();
+      vadagaiRef.current?.select();
+      return;
+    }
+    if (e.key === 'ArrowDown' || e.key === 'Enter') {
+      e.preventDefault();
+      if (cart.billType === 'commission') {
+        notesRef.current?.focus();
+        notesRef.current?.select();
+      } else {
+        paidAmountRef.current?.focus();
+        paidAmountRef.current?.select();
+      }
+      return;
+    }
+    if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      notesRef.current?.focus() || paymentMethodRef.current?.focus();
+      return;
+    }
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      vadagaiRef.current?.focus();
+      vadagaiRef.current?.select();
+      return;
+    }
+    if (e.key === 'Backspace' && shouldBackspaceNavigate(e.target)) {
+      e.preventDefault();
+      vadagaiRef.current?.focus();
+      vadagaiRef.current?.select();
+      return;
+    }
+  }
+
   function handlePaidAmountKeyDown(e) {
     if (e.key === 'Enter' || e.key === 'ArrowDown' || e.key === 'ArrowRight') {
       e.preventDefault();
@@ -868,8 +900,8 @@ export default function Billing() {
     if (e.key === 'ArrowUp') {
       e.preventDefault();
       if (cart.billType === 'commission') {
-        vadagaiRef.current?.focus();
-        vadagaiRef.current?.select();
+        otherDeductionRef.current?.focus();
+        otherDeductionRef.current?.select();
       } else if (discountAmountRef.current && cart.discountPercent === '') {
         discountAmountRef.current.focus();
         discountAmountRef.current.select();
@@ -907,8 +939,8 @@ export default function Billing() {
     if (e.key === 'Backspace' && shouldBackspaceNavigate(e.target)) {
       e.preventDefault();
       if (cart.billType === 'commission') {
-        vadagaiRef.current?.focus();
-        vadagaiRef.current?.select();
+        otherDeductionRef.current?.focus();
+        otherDeductionRef.current?.select();
       } else if (discountAmountRef.current && cart.discountPercent === '') {
         discountAmountRef.current.focus();
         discountAmountRef.current.select();
@@ -999,8 +1031,8 @@ export default function Billing() {
     if (e.key === 'ArrowUp') {
       e.preventDefault();
       if (cart.billType === 'commission') {
-        vadagaiRef.current?.focus();
-        vadagaiRef.current?.select();
+        otherDeductionRef.current?.focus();
+        otherDeductionRef.current?.select();
       } else {
         paymentMethodRef.current?.focus();
       }
@@ -1035,8 +1067,8 @@ export default function Billing() {
     if (e.key === 'Backspace' && shouldBackspaceNavigate(e.target)) {
       e.preventDefault();
       if (cart.billType === 'commission') {
-        vadagaiRef.current?.focus();
-        vadagaiRef.current?.select();
+        otherDeductionRef.current?.focus();
+        otherDeductionRef.current?.select();
       } else {
         paymentMethodRef.current?.focus();
       }
@@ -1096,8 +1128,8 @@ export default function Billing() {
   const commissionAmount = isFixedCommission
     ? Number(cart.commissionAmount) || 0
     : (grossTotal * (Number(cart.commissionPercent) || 0)) / 100;
-  const otherDeduction = 0;
-  const totalDeductions = commissionAmount + (Number(cart.patthu) || 0) + (Number(cart.cooli) || 0) + (Number(cart.vadagai) || 0);
+  const otherDeduction = Number(cart.otherDeduction) || 0;
+  const totalDeductions = commissionAmount + (Number(cart.patthu) || 0) + (Number(cart.cooli) || 0) + (Number(cart.vadagai) || 0) + otherDeduction;
   const netTotal = grossTotal - totalDeductions;
   const deductionsExceedSales = totalDeductions > grossTotal + 0.009;
 
@@ -1185,7 +1217,7 @@ export default function Billing() {
       patthu_amount: isCommission ? Number(cart.patthu) || 0 : 0,
       cooli_amount: isCommission ? Number(cart.cooli) || 0 : 0,
       vadagai_amount: isCommission ? Number(cart.vadagai) || 0 : 0,
-      other_deduction_amount: 0,
+      other_deduction_amount: isCommission ? otherDeduction : 0,
       paid_amount: paid,
       payment_method_id: cart.paymentMethodId || null,
       notes: cart.notes || null,
@@ -1963,6 +1995,13 @@ export default function Billing() {
                   value={cart.vadagai}
                   onChange={(v) => setCart({ ...cart, vadagai: v })}
                   onKeyDown={handleVadagaiKeyDown}
+                />
+                <NumberRow
+                  inputRef={otherDeductionRef}
+                  label={t('billing.other_deduction')}
+                  value={cart.otherDeduction}
+                  onChange={(v) => setCart({ ...cart, otherDeduction: v })}
+                  onKeyDown={handleOtherDeductionKeyDown}
                 />
 
                 <Row label={t('billing.commission_side_total')} value={formatINR(totalDeductions)} bold />
