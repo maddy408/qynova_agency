@@ -390,17 +390,6 @@ export default function SurandaiInvoice({ bill, settings = {}, isCommissionView,
                   </td>
                 </tr>
 
-                {otherDeductionVal > 0 && (
-                  <tr className="font-bold">
-                    <td colSpan={3} className="border-r border-[#0e6037]"></td>
-                    <td className="border-r border-[#0e6037] py-0.5 px-2 text-right font-bold text-xs text-red-600 whitespace-nowrap">
-                      இதர கழிவு
-                    </td>
-                    <td className="py-0.5 px-2.5 text-right font-mono font-bold text-xs text-slate-900">
-                      {formatIndian(otherDeductionVal)}
-                    </td>
-                  </tr>
-                )}
 
                 {/* 6. மொத்தம் : (Net Final Total) */}
                 <tr className="border-t-2 border-[#0e6037] font-black">
