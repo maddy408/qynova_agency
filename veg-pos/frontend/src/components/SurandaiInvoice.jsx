@@ -337,7 +337,7 @@ export default function SurandaiInvoice({ bill, settings = {}, isCommissionView,
                 <tr className="border-t border-[#0e6037] font-bold">
                   <td colSpan={3} className="border-r border-[#0e6037]"></td>
                   <td className="border-r border-[#0e6037] py-0.5 px-2 text-right font-bold text-xs text-slate-800 whitespace-nowrap">
-                    மொத்தம் :
+                    மொத்தம்:
                   </td>
                   <td className="py-0.5 px-2.5 text-right font-mono font-bold text-xs text-slate-900">
                     {formatIndian(itemsTotal)}
@@ -389,11 +389,11 @@ export default function SurandaiInvoice({ bill, settings = {}, isCommissionView,
                 </tr>
 
 
-                {/* 6. மொத்தம் : (Net Final Total) */}
+                {/* 6. மொத்தம்: (Net Final Total) */}
                 <tr className="border-t-2 border-[#0e6037] font-black">
                   <td colSpan={3} className="border-r border-[#0e6037]"></td>
                   <td className="border-r border-[#0e6037] py-1 px-2 text-right font-black text-sm text-[#0e6037] whitespace-nowrap">
-                    மொத்தம் :
+                    மொத்தம்:
                   </td>
                   <td className="py-1 px-2.5 text-right font-mono font-black text-sm text-[#0e6037]">
                     {formatIndian(netTotalVal)}
