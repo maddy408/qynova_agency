@@ -132,12 +132,12 @@ export default function SurandaiInvoice({ bill, settings = {}, isCommissionView,
         isSlip
           ? 'max-w-[76mm] w-full p-1 border-2 border-[#0e6037] text-[10px]'
           : isCommission
-            ? 'max-w-[142mm] w-full p-2 border-[2.5px] border-[#0e6037] text-xs'
+            ? 'max-w-[140mm] w-full p-1.5 border-[2px] border-[#0e6037] text-xs'
             : 'max-w-[142mm] w-full p-2 border-[2.5px] border-[#0e6037] text-xs min-h-[196mm]'
       }`}
       style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}
     >
-      <div className={`border border-[#0e6037] flex flex-col flex-1 ${isSlip ? 'p-1' : isCompact ? 'p-1.5' : 'p-2'}`}>
+      <div className={`border border-[#0e6037] flex flex-col ${isSlip ? 'p-1' : isCompact ? 'p-1.5' : 'p-2'}`}>
 
         {/* 1. Top Contact Bar with Center Sacred Inscription (Zero Overlap Guaranteed) */}
         <div className="grid grid-cols-[38%_24%_38%] items-start pb-0.5 text-[11px] font-bold text-slate-900 leading-tight">
@@ -166,8 +166,8 @@ export default function SurandaiInvoice({ bill, settings = {}, isCommissionView,
         {/* 2. Badges, Deity Icons & Center Brand Banner */}
         <div className={`flex items-center justify-between px-1 ${isCompact || isSlip ? 'my-0.5' : 'my-1'}`}>
           {/* Left Shop No Badge */}
-          <div className={`border-2 border-[#0e6037] rounded overflow-hidden text-center shrink-0 shadow-xs ${isCompact || isSlip ? 'w-9' : 'w-11'}`}>
-            <div className="bg-[#0e6037] text-white text-[8px] font-bold py-0.5 leading-none">
+          <div className={`border-2 border-[#0e6037] rounded overflow-hidden text-center shrink-0 shadow-xs ${isCompact || isSlip ? 'w-10' : 'w-14'}`}>
+            <div className="bg-[#0e6037] text-white text-[8px] font-bold py-0.5 px-1 leading-none whitespace-nowrap">
               கடை எண்
             </div>
             <div className={`font-black text-red-600 leading-none font-sans ${isCompact || isSlip ? 'text-base py-0.5' : 'text-xl py-0.5'}`}>
@@ -193,7 +193,7 @@ export default function SurandaiInvoice({ bill, settings = {}, isCommissionView,
               </div>
             )}
             <div className="my-0.5 inline-block">
-              <span className={`inline-block ${isCommission ? 'bg-white text-red-600 border border-red-500' : 'bg-[#dc2626] text-white border border-red-700'} font-serif font-black rounded-full tracking-wider leading-tight ${isCompact || isSlip ? 'text-sm px-3 py-0' : 'text-lg px-4 py-0.5'}`}>
+              <span className={`inline-block ${isCommission ? 'bg-white text-red-600 border border-red-500' : 'bg-[#dc2626] text-white border border-red-700'} font-serif font-black rounded-full tracking-wider leading-tight ${isCompact || isSlip ? 'text-sm px-3 py-0' : 'text-base px-4 py-0.5'}`}>
                 {brandLogo}
               </span>
             </div>
@@ -210,8 +210,8 @@ export default function SurandaiInvoice({ bill, settings = {}, isCommissionView,
           </div>
 
           {/* Right Shop No Badge */}
-          <div className={`border-2 border-[#0e6037] rounded overflow-hidden text-center shrink-0 shadow-xs ${isCompact || isSlip ? 'w-9' : 'w-11'}`}>
-            <div className="bg-[#0e6037] text-white text-[8px] font-bold py-0.5 leading-none">
+          <div className={`border-2 border-[#0e6037] rounded overflow-hidden text-center shrink-0 shadow-xs ${isCompact || isSlip ? 'w-10' : 'w-14'}`}>
+            <div className="bg-[#0e6037] text-white text-[8px] font-bold py-0.5 px-1 leading-none whitespace-nowrap">
               கடை எண்
             </div>
             <div className={`font-black text-red-600 leading-none font-sans ${isCompact || isSlip ? 'text-base py-0.5' : 'text-xl py-0.5'}`}>
@@ -257,11 +257,11 @@ export default function SurandaiInvoice({ bill, settings = {}, isCommissionView,
         <table className="w-full border-collapse text-xs border border-[#0e6037] table-fixed">
           <thead>
             <tr className={`${isCommission ? 'bg-white' : 'bg-[#e6f4ea]'} text-[#0e6037] border-b border-[#0e6037] text-center font-bold`}>
-              <th className={`border-r border-[#0e6037] py-1.5 px-2 w-[15%] ${isCommission ? 'text-center' : 'text-right pr-2'}`}>விலை</th>
-              <th className={`border-r border-[#0e6037] py-1.5 px-2 w-[35%] ${isCommission ? 'text-center' : 'text-left pl-2'}`}>பொருள் விபரம்</th>
-              <th className={`border-r border-[#0e6037] py-1.5 px-1.5 w-[18%] ${isCommission ? 'text-center' : 'text-right pr-2'}`}>எடை</th>
-              <th className="border-r border-[#0e6037] py-1.5 px-1 w-[12%] text-center">பை</th>
-              <th className={`py-1.5 px-2 w-[20%] ${isCommission ? 'text-center' : 'text-right pr-2.5'}`}>தொகை</th>
+              <th className={`border-r border-[#0e6037] py-1 px-1 w-[14%] ${isCommission ? 'text-center' : 'text-right pr-2'}`}>விலை</th>
+              <th className={`border-r border-[#0e6037] py-1 px-1.5 w-[34%] ${isCommission ? 'text-center' : 'text-left pl-2'}`}>பொருள் விபரம்</th>
+              <th className={`border-r border-[#0e6037] py-1 px-1 w-[16%] ${isCommission ? 'text-center' : 'text-right pr-2'}`}>எடை</th>
+              <th className="border-r border-[#0e6037] py-1 px-1 w-[18%] text-center">பை</th>
+              <th className={`py-1 px-1 w-[18%] ${isCommission ? 'text-center' : 'text-right pr-2.5'}`}>தொகை</th>
             </tr>
           </thead>
           <tbody>
@@ -295,10 +295,10 @@ export default function SurandaiInvoice({ bill, settings = {}, isCommissionView,
 
               return (
                 <tr key={l.id || l.key || index} className="font-medium align-top">
-                  <td className={`border-r border-[#0e6037] ${isCompact ? 'py-0.5 px-1.5' : 'py-1 px-2'} ${isCommission ? 'text-center' : 'text-right pr-2'} font-mono font-bold text-xs align-top`}>
+                  <td className={`border-r border-[#0e6037] ${isCompact ? 'py-0.5 px-1' : 'py-1 px-1'} ${isCommission ? 'text-center' : 'text-right pr-2'} font-mono font-bold text-xs align-top`}>
                     {rateVal > 0 ? rateVal.toFixed(2) : '—'}
                   </td>
-                  <td className={`border-r border-[#0e6037] ${isCompact ? 'py-0.5 px-1.5' : 'py-1 px-2'} text-left align-top pl-2`}>
+                  <td className={`border-r border-[#0e6037] ${isCompact ? 'py-0.5 px-1' : 'py-1 px-1.5'} text-left align-top pl-2`}>
                     <div className="font-bold text-xs text-slate-900 leading-snug break-words">
                       {itemName}
                     </div>
@@ -308,13 +308,13 @@ export default function SurandaiInvoice({ bill, settings = {}, isCommissionView,
                       </div>
                     )}
                   </td>
-                  <td className={`border-r border-[#0e6037] ${isCompact ? 'py-0.5 px-1' : 'py-1 px-1.5'} ${isCommission ? 'text-center' : 'text-right pr-2'} font-mono font-bold text-xs align-top`}>
+                  <td className={`border-r border-[#0e6037] ${isCompact ? 'py-0.5 px-1' : 'py-1 px-1'} ${isCommission ? 'text-center' : 'text-right pr-2'} font-mono font-bold text-xs align-top`}>
                     {weightDisplay}
                   </td>
                   <td className={`border-r border-[#0e6037] ${isCompact ? 'py-0.5 px-1' : 'py-1 px-1'} text-center font-mono font-bold text-xs text-slate-800 align-top`}>
                     {bagDisplay || ''}
                   </td>
-                  <td className={`${isCompact ? 'py-0.5 px-1.5' : 'py-1 px-2'} text-right font-mono font-bold text-xs pr-2.5 align-top`}>
+                  <td className={`${isCompact ? 'py-0.5 px-1.5' : 'py-1 px-2.5'} text-right font-mono font-bold text-xs pr-2.5 align-top`}>
                     {amountVal > 0 ? formatIndian(amountVal) : '—'}
                   </td>
                 </tr>
@@ -323,7 +323,7 @@ export default function SurandaiInvoice({ bill, settings = {}, isCommissionView,
 
             {/* In Commission mode: extend the 5 vertical columns down to create the authentic Mandi bill book look */}
             {isCommission && (
-              <tr style={{ height: `${Math.max(60, 200 - (rawLines.length * 28))}px` }}>
+              <tr style={{ height: `${Math.max(50, 160 - (rawLines.length * 24))}px` }}>
                 <td className="border-r border-[#0e6037]"></td>
                 <td className="border-r border-[#0e6037]"></td>
                 <td className="border-r border-[#0e6037]"></td>
@@ -338,10 +338,10 @@ export default function SurandaiInvoice({ bill, settings = {}, isCommissionView,
                 {/* 1. மொத்தம் : (Gross Sales Total) */}
                 <tr className="border-t border-[#0e6037] font-bold">
                   <td colSpan={3} className="border-r border-[#0e6037]"></td>
-                  <td className="border-r border-[#0e6037] py-1 px-2 text-right font-bold text-xs text-slate-800">
+                  <td className="border-r border-[#0e6037] py-0.5 px-2 text-right font-bold text-xs text-slate-800 whitespace-nowrap">
                     மொத்தம் :
                   </td>
-                  <td className="py-1 px-2.5 text-right font-mono font-bold text-xs text-slate-900">
+                  <td className="py-0.5 px-2.5 text-right font-mono font-bold text-xs text-slate-900">
                     {formatIndian(itemsTotal)}
                   </td>
                 </tr>
@@ -349,7 +349,7 @@ export default function SurandaiInvoice({ bill, settings = {}, isCommissionView,
                 {/* 2. கமிஷன் */}
                 <tr className="font-bold">
                   <td colSpan={3} className="border-r border-[#0e6037]"></td>
-                  <td className="border-r border-[#0e6037] py-0.5 px-2 text-right font-bold text-xs text-red-600">
+                  <td className="border-r border-[#0e6037] py-0.5 px-2 text-right font-bold text-xs text-red-600 whitespace-nowrap">
                     கமிஷன்
                   </td>
                   <td className="py-0.5 px-2.5 text-right font-mono font-bold text-xs text-slate-900">
@@ -360,7 +360,7 @@ export default function SurandaiInvoice({ bill, settings = {}, isCommissionView,
                 {/* 3. பற்று */}
                 <tr className="font-bold">
                   <td colSpan={3} className="border-r border-[#0e6037]"></td>
-                  <td className="border-r border-[#0e6037] py-0.5 px-2 text-right font-bold text-xs text-red-600">
+                  <td className="border-r border-[#0e6037] py-0.5 px-2 text-right font-bold text-xs text-red-600 whitespace-nowrap">
                     பற்று
                   </td>
                   <td className="py-0.5 px-2.5 text-right font-mono font-bold text-xs text-slate-900">
@@ -371,7 +371,7 @@ export default function SurandaiInvoice({ bill, settings = {}, isCommissionView,
                 {/* 4. கூலி */}
                 <tr className="font-bold">
                   <td colSpan={3} className="border-r border-[#0e6037]"></td>
-                  <td className="border-r border-[#0e6037] py-0.5 px-2 text-right font-bold text-xs text-red-600">
+                  <td className="border-r border-[#0e6037] py-0.5 px-2 text-right font-bold text-xs text-red-600 whitespace-nowrap">
                     கூலி
                   </td>
                   <td className="py-0.5 px-2.5 text-right font-mono font-bold text-xs text-slate-900">
@@ -382,7 +382,7 @@ export default function SurandaiInvoice({ bill, settings = {}, isCommissionView,
                 {/* 5. வாடகை */}
                 <tr className="font-bold">
                   <td colSpan={3} className="border-r border-[#0e6037]"></td>
-                  <td className="border-r border-[#0e6037] py-0.5 px-2 text-right font-bold text-xs text-red-600">
+                  <td className="border-r border-[#0e6037] py-0.5 px-2 text-right font-bold text-xs text-red-600 whitespace-nowrap">
                     வாடகை
                   </td>
                   <td className="py-0.5 px-2.5 text-right font-mono font-bold text-xs text-slate-900">
@@ -393,7 +393,7 @@ export default function SurandaiInvoice({ bill, settings = {}, isCommissionView,
                 {otherDeductionVal > 0 && (
                   <tr className="font-bold">
                     <td colSpan={3} className="border-r border-[#0e6037]"></td>
-                    <td className="border-r border-[#0e6037] py-0.5 px-2 text-right font-bold text-xs text-red-600">
+                    <td className="border-r border-[#0e6037] py-0.5 px-2 text-right font-bold text-xs text-red-600 whitespace-nowrap">
                       இதர கழிவு
                     </td>
                     <td className="py-0.5 px-2.5 text-right font-mono font-bold text-xs text-slate-900">
@@ -405,7 +405,7 @@ export default function SurandaiInvoice({ bill, settings = {}, isCommissionView,
                 {/* 6. மொத்தம் : (Net Final Total) */}
                 <tr className="border-t-2 border-[#0e6037] font-black">
                   <td colSpan={3} className="border-r border-[#0e6037]"></td>
-                  <td className="border-r border-[#0e6037] py-1 px-2 text-right font-black text-sm text-[#0e6037]">
+                  <td className="border-r border-[#0e6037] py-1 px-2 text-right font-black text-sm text-[#0e6037] whitespace-nowrap">
                     மொத்தம் :
                   </td>
                   <td className="py-1 px-2.5 text-right font-mono font-black text-sm text-[#0e6037]">
@@ -442,7 +442,7 @@ export default function SurandaiInvoice({ bill, settings = {}, isCommissionView,
         {/* Bottom Section */}
         {isCommission ? (
           /* Commission Bill Bottom: Clean rounded stamp/seal outline box at bottom-left */
-          <div className="pt-2 pb-1">
+          <div className="pt-2 pb-0.5">
             <div className="w-28 h-7 border border-gray-300 rounded-md" />
           </div>
         ) : (
