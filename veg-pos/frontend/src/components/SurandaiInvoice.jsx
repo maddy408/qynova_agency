@@ -131,9 +131,7 @@ export default function SurandaiInvoice({ bill, settings = {}, isCommissionView,
       className={`surandai-bhavani-template font-sans text-black bg-white select-none shadow-sm flex flex-col mx-auto relative ${
         isSlip
           ? 'max-w-[76mm] w-full p-1 border-2 border-[#0e6037] text-[10px]'
-          : isCommission
-            ? 'max-w-[140mm] w-full p-1.5 border-[2px] border-[#0e6037] text-xs'
-            : 'max-w-[142mm] w-full p-2 border-[2.5px] border-[#0e6037] text-xs min-h-[196mm]'
+          : 'max-w-[140mm] w-full p-1.5 border-[2px] border-[#0e6037] text-xs'
       }`}
       style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}
     >
@@ -470,14 +468,6 @@ export default function SurandaiInvoice({ bill, settings = {}, isCommissionView,
                 குறிப்பு: {bill.notes}
               </div>
             )}
-
-            {/* 8. Generous Blank Space Below Bill Content */}
-            <div className="flex-1 min-h-[12mm] my-0.5" />
-
-            {/* 9. Minimal Clean Bottom Footer */}
-            <div className="pt-1 border-t border-gray-200 text-center text-[9px] text-gray-500 font-medium">
-              {footerNote}
-            </div>
           </>
         )}
 
