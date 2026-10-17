@@ -863,8 +863,13 @@ export default function Billing() {
     }
     if (e.key === 'ArrowDown' || e.key === 'Enter') {
       e.preventDefault();
-      paidAmountRef.current?.focus();
-      paidAmountRef.current?.select();
+      if (cart.billType === 'commission') {
+        notesRef.current?.focus();
+        notesRef.current?.select();
+      } else {
+        paidAmountRef.current?.focus();
+        paidAmountRef.current?.select();
+      }
       return;
     }
     if (e.key === 'ArrowRight') {
@@ -1025,7 +1030,12 @@ export default function Billing() {
     }
     if (e.key === 'ArrowUp') {
       e.preventDefault();
-      paymentMethodRef.current?.focus();
+      if (cart.billType === 'commission') {
+        otherDeductionRef.current?.focus();
+        otherDeductionRef.current?.select();
+      } else {
+        paymentMethodRef.current?.focus();
+      }
       return;
     }
     if (e.key === 'ArrowRight' && (isAtEnd(e.target) || !cart.notes)) {
@@ -1056,7 +1066,12 @@ export default function Billing() {
     }
     if (e.key === 'Backspace' && shouldBackspaceNavigate(e.target)) {
       e.preventDefault();
-      paymentMethodRef.current?.focus();
+      if (cart.billType === 'commission') {
+        otherDeductionRef.current?.focus();
+        otherDeductionRef.current?.select();
+      } else {
+        paymentMethodRef.current?.focus();
+      }
       return;
     }
   }
@@ -1073,8 +1088,7 @@ export default function Billing() {
       else if (btnName === 'save') holdBtnRef.current?.focus();
       else if (btnName === 'hold') {
         if (cart.billType === 'commission') {
-          otherDeductionRef.current?.focus();
-          otherDeductionRef.current?.select();
+          notesRef.current?.focus();
         } else {
           if (discountAmountRef.current && cart.discountPercent === '') {
             discountAmountRef.current.focus();
@@ -1592,412 +1606,465 @@ export default function Billing() {
             </div>
           </div>
 
-          {/* 3. Bottom 2-Column Section (BILLING SUMMARY & PAYMENT) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 items-start">
-            {/* Left: BILLING SUMMARY */}
-            <div className="bg-white rounded-lg border border-gray-200 p-2 space-y-1 shadow-xs">
-              <div className="text-[11px] font-black uppercase tracking-wider text-slate-700 pb-0.5 border-b border-gray-100 flex justify-between items-center">
-                <span>{isCommission ? 'COMMISSION BILL SUMMARY' : 'BILLING SUMMARY'}</span>
-                <span className="font-mono text-xs text-slate-600 font-bold">{cart.lines.length} items</span>
-              </div>
-
-              <Row label={t('billing.items_total')} value={formatINR(itemsTotal)} />
-
-              {!isCommission ? (
-                <>
-                  <div className="flex items-center justify-between py-0.5 text-xs">
-                    <label className="text-gray-600 text-xs mb-0">{t('billing.discount')}</label>
-                    <div className="flex items-center gap-1.5">
-                      <input
-                        ref={discountPercentRef}
-                        className="w-16 h-6 px-1.5 text-xs rounded border border-gray-300 text-right font-mono focus:ring-1 focus:ring-blue-600"
-                        type="text"
-                        inputMode="decimal"
-                        placeholder="%"
-                        value={cart.discountPercent}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          if (val === '' || /^\d*\.?\d*$/.test(val)) {
-                            setCart({ ...cart, discountPercent: val });
-                          }
-                        }}
-                        onKeyDown={handleDiscountPercentKeyDown}
-                      />
-                      <input
-                        ref={discountAmountRef}
-                        className="w-24 h-6 px-1.5 text-xs rounded border border-gray-300 text-right font-mono focus:ring-1 focus:ring-blue-600"
-                        type="text"
-                        inputMode="decimal"
-                        placeholder="₹"
-                        disabled={cart.discountPercent !== ''}
-                        value={cart.discountPercent !== '' ? discountAmount.toFixed(2) : cart.discountAmount}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          if (val === '' || /^\d*\.?\d*$/.test(val)) {
-                            setCart({ ...cart, discountAmount: val });
-                          }
-                        }}
-                        onKeyDown={handleDiscountAmountKeyDown}
-                      />
-                    </div>
-                  </div>
-
-                  {oldCreditBalance > 0 && (
-                    <Row label="பழைய கடன் பாக்கி (Old Credit)" value={formatINR(oldCreditBalance)} />
-                  )}
-                  {oldCreditBalance < 0 && (
-                    <Row label="முன் அட்வான்ஸ் இருப்பு (Advance)" value={formatINR(Math.abs(oldCreditBalance))} />
-                  )}
-
-                  {/* Bill Total Navy Bar */}
-                  <div className="bg-[#0a1733] text-white px-3 py-1 rounded-md flex items-center justify-between font-black text-xs mt-1">
-                    <span className="tracking-wide">இன்றைய பில் மொத்தம் (BILL TOTAL)</span>
-                    <span className="font-mono text-sm tracking-tight">{formatINR(currentBillTotal)}</span>
-                  </div>
-                  {oldCreditBalance > 0 && (
-                    <div className="flex justify-between items-center text-[11px] text-gray-500 font-bold px-1 pt-0.5">
-                      <span>மொத்த கணக்கு (Total with Old Credit):</span>
-                      <span className="font-mono text-slate-800">{formatINR(oldCreditBalance + currentBillTotal)}</span>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <>
-                  <div className="flex items-center justify-between py-0.5 text-xs">
-                    <span className="text-gray-600">{t('billing.commission_mode')}</span>
-                    <div className="inline-flex p-0.5 bg-gray-100 rounded border border-gray-200 text-xs">
-                      <button
-                        type="button"
-                        className={`px-2 py-0.5 rounded text-[11px] font-bold ${cart.commissionMode === 'percentage' ? 'bg-blue-900 text-white' : 'text-gray-600'}`}
-                        onClick={() => setCart({ ...cart, commissionMode: 'percentage' })}
-                      >
-                        %
-                      </button>
-                      <button
-                        type="button"
-                        className={`px-2 py-0.5 rounded text-[11px] font-bold ${cart.commissionMode === 'fixed' ? 'bg-blue-900 text-white' : 'text-gray-600'}`}
-                        onClick={() => setCart({ ...cart, commissionMode: 'fixed' })}
-                      >
-                        Fixed ₹
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between py-0.5 text-xs">
-                    <label className="text-gray-600 text-xs mb-0">{t('billing.commission')}</label>
-                    {cart.commissionMode === 'percentage' ? (
-                      <input
-                        ref={commissionInputRef}
-                        className="w-20 h-6 px-1.5 text-xs text-right font-mono rounded border border-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-600"
-                        type="text"
-                        inputMode="decimal"
-                        placeholder="%"
-                        value={cart.commissionPercent === 0 || cart.commissionPercent === '0' ? '' : (cart.commissionPercent ?? '')}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          if (val === '' || /^\d*\.?\d*$/.test(val)) {
-                            setCart({ ...cart, commissionPercent: val });
-                          }
-                        }}
-                        onKeyDown={handleCommissionKeyDown}
-                      />
-                    ) : (
-                      <input
-                        ref={commissionInputRef}
-                        className="w-24 h-6 px-1.5 text-xs text-right font-mono rounded border border-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-600"
-                        type="text"
-                        inputMode="decimal"
-                        placeholder="₹"
-                        value={cart.commissionAmount === 0 || cart.commissionAmount === '0' ? '' : (cart.commissionAmount ?? '')}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          if (val === '' || /^\d*\.?\d*$/.test(val)) {
-                            setCart({ ...cart, commissionAmount: val });
-                          }
-                        }}
-                        onKeyDown={handleCommissionKeyDown}
-                      />
-                    )}
-                  </div>
-
-                  {cart.commissionMode === 'percentage' && (
-                    <Row label={t('billing.commission') + ' (₹)'} value={formatINR(commissionAmount)} />
-                  )}
-
-                  <NumberRow
-                    inputRef={patthuRef}
-                    label={t('billing.patthu')}
-                    value={cart.patthu}
-                    onChange={(v) => setCart({ ...cart, patthu: v })}
-                    onKeyDown={handlePatthuKeyDown}
-                  />
-                  <NumberRow
-                    inputRef={cooliRef}
-                    label={t('billing.cooli')}
-                    value={cart.cooli}
-                    onChange={(v) => setCart({ ...cart, cooli: v })}
-                    onKeyDown={handleCooliKeyDown}
-                  />
-                  <NumberRow
-                    inputRef={vadagaiRef}
-                    label={t('billing.vadagai')}
-                    value={cart.vadagai}
-                    onChange={(v) => setCart({ ...cart, vadagai: v })}
-                    onKeyDown={handleVadagaiKeyDown}
-                  />
-                  <NumberRow
-                    inputRef={otherDeductionRef}
-                    label={t('billing.other_deduction')}
-                    value={cart.otherDeduction}
-                    onChange={(v) => setCart({ ...cart, otherDeduction: v })}
-                    onKeyDown={handleOtherDeductionKeyDown}
-                  />
-                  
-                  <Row label={t('billing.commission_side_total')} value={formatINR(totalDeductions)} bold />
-
-                  {deductionsExceedSales && (
-                    <p className="text-red-600 text-xs font-bold bg-red-50 border border-red-200 rounded px-2 py-0.5">
-                      ⚠ {t('billing.validation_exceeds')}
-                    </p>
-                  )}
-
-                  {/* Net Total Navy Bar */}
-                  <div className="bg-[#0a1733] text-white px-3 py-1 rounded-md flex items-center justify-between font-black text-xs mt-1">
-                    <span className="tracking-wide">NET TOTAL</span>
-                    <span className="font-mono text-sm tracking-tight">{formatINR(netTotal)}</span>
-                  </div>
-                </>
-              )}
-            </div>
-
-            {/* Right: PAYMENT */}
-            <div className="bg-white rounded-lg border border-gray-200 p-2 space-y-1 shadow-xs">
-              <div className="text-[11px] font-black uppercase tracking-wider text-slate-700 pb-0.5 border-b border-gray-100">
-                PAYMENT
-              </div>
-
-              <div className="flex items-center justify-between py-0.5 text-xs">
-                <label className="text-gray-600 text-xs mb-0 font-medium">{t('billing.paid_amount')}</label>
-                <div className="flex items-center gap-1">
-                  <input
-                    ref={paidAmountRef}
-                    className="w-24 h-6 px-1.5 text-xs text-right font-mono font-bold rounded border border-gray-300 focus:ring-1 focus:ring-blue-600"
-                    type="text"
-                    inputMode="decimal"
-                    placeholder="0.00"
-                    value={cart.paidAmount}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      if (val === '' || /^\d*\.?\d*$/.test(val)) {
-                        setIsPaidManuallyEdited(true);
-                        setCart({ ...cart, paidAmount: val });
-                      }
-                    }}
-                    onKeyDown={handlePaidAmountKeyDown}
-                  />
-                  <button
-                    type="button"
-                    title="இன்றைய பில் தொகை மட்டும் செலுத்த (Pay Current Bill)"
-                    className="px-2 py-0.5 text-[10px] font-black bg-emerald-600 hover:bg-emerald-700 text-white rounded transition-colors"
-                    onClick={() => {
-                      setIsPaidManuallyEdited(false);
-                      setCart({ ...cart, paidAmount: currentBillTotal > 0 ? currentBillTotal : 0 });
-                    }}
-                  >
-                    Full
-                  </button>
+          {/* 3. Bottom Section: Normal Bill (2 Columns) vs Commission Bill (Single Centered Card, No Payment Panel) */}
+          {!isCommission ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 items-start">
+              {/* Left: BILLING SUMMARY */}
+              <div className="bg-white rounded-lg border border-gray-200 p-2 space-y-1 shadow-xs">
+                <div className="text-[11px] font-black uppercase tracking-wider text-slate-700 pb-0.5 border-b border-gray-100 flex justify-between items-center">
+                  <span>BILLING SUMMARY</span>
+                  <span className="font-mono text-xs text-slate-600 font-bold">{cart.lines.length} items</span>
                 </div>
-              </div>
 
-              {/* Quick adjustment chips */}
-              <div className="flex gap-1 justify-end pb-0.5 text-[10px]">
-                <button
-                  type="button"
-                  className="px-1.5 py-0.5 text-gray-600 hover:bg-gray-100 border border-gray-200 rounded font-medium"
-                  onClick={() => {
-                    setIsPaidManuallyEdited(true);
-                    setCart({ ...cart, paidAmount: 0 });
-                  }}
-                >
-                  கடன் (0)
-                </button>
+                <Row label={t('billing.items_total')} value={formatINR(itemsTotal)} />
+
+                <div className="flex items-center justify-between py-0.5 text-xs">
+                  <label className="text-gray-600 text-xs mb-0">{t('billing.discount')}</label>
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      ref={discountPercentRef}
+                      className="w-16 h-6 px-1.5 text-xs rounded border border-gray-300 text-right font-mono focus:ring-1 focus:ring-blue-600"
+                      type="text"
+                      inputMode="decimal"
+                      placeholder="%"
+                      value={cart.discountPercent}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                          setCart({ ...cart, discountPercent: val });
+                        }
+                      }}
+                      onKeyDown={handleDiscountPercentKeyDown}
+                    />
+                    <input
+                      ref={discountAmountRef}
+                      className="w-24 h-6 px-1.5 text-xs rounded border border-gray-300 text-right font-mono focus:ring-1 focus:ring-blue-600"
+                      type="text"
+                      inputMode="decimal"
+                      placeholder="₹"
+                      disabled={cart.discountPercent !== ''}
+                      value={cart.discountPercent !== '' ? discountAmount.toFixed(2) : cart.discountAmount}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                          setCart({ ...cart, discountAmount: val });
+                        }
+                      }}
+                      onKeyDown={handleDiscountAmountKeyDown}
+                    />
+                  </div>
+                </div>
+
                 {oldCreditBalance > 0 && (
-                  <button
-                    type="button"
-                    className="px-1.5 py-0.5 text-blue-700 hover:bg-blue-50 border border-blue-200 rounded font-medium"
-                    onClick={() => {
-                      setIsPaidManuallyEdited(true);
-                      setCart({ ...cart, paidAmount: currentBillTotal + oldCreditBalance });
-                    }}
-                  >
-                    முழு பழைய கடன் + பில் ({formatINR(currentBillTotal + oldCreditBalance)})
-                  </button>
+                  <Row label="பழைய கடன் பாக்கி (Old Credit)" value={formatINR(oldCreditBalance)} />
+                )}
+                {oldCreditBalance < 0 && (
+                  <Row label="முன் அட்வான்ஸ் இருப்பு (Advance)" value={formatINR(Math.abs(oldCreditBalance))} />
+                )}
+
+                {/* Bill Total Navy Bar */}
+                <div className="bg-[#0a1733] text-white px-3 py-1 rounded-md flex items-center justify-between font-black text-xs mt-1">
+                  <span className="tracking-wide">இன்றைய பில் மொத்தம் (BILL TOTAL)</span>
+                  <span className="font-mono text-sm tracking-tight">{formatINR(currentBillTotal)}</span>
+                </div>
+                {oldCreditBalance > 0 && (
+                  <div className="flex justify-between items-center text-[11px] text-gray-500 font-bold px-1 pt-0.5">
+                    <span>மொத்த கணக்கு (Total with Old Credit):</span>
+                    <span className="font-mono text-slate-800">{formatINR(oldCreditBalance + currentBillTotal)}</span>
+                  </div>
                 )}
               </div>
 
-              <div className="flex items-center justify-between py-0.5 text-xs">
-                <label className="text-gray-600 text-xs mb-0 font-medium">{t('billing.payment_method')}</label>
-                <select
-                  ref={paymentMethodRef}
-                  className="w-36 h-6 px-1.5 text-xs rounded border border-gray-300 font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 cursor-pointer"
-                  value={cart.paymentMethodId}
-                  onChange={(e) => handlePaymentMethodChange(e.target.value)}
-                  onKeyDown={handlePaymentMethodKeyDown}
-                >
-                  {methods.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.name_ta}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {/* Right: PAYMENT */}
+              <div className="bg-white rounded-lg border border-gray-200 p-2 space-y-1 shadow-xs">
+                <div className="text-[11px] font-black uppercase tracking-wider text-slate-700 pb-0.5 border-b border-gray-100">
+                  PAYMENT
+                </div>
 
-              {/* Balance Due Navy Bar */}
-              <div className={`px-3 py-1 rounded-md flex items-center justify-between font-black text-xs ${
-                currentBillDue > 0 ? 'bg-[#0a1733] text-white' : 'bg-emerald-950 text-white'
-              }`}>
-                <span className="tracking-wide">
-                  {currentBillDue > 0
-                    ? 'BILL BALANCE DUE (பில் மீதி பாக்கி)'
-                    : changeToReturn > 0
-                      ? 'CHANGE TO RETURN (சில்லறை கொடுக்க)'
-                      : 'PAID IN FULL (முழுவதும் செலுத்தப்பட்டது)'}
-                </span>
-                <span className={`font-mono text-sm ${
-                  currentBillDue > 0 ? 'text-rose-400' : changeToReturn > 0 ? 'text-amber-300 font-black' : 'text-emerald-300'
-                }`}>
-                  {currentBillDue > 0
-                    ? formatINR(currentBillDue)
-                    : changeToReturn > 0
-                      ? `+ ${formatINR(changeToReturn)}`
-                      : formatINR(0)}
-                </span>
-              </div>
+                <div className="flex items-center justify-between py-0.5 text-xs">
+                  <label className="text-gray-600 text-xs mb-0 font-medium">{t('billing.paid_amount')}</label>
+                  <div className="flex items-center gap-1">
+                    <input
+                      ref={paidAmountRef}
+                      className="w-24 h-6 px-1.5 text-xs text-right font-mono font-bold rounded border border-gray-300 focus:ring-1 focus:ring-blue-600"
+                      type="text"
+                      inputMode="decimal"
+                      placeholder="0.00"
+                      value={cart.paidAmount}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                          setIsPaidManuallyEdited(true);
+                          setCart({ ...cart, paidAmount: val });
+                        }
+                      }}
+                      onKeyDown={handlePaidAmountKeyDown}
+                    />
+                    <button
+                      type="button"
+                      title="இன்றைய பில் தொகை மட்டும் செலுத்த (Pay Current Bill)"
+                      className="px-2 py-0.5 text-[10px] font-black bg-emerald-600 hover:bg-emerald-700 text-white rounded transition-colors"
+                      onClick={() => {
+                        setIsPaidManuallyEdited(false);
+                        setCart({ ...cart, paidAmount: currentBillTotal > 0 ? currentBillTotal : 0 });
+                      }}
+                    >
+                      Full
+                    </button>
+                  </div>
+                </div>
 
-              {/* Live Credit & Adjustment Status */}
-              {cart.partyId && (
-                <div className="bg-slate-50 border border-slate-200 text-slate-800 rounded p-1.5 text-[11px] space-y-1 mt-0.5">
-                  {oldCreditBalance > 0 ? (
-                    <>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">பழைய கடன் இருப்பு:</span>
-                        <span className="font-mono font-bold text-slate-800">{formatINR(oldCreditBalance)}</span>
-                      </div>
-
-                      {paid === currentBillTotal && currentBillTotal > 0 && (
-                        <div className="flex justify-between text-emerald-700 font-semibold border-t border-slate-200 pt-0.5">
-                          <span>இன்றைய பில் செலுத்தப்பட்டது:</span>
-                          <span>பழைய கடனில் மாற்றமில்லை ({formatINR(oldCreditBalance)}) ✓</span>
-                        </div>
-                      )}
-
-                      {currentBillDue > 0 && (
-                        <div className="flex justify-between text-rose-700 font-bold border-t border-slate-200 pt-0.5">
-                          <span>இன்றைய பில் கடனில் சேர்க்கப்பட்டது:</span>
-                          <span className="font-mono">+ {formatINR(currentBillDue)} (மொத்த கடன்: {formatINR(newPartyBalance)})</span>
-                        </div>
-                      )}
-
-                      {excessPaidOverBill > 0 && (
-                        <div className="space-y-0.5 border-t border-slate-200 pt-0.5">
-                          <div className="flex justify-between text-emerald-700 font-semibold">
-                            <span>இன்றைய பில் ({formatINR(currentBillTotal)}):</span>
-                            <span>செலுத்தப்பட்டது ✓</span>
-                          </div>
-                          <div className="flex justify-between text-blue-700 font-bold">
-                            <span>பழைய கடனில் கழித்தது:</span>
-                            <span className="font-mono">- {formatINR(creditDeduction)}</span>
-                          </div>
-                          <div className="flex justify-between font-bold text-slate-900">
-                            <span>மீதமுள்ள பழைய கடன்:</span>
-                            <span className="font-mono text-rose-600">{formatINR(remainingOldCredit)}</span>
-                          </div>
-                          {changeToReturn > 0 && (
-                            <div className="flex justify-between text-amber-900 bg-amber-100/70 p-1 rounded font-bold">
-                              <span>கூடுதல் சில்லறை / அட்வான்ஸ்:</span>
-                              <span className="font-mono">{formatINR(changeToReturn)}</span>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </>
-                  ) : oldCreditBalance < 0 ? (
-                    <>
-                      <div className="flex justify-between text-blue-800 font-semibold">
-                        <span>முன் அட்வான்ஸ் / வரவு இருப்பு:</span>
-                        <span className="font-mono font-bold">{formatINR(Math.abs(oldCreditBalance))}</span>
-                      </div>
-                      {currentBillDue > 0 && (
-                        <div className="flex justify-between text-slate-700 font-bold border-t border-slate-200 pt-0.5">
-                          <span>அட்வான்ஸில் கழிக்கப்பட்ட பின் மீதம்:</span>
-                          <span className="font-mono">{formatINR(Math.abs(newPartyBalance))}</span>
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    currentBillDue > 0 && (
-                      <div className="flex justify-between text-rose-700 font-bold">
-                        <span>கடன் பாக்கி:</span>
-                        <span className="font-mono">{formatINR(currentBillDue)}</span>
-                      </div>
-                    )
+                {/* Quick adjustment chips */}
+                <div className="flex gap-1 justify-end pb-0.5 text-[10px]">
+                  <button
+                    type="button"
+                    className="px-1.5 py-0.5 text-gray-600 hover:bg-gray-100 border border-gray-200 rounded font-medium"
+                    onClick={() => {
+                      setIsPaidManuallyEdited(true);
+                      setCart({ ...cart, paidAmount: 0 });
+                    }}
+                  >
+                    கடன் (0)
+                  </button>
+                  {oldCreditBalance > 0 && (
+                    <button
+                      type="button"
+                      className="px-1.5 py-0.5 text-blue-700 hover:bg-blue-50 border border-blue-200 rounded font-medium"
+                      onClick={() => {
+                        setIsPaidManuallyEdited(true);
+                        setCart({ ...cart, paidAmount: currentBillTotal + oldCreditBalance });
+                      }}
+                    >
+                      முழு பழைய கடன் + பில் ({formatINR(currentBillTotal + oldCreditBalance)})
+                    </button>
                   )}
                 </div>
-              )}
 
-              {/* Walk-in Customer Extra Paid */}
-              {!cart.partyId && excessPaidOverBill > 0 && (
-                <div className="bg-amber-50 border border-amber-200 text-amber-900 rounded p-1.5 text-[11px] flex justify-between items-center font-bold mt-0.5">
-                  <span>சில்லறை கொடுக்க வேண்டியது (Change):</span>
-                  <span className="font-mono text-emerald-700 text-xs">₹{excessPaidOverBill.toFixed(2)}</span>
+                <div className="flex items-center justify-between py-0.5 text-xs">
+                  <label className="text-gray-600 text-xs mb-0 font-medium">{t('billing.payment_method')}</label>
+                  <select
+                    ref={paymentMethodRef}
+                    className="w-36 h-6 px-1.5 text-xs rounded border border-gray-300 font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 cursor-pointer"
+                    value={cart.paymentMethodId}
+                    onChange={(e) => handlePaymentMethodChange(e.target.value)}
+                    onKeyDown={handlePaymentMethodKeyDown}
+                  >
+                    {methods.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.name_ta}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-              )}
 
-              <input
-                ref={notesRef}
-                className="w-full h-6 px-2 text-xs rounded border border-gray-300 text-gray-700 placeholder-gray-400"
-                placeholder={t('billing.notes') + ' (optional)...'}
-                value={cart.notes}
-                onChange={(e) => setCart({ ...cart, notes: e.target.value })}
-                onKeyDown={handleNotesKeyDown}
-              />
+                {/* Balance Due Navy Bar */}
+                <div className={`px-3 py-1 rounded-md flex items-center justify-between font-black text-xs ${
+                  currentBillDue > 0 ? 'bg-[#0a1733] text-white' : 'bg-emerald-950 text-white'
+                }`}>
+                  <span className="tracking-wide">
+                    {currentBillDue > 0
+                      ? 'BILL BALANCE DUE (பில் மீதி பாக்கி)'
+                      : changeToReturn > 0
+                        ? 'CHANGE TO RETURN (சில்லறை கொடுக்க)'
+                        : 'PAID IN FULL (முழுவதும் செலுத்தப்பட்டது)'}
+                  </span>
+                  <span className={`font-mono text-sm ${
+                    currentBillDue > 0 ? 'text-rose-400' : changeToReturn > 0 ? 'text-amber-300 font-black' : 'text-emerald-300'
+                  }`}>
+                    {currentBillDue > 0
+                      ? formatINR(currentBillDue)
+                      : changeToReturn > 0
+                        ? `+ ${formatINR(changeToReturn)}`
+                        : formatINR(0)}
+                  </span>
+                </div>
 
-              {/* Action Buttons */}
-              <div className="flex gap-1.5 pt-1">
-                <button
-                  ref={holdBtnRef}
-                  type="button"
-                  className="btn-secondary h-7 py-0.5 px-2 text-xs font-bold rounded flex-1 focus:ring-2 focus:ring-slate-400 focus:outline-none"
-                  onClick={handleHold}
-                  onKeyDown={(e) => handleButtonKeyDown(e, 'hold')}
-                  disabled={saving || cart.lines.length === 0}
-                >
-                  {t('billing.hold_bill')} (F2)
-                </button>
-                <button
-                  ref={saveBtnRef}
-                  type="button"
-                  className="btn-secondary h-7 py-0.5 px-2 text-xs font-bold rounded flex-1 focus:ring-2 focus:ring-slate-400 focus:outline-none"
-                  onClick={() => handleSave(true)}
-                  onKeyDown={(e) => handleButtonKeyDown(e, 'save')}
-                  disabled={saving || !canSave || cart.lines.length === 0}
-                >
-                  {t('billing.save')}
-                </button>
-                <button
-                  ref={savePrintBtnRef}
-                  type="button"
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white h-7 py-0.5 px-3 text-xs font-black rounded shadow-xs flex-1 flex items-center justify-center gap-1 transition-all focus:ring-2 focus:ring-emerald-400 focus:outline-none"
-                  onClick={() => handleSave(true)}
-                  onKeyDown={(e) => handleButtonKeyDown(e, 'savePrint')}
-                  disabled={saving || !canSave || cart.lines.length === 0}
-                >
-                  <span>✓</span>
-                  <span>{t('billing.save_print')} (F9)</span>
-                </button>
+                {/* Live Credit & Adjustment Status */}
+                {cart.partyId && (
+                  <div className="bg-slate-50 border border-slate-200 text-slate-800 rounded p-1.5 text-[11px] space-y-1 mt-0.5">
+                    {oldCreditBalance > 0 ? (
+                      <>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">பழைய கடன் இருப்பு:</span>
+                          <span className="font-mono font-bold text-slate-800">{formatINR(oldCreditBalance)}</span>
+                        </div>
+
+                        {paid === currentBillTotal && currentBillTotal > 0 && (
+                          <div className="flex justify-between text-emerald-700 font-semibold border-t border-slate-200 pt-0.5">
+                            <span>இன்றைய பில் செலுத்தப்பட்டது:</span>
+                            <span>பழைய கடனில் மாற்றமில்லை ({formatINR(oldCreditBalance)}) ✓</span>
+                          </div>
+                        )}
+
+                        {currentBillDue > 0 && (
+                          <div className="flex justify-between text-rose-700 font-bold border-t border-slate-200 pt-0.5">
+                            <span>இன்றைய பில் கடனில் சேர்க்கப்பட்டது:</span>
+                            <span className="font-mono">+ {formatINR(currentBillDue)} (மொத்த கடன்: {formatINR(newPartyBalance)})</span>
+                          </div>
+                        )}
+
+                        {excessPaidOverBill > 0 && (
+                          <div className="space-y-0.5 border-t border-slate-200 pt-0.5">
+                            <div className="flex justify-between text-emerald-700 font-semibold">
+                              <span>இன்றைய பில் ({formatINR(currentBillTotal)}):</span>
+                              <span>செலுத்தப்பட்டது ✓</span>
+                            </div>
+                            <div className="flex justify-between text-blue-700 font-bold">
+                              <span>பழைய கடனில் கழித்தது:</span>
+                              <span className="font-mono">- {formatINR(creditDeduction)}</span>
+                            </div>
+                            <div className="flex justify-between font-bold text-slate-900">
+                              <span>மீதமுள்ள பழைய கடன்:</span>
+                              <span className="font-mono text-rose-600">{formatINR(remainingOldCredit)}</span>
+                            </div>
+                            {changeToReturn > 0 && (
+                              <div className="flex justify-between text-amber-900 bg-amber-100/70 p-1 rounded font-bold">
+                                <span>கூடுதல் சில்லறை / அட்வான்ஸ்:</span>
+                                <span className="font-mono">{formatINR(changeToReturn)}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </>
+                    ) : oldCreditBalance < 0 ? (
+                      <>
+                        <div className="flex justify-between text-blue-800 font-semibold">
+                          <span>முன் அட்வான்ஸ் / வரவு இருப்பு:</span>
+                          <span className="font-mono font-bold">{formatINR(Math.abs(oldCreditBalance))}</span>
+                        </div>
+                        {currentBillDue > 0 && (
+                          <div className="flex justify-between text-slate-700 font-bold border-t border-slate-200 pt-0.5">
+                            <span>அட்வான்ஸில் கழிக்கப்பட்ட பின் மீதம்:</span>
+                            <span className="font-mono">{formatINR(Math.abs(newPartyBalance))}</span>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      currentBillDue > 0 && (
+                        <div className="flex justify-between text-rose-700 font-bold">
+                          <span>கடன் பாக்கி:</span>
+                          <span className="font-mono">{formatINR(currentBillDue)}</span>
+                        </div>
+                      )
+                    )}
+                  </div>
+                )}
+
+                {/* Walk-in Customer Extra Paid */}
+                {!cart.partyId && excessPaidOverBill > 0 && (
+                  <div className="bg-amber-50 border border-amber-200 text-amber-900 rounded p-1.5 text-[11px] flex justify-between items-center font-bold mt-0.5">
+                    <span>சில்லறை கொடுக்க வேண்டியது (Change):</span>
+                    <span className="font-mono text-emerald-700 text-xs">₹{excessPaidOverBill.toFixed(2)}</span>
+                  </div>
+                )}
+
+                <input
+                  ref={notesRef}
+                  className="w-full h-6 px-2 text-xs rounded border border-gray-300 text-gray-700 placeholder-gray-400"
+                  placeholder={t('billing.notes') + ' (optional)...'}
+                  value={cart.notes}
+                  onChange={(e) => setCart({ ...cart, notes: e.target.value })}
+                  onKeyDown={handleNotesKeyDown}
+                />
+
+                {/* Action Buttons */}
+                <div className="flex gap-1.5 pt-1">
+                  <button
+                    ref={holdBtnRef}
+                    type="button"
+                    className="btn-secondary h-7 py-0.5 px-2 text-xs font-bold rounded flex-1 focus:ring-2 focus:ring-slate-400 focus:outline-none"
+                    onClick={handleHold}
+                    onKeyDown={(e) => handleButtonKeyDown(e, 'hold')}
+                    disabled={saving || cart.lines.length === 0}
+                  >
+                    {t('billing.hold_bill')} (F2)
+                  </button>
+                  <button
+                    ref={saveBtnRef}
+                    type="button"
+                    className="btn-secondary h-7 py-0.5 px-2 text-xs font-bold rounded flex-1 focus:ring-2 focus:ring-slate-400 focus:outline-none"
+                    onClick={() => handleSave(true)}
+                    onKeyDown={(e) => handleButtonKeyDown(e, 'save')}
+                    disabled={saving || !canSave || cart.lines.length === 0}
+                  >
+                    {t('billing.save')}
+                  </button>
+                  <button
+                    ref={savePrintBtnRef}
+                    type="button"
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white h-7 py-0.5 px-3 text-xs font-black rounded shadow-xs flex-1 flex items-center justify-center gap-1 transition-all focus:ring-2 focus:ring-emerald-400 focus:outline-none"
+                    onClick={() => handleSave(true)}
+                    onKeyDown={(e) => handleButtonKeyDown(e, 'savePrint')}
+                    disabled={saving || !canSave || cart.lines.length === 0}
+                  >
+                    <span>✓</span>
+                    <span>{t('billing.save_print')} (F9)</span>
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
+          ) : (
+            /* Commission Bill: Single Centered Card, No Payment Panel (Matches Reference Screenshots 3 & 4) */
+            <div className="max-w-xl mx-auto w-full">
+              <div className="bg-white rounded-lg border border-gray-200 p-2 space-y-1 shadow-xs">
+                <div className="text-[11px] font-black uppercase tracking-wider text-slate-700 pb-0.5 border-b border-gray-100 flex justify-between items-center">
+                  <span>COMMISSION BILL SUMMARY</span>
+                  <span className="font-mono text-xs text-slate-600 font-bold uppercase">{cart.lines.length} ITEMS</span>
+                </div>
+
+                <Row label={t('billing.items_total')} value={formatINR(itemsTotal)} />
+
+                <div className="flex items-center justify-between py-0.5 text-xs">
+                  <span className="text-gray-600">{t('billing.commission_mode')}</span>
+                  <div className="inline-flex p-0.5 bg-gray-100 rounded border border-gray-200 text-xs">
+                    <button
+                      type="button"
+                      className={`px-2 py-0.5 rounded text-[11px] font-bold ${cart.commissionMode === 'percentage' ? 'bg-blue-900 text-white' : 'text-gray-600'}`}
+                      onClick={() => setCart({ ...cart, commissionMode: 'percentage' })}
+                    >
+                      %
+                    </button>
+                    <button
+                      type="button"
+                      className={`px-2 py-0.5 rounded text-[11px] font-bold ${cart.commissionMode === 'fixed' ? 'bg-blue-900 text-white' : 'text-gray-600'}`}
+                      onClick={() => setCart({ ...cart, commissionMode: 'fixed' })}
+                    >
+                      Fixed ₹
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between py-0.5 text-xs">
+                  <label className="text-gray-600 text-xs mb-0">{t('billing.commission')}</label>
+                  {cart.commissionMode === 'percentage' ? (
+                    <input
+                      ref={commissionInputRef}
+                      className="w-20 h-6 px-1.5 text-xs text-right font-mono rounded border border-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-600"
+                      type="text"
+                      inputMode="decimal"
+                      placeholder="%"
+                      value={cart.commissionPercent === 0 || cart.commissionPercent === '0' ? '' : (cart.commissionPercent ?? '')}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                          setCart({ ...cart, commissionPercent: val });
+                        }
+                      }}
+                      onKeyDown={handleCommissionKeyDown}
+                    />
+                  ) : (
+                    <input
+                      ref={commissionInputRef}
+                      className="w-24 h-6 px-1.5 text-xs text-right font-mono rounded border border-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-600"
+                      type="text"
+                      inputMode="decimal"
+                      placeholder="₹"
+                      value={cart.commissionAmount === 0 || cart.commissionAmount === '0' ? '' : (cart.commissionAmount ?? '')}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                          setCart({ ...cart, commissionAmount: val });
+                        }
+                      }}
+                      onKeyDown={handleCommissionKeyDown}
+                    />
+                  )}
+                </div>
+
+                {cart.commissionMode === 'percentage' && (
+                  <Row label={t('billing.commission') + ' (₹)'} value={formatINR(commissionAmount)} />
+                )}
+
+                <NumberRow
+                  inputRef={patthuRef}
+                  label={t('billing.patthu')}
+                  value={cart.patthu}
+                  onChange={(v) => setCart({ ...cart, patthu: v })}
+                  onKeyDown={handlePatthuKeyDown}
+                />
+                <NumberRow
+                  inputRef={cooliRef}
+                  label={t('billing.cooli')}
+                  value={cart.cooli}
+                  onChange={(v) => setCart({ ...cart, cooli: v })}
+                  onKeyDown={handleCooliKeyDown}
+                />
+                <NumberRow
+                  inputRef={vadagaiRef}
+                  label={t('billing.vadagai')}
+                  value={cart.vadagai}
+                  onChange={(v) => setCart({ ...cart, vadagai: v })}
+                  onKeyDown={handleVadagaiKeyDown}
+                />
+                <NumberRow
+                  inputRef={otherDeductionRef}
+                  label={t('billing.other_deduction')}
+                  value={cart.otherDeduction}
+                  onChange={(v) => setCart({ ...cart, otherDeduction: v })}
+                  onKeyDown={handleOtherDeductionKeyDown}
+                />
+
+                <Row label={t('billing.commission_side_total')} value={formatINR(totalDeductions)} bold />
+
+                {deductionsExceedSales && (
+                  <p className="text-red-600 text-xs font-bold bg-red-50 border border-red-200 rounded px-2 py-0.5">
+                    ⚠ {t('billing.validation_exceeds')}
+                  </p>
+                )}
+
+                {/* Net Total Navy Bar */}
+                <div className="bg-[#0a1733] text-white px-3 py-1 rounded-md flex items-center justify-between font-black text-xs mt-1">
+                  <span className="tracking-wide">NET TOTAL</span>
+                  <span className="font-mono text-sm tracking-tight">{formatINR(netTotal)}</span>
+                </div>
+
+                {/* Notes (optional) Input directly in summary card */}
+                <input
+                  ref={notesRef}
+                  className="w-full h-6 px-2 text-xs rounded border border-gray-300 text-gray-700 placeholder-gray-400 mt-1"
+                  placeholder={t('billing.notes') + ' (optional)...'}
+                  value={cart.notes}
+                  onChange={(e) => setCart({ ...cart, notes: e.target.value })}
+                  onKeyDown={handleNotesKeyDown}
+                />
+
+                {/* Action Buttons inside summary card */}
+                <div className="flex gap-1.5 pt-1">
+                  <button
+                    ref={holdBtnRef}
+                    type="button"
+                    className="btn-secondary h-7 py-0.5 px-2 text-xs font-bold rounded flex-1 focus:ring-2 focus:ring-slate-400 focus:outline-none"
+                    onClick={handleHold}
+                    onKeyDown={(e) => handleButtonKeyDown(e, 'hold')}
+                    disabled={saving || cart.lines.length === 0}
+                  >
+                    {t('billing.hold_bill')} (F2)
+                  </button>
+                  <button
+                    ref={saveBtnRef}
+                    type="button"
+                    className="btn-secondary h-7 py-0.5 px-2 text-xs font-bold rounded flex-1 focus:ring-2 focus:ring-slate-400 focus:outline-none"
+                    onClick={() => handleSave(true)}
+                    onKeyDown={(e) => handleButtonKeyDown(e, 'save')}
+                    disabled={saving || !canSave || cart.lines.length === 0}
+                  >
+                    {t('billing.save')}
+                  </button>
+                  <button
+                    ref={savePrintBtnRef}
+                    type="button"
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white h-7 py-0.5 px-3 text-xs font-black rounded shadow-xs flex-1 flex items-center justify-center gap-1 transition-all focus:ring-2 focus:ring-emerald-400 focus:outline-none"
+                    onClick={() => handleSave(true)}
+                    onKeyDown={(e) => handleButtonKeyDown(e, 'savePrint')}
+                    disabled={saving || !canSave || cart.lines.length === 0}
+                  >
+                    <span>✓</span>
+                    <span>{t('billing.save_print')} (F9)</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* 4. Bottom Compact Summary Strip */}
           <div className="bg-slate-900 text-white rounded-md px-4 py-1 flex items-center justify-between text-xs font-medium">
