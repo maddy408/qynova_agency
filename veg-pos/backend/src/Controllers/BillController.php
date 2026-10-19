@@ -248,6 +248,23 @@ class BillController
         return $billId;
     }
 
+    private function ensureBagWeightsColumn(): void
+    {
+        static $checked = false;
+        if ($checked) {
+            return;
+        }
+        try {
+            $cols = $this->pdo->query("SHOW COLUMNS FROM bill_lines LIKE 'bag_weights'")->fetchAll();
+            if (empty($cols)) {
+                $this->pdo->exec("ALTER TABLE bill_lines ADD COLUMN bag_weights TEXT NULL DEFAULT NULL AFTER bag_count");
+            }
+        } catch (\Throwable) {
+            // Safe fallback if alter table is restricted
+        }
+        $checked = true;
+    }
+
     /**
      * Writes lines + computed totals + the ledger effect for a (re)created
      * bill row. Shared by create and update so the math never diverges.
@@ -257,6 +274,7 @@ class BillController
      */
     private function applyBillFields(int $billId, array $body, array $claims, string $billNo, string $seriesKey, string $locationType, string $billType): void
     {
+        $this->ensureBagWeightsColumn();
         $lines = $body['lines'] ?? [];
         $itemsTotal = 0.0;
         $order = 0;

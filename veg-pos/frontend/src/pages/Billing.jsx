@@ -45,6 +45,8 @@ export default function Billing() {
   const [heldOpen, setHeldOpen] = useState(false);
   const [heldBills, setHeldBills] = useState([]);
   const [saving, setSaving] = useState(false);
+  const [holding, setHolding] = useState(false);
+  const holdingRef = useRef(false);
 
   const codeRef = useRef(null);
   const partyRef = useRef(null);
@@ -135,6 +137,15 @@ export default function Billing() {
     return false;
   }
 
+  const fetchHeldBills = useCallback(async () => {
+    try {
+      const list = await listHeldBills();
+      setHeldBills(Array.isArray(list) ? list : []);
+    } catch (err) {
+      console.warn('Failed to load held bills count:', err);
+    }
+  }, []);
+
   useEffect(() => {
     listItems({ active_only: '1' }).then(setItems);
     listParties().then(setParties);
@@ -143,8 +154,9 @@ export default function Billing() {
       const def = m.find((x) => x.is_default) || m[0];
       if (def) setCart((c) => ({ ...c, paymentMethodId: def.id }));
     });
+    fetchHeldBills();
     setTimeout(() => codeRef.current?.focus(), 100);
-  }, []);
+  }, [fetchHeldBills]);
 
   useEffect(() => {
     if (pendingFocusRef.current) {
@@ -1239,16 +1251,29 @@ export default function Billing() {
   }
 
   async function handleHold() {
-    if (cart.lines.length === 0) return;
-    const label = cart.partyId ? parties.find((p) => p.id === Number(cart.partyId))?.name : cart.walkinName || 'Walk-in';
-    await holdBill({
-      label,
-      cart_json: JSON.stringify(cart),
-      location_type: cart.locationType,
-      bill_type: cart.billType,
-      party_id: cart.partyId || null,
-    });
-    resetCart();
+    if (holdingRef.current || saving || cart.lines.length === 0) return;
+    holdingRef.current = true;
+    setHolding(true);
+    try {
+      const label = cart.partyId
+        ? parties.find((p) => p.id === Number(cart.partyId))?.name
+        : cart.walkinName || 'Walk-in';
+      await holdBill({
+        label,
+        cart: cart,
+        cart_json: JSON.stringify(cart),
+        location_type: cart.locationType,
+        bill_type: cart.billType,
+        party_id: cart.partyId || null,
+      });
+      resetCart();
+      await fetchHeldBills();
+    } catch (err) {
+      alert(err?.response?.data?.error || err?.message || 'Failed to hold bill');
+    } finally {
+      holdingRef.current = false;
+      setHolding(false);
+    }
   }
 
   function resetCart() {
@@ -1260,25 +1285,59 @@ export default function Billing() {
   }
 
   async function openHeld() {
-    const list = await listHeldBills();
-    setHeldBills(list);
+    await fetchHeldBills();
     setHeldOpen(true);
   }
 
-  function resumeHeld(row) {
+  async function resumeHeld(row) {
+    if (cart.lines.length > 0) {
+      const confirmDiscard = window.confirm(
+        'Current bill contains items. Discard and restore held bill?'
+      );
+      if (!confirmDiscard) return;
+    }
+
     try {
-      const parsed = typeof row.cart_json === 'string' ? JSON.parse(row.cart_json) : row.cart_json;
-      setCart(parsed);
+      let rawCart = row.cart;
+      if (!rawCart && row.cart_json) {
+        rawCart = typeof row.cart_json === 'string' ? JSON.parse(row.cart_json) : row.cart_json;
+      }
+      if (!rawCart || typeof rawCart !== 'object') {
+        throw new Error('Invalid held bill data');
+      }
+
+      const restoredCart = {
+        ...emptyCart(),
+        ...rawCart,
+        lines: Array.isArray(rawCart.lines) ? rawCart.lines : [],
+      };
+
+      if (restoredCart.lines.length === 0) {
+        throw new Error('Held bill has no items');
+      }
+
+      setIsPaidManuallyEdited(false);
+      setCart(restoredCart);
       setHeldOpen(false);
-      deleteHeldBill(row.id);
+
+      try {
+        await deleteHeldBill(row.id);
+        await fetchHeldBills();
+      } catch (delErr) {
+        console.warn('Failed to delete held bill after restore:', delErr);
+      }
     } catch (e) {
-      alert('Could not restore bill');
+      alert(e?.message || 'Could not restore bill');
     }
   }
 
   async function removeHeld(id) {
-    await deleteHeldBill(id);
-    setHeldBills((rows) => rows.filter((r) => r.id !== id));
+    try {
+      await deleteHeldBill(id);
+      await fetchHeldBills();
+    } catch (err) {
+      alert(err?.response?.data?.error || err?.message || 'Failed to delete held bill');
+    }
   }
 
   useEffect(() => {
@@ -1295,7 +1354,7 @@ export default function Billing() {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cart, currentMode]);
+  }, [cart, currentMode, holding, saving]);
 
   return (
     <div className="w-full space-y-1.5 select-none text-slate-800 pb-10">
@@ -1330,10 +1389,20 @@ export default function Billing() {
         {currentMode !== 'quick' && (
           <div className="flex items-center gap-1.5">
             <button
-              className="btn-secondary h-7 py-0.5 px-3 text-xs font-semibold rounded"
+              type="button"
+              className="btn-secondary h-7 py-0.5 px-2.5 text-xs font-semibold rounded inline-flex items-center gap-1.5 focus:ring-1 focus:ring-slate-400"
               onClick={openHeld}
             >
-              {t('billing.held_bills')}
+              <span>{t('billing.held_bills')}</span>
+              <span
+                className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold rounded-full leading-none transition-colors ${
+                  heldBills.length > 0
+                    ? 'bg-amber-600 text-white'
+                    : 'bg-gray-200 text-gray-600'
+                }`}
+              >
+                {heldBills.length}
+              </span>
             </button>
             <button
               className="btn-secondary h-7 py-0.5 px-3 text-xs font-semibold rounded bg-slate-800 text-white hover:bg-slate-900"
@@ -1875,9 +1944,9 @@ export default function Billing() {
                     className="btn-secondary h-7 py-0.5 px-2 text-xs font-bold rounded flex-1 focus:ring-2 focus:ring-slate-400 focus:outline-none"
                     onClick={handleHold}
                     onKeyDown={(e) => handleButtonKeyDown(e, 'hold')}
-                    disabled={saving || cart.lines.length === 0}
+                    disabled={holding || saving || cart.lines.length === 0}
                   >
-                    {t('billing.hold_bill')} (F2)
+                    {t('billing.hold_bill')}
                   </button>
                   <button
                     ref={saveBtnRef}
@@ -2036,9 +2105,9 @@ export default function Billing() {
                     className="btn-secondary h-7 py-0.5 px-2 text-xs font-bold rounded flex-1 focus:ring-2 focus:ring-slate-400 focus:outline-none"
                     onClick={handleHold}
                     onKeyDown={(e) => handleButtonKeyDown(e, 'hold')}
-                    disabled={saving || cart.lines.length === 0}
+                    disabled={holding || saving || cart.lines.length === 0}
                   >
-                    {t('billing.hold_bill')} (F2)
+                    {t('billing.hold_bill')}
                   </button>
                   <button
                     ref={saveBtnRef}
@@ -2091,29 +2160,34 @@ export default function Billing() {
                 </div>
                 {heldBills.length === 0 && <p className="text-gray-400 text-xs italic py-2">— No held bills found —</p>}
                 <div className="max-h-60 overflow-y-auto space-y-2">
-                  {heldBills.map((row) => (
-                    <div key={row.id} className="flex items-center justify-between border-b pb-2 text-xs">
-                      <div>
-                        <div className="font-bold text-slate-900">{row.label || t('common.walkin')}</div>
-                        <div className="text-[11px] text-gray-500">{row.cart?.lines?.length || 0} items</div>
+                  {heldBills.map((row) => {
+                    const lineCount = row.cart?.lines?.length ?? (typeof row.cart_json === 'string' ? JSON.parse(row.cart_json || '{}')?.lines?.length : 0) ?? 0;
+                    return (
+                      <div key={row.id} className="flex items-center justify-between border-b pb-2 text-xs">
+                        <div>
+                          <div className="font-bold text-slate-900">{row.label || t('common.walkin')}</div>
+                          <div className="text-[11px] text-gray-500">
+                            {lineCount} items • {row.bill_type === 'commission' ? 'Commission' : 'Normal'}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <button className="btn-secondary py-0.5 px-2 text-xs font-semibold" onClick={() => resumeHeld(row)}>
+                            {t('billing.resume')}
+                          </button>
+                          <button
+                            className="p-1.5 text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors inline-flex items-center justify-center"
+                            onClick={() => removeHeld(row.id)}
+                            title={t('common.delete')}
+                            type="button"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1.5">
-                        <button className="btn-secondary py-0.5 px-2 text-xs font-semibold" onClick={() => resumeHeld(row)}>
-                          {t('billing.resume')}
-                        </button>
-                        <button
-                          className="p-1.5 text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors inline-flex items-center justify-center"
-                          onClick={() => removeHeld(row.id)}
-                          title={t('common.delete')}
-                          type="button"
-                        >
-                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </div>
