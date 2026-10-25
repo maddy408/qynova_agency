@@ -175,6 +175,11 @@ function CustomersPanel({ canManage }) {
   const routeMap = new Map(routes.map((r) => [r.id, r.name]));
   const cityMap = new Map(cities.map((c) => [c.id, c.name]));
   const filtered = rows;
+  const pricingOptions = Array.from(
+    new Set(
+      ['normal', 'retail', 'wholesale', ...rows.map((r) => r.pricing_type).filter(Boolean), pricingType].filter(Boolean)
+    )
+  );
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
@@ -288,9 +293,11 @@ function CustomersPanel({ canManage }) {
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-[#0B1B45] mb-1">Pricing Type</label>
                 <select value={pricingType} onChange={(e) => setPricingType(e.target.value)} disabled={!canManage} className="w-full rounded-xl border border-[#D5E3F7] bg-white px-3 py-2 text-sm font-medium text-[#0B1B45] shadow-xs outline-none transition focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15">
-                  <option value="normal">Normal</option>
-                  <option value="retail">Retail</option>
-                  <option value="wholesale">Wholesale</option>
+                  {pricingOptions.map((opt) => (
+                    <option key={opt} value={opt}>
+                      {opt.charAt(0).toUpperCase() + opt.slice(1)}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>

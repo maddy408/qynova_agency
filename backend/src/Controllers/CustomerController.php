@@ -333,20 +333,24 @@ class CustomerController
 
         $doj = $this->parseExcelDate($record['doj'] ?? null);
         $dob = $this->parseExcelDate($record['dob'] ?? null);
-        if (($record['doj'] ?? '') !== '' && $record['doj'] !== null && $doj === null) {
-            $errors[] = "invalid DOJ date '{$record['doj']}'";
-        }
-        if (($record['dob'] ?? '') !== '' && $record['dob'] !== null && $dob === null) {
-            $errors[] = "invalid DOB date '{$record['dob']}'";
-        }
 
-        $pricingType = strtolower(trim((string) ($record['pricing_type'] ?? '')));
-        if ($pricingType !== '' && !in_array($pricingType, ['normal', 'retail', 'wholesale'], true)) {
-            $errors[] = "pricing_type must be normal, retail, or wholesale (got '{$pricingType}')";
+        // Flexible pricing_type normalization:
+        // - Wholesale variations (wholesaler, wholesaler shop, wholesale) -> 'wholesale'
+        // - Retail variations (retailer, retail shop, retail) -> 'retail'
+        // - Normal/standard/empty variations -> 'normal'
+        // - Any other custom tier (e.g. sundry debtors) auto-accepted and preserved cleanly without error
+        $rawPricing = strtolower(trim((string) ($record['pricing_type'] ?? '')));
+        if ($rawPricing === '' || in_array($rawPricing, ['normal', 'standard', 'regular', 'general'], true)) {
             $pricingType = 'normal';
-        }
-        if ($pricingType === '') {
-            $pricingType = 'normal';
+        } elseif (str_contains($rawPricing, 'whole')) {
+            $pricingType = 'wholesale';
+        } elseif (str_contains($rawPricing, 'retail')) {
+            $pricingType = 'retail';
+        } else {
+            $pricingType = preg_replace('/[^a-zA-Z0-9_\-\s]/', '', $rawPricing);
+            if ($pricingType === '') {
+                $pricingType = 'normal';
+            }
         }
 
         $data = [
@@ -377,9 +381,9 @@ class CustomerController
     }
 
     /**
-     * Handles both an Excel serial date (numeric cell) and a plain text date
-     * in the reference format's own DD-MM-YYYY style, plus a couple of
-     * common variants — never guesses ambiguous input, returns null instead.
+     * Robust Excel & text date parser:
+     * Handles Excel numeric serial dates, D/M/Y, M/D/Y, single-digit day/month (4/1/2016, 9/1/2017),
+     * Y-m-d, textual dates, and fallbacks. Never throws or fails the customer import row.
      */
     private function parseExcelDate(mixed $value): ?string
     {
@@ -395,12 +399,57 @@ class CustomerController
             }
         }
         $text = trim((string) $value);
-        foreach (['d-m-Y', 'd/m/Y', 'Y-m-d', 'd-m-y', 'd/m/y'] as $format) {
+        if ($text === '' || in_array(strtolower($text), ['null', 'nil', 'na', 'n/a', '-', '0', '00-00-0000', '0000-00-00'], true)) {
+            return null;
+        }
+
+        $formats = [
+            'Y-m-d', 'Y/m/d', 'Y.m.d',
+            'd-m-Y', 'd/m/Y', 'd.m.Y',
+            'm-d-Y', 'm/d/Y', 'm.d.Y',
+            'j-n-Y', 'j/n/Y', 'j.n.Y',
+            'n-j-Y', 'n/j/Y', 'n.j.Y',
+            'd-m-y', 'd/m/y', 'd.m.y',
+            'j-n-y', 'j/n/y', 'j.n.y',
+            'm-d-y', 'm/d/y', 'm.d.y',
+            'n-j-y', 'n/j/y', 'n.j.y',
+            'd M Y', 'd-M-Y', 'd/M/Y',
+            'd F Y', 'd-F-Y', 'd/F/Y',
+            'M d, Y', 'F d, Y',
+        ];
+        foreach ($formats as $format) {
             $dt = \DateTime::createFromFormat($format, $text);
-            if ($dt !== false && $dt->format($format) === $text) {
+            if ($dt !== false) {
                 return $dt->format('Y-m-d');
             }
         }
+
+        if (preg_match('/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})$/', $text, $m)) {
+            $p1 = (int) $m[1];
+            $p2 = (int) $m[2];
+            $year = (int) $m[3];
+            if ($year < 100) {
+                $year += ($year > 50 ? 1900 : 2000);
+            }
+            if ($p1 > 12 && $p2 <= 12 && checkdate($p2, $p1, $year)) {
+                return sprintf('%04d-%02d-%02d', $year, $p2, $p1);
+            }
+            if ($p2 > 12 && $p1 <= 12 && checkdate($p1, $p2, $year)) {
+                return sprintf('%04d-%02d-%02d', $year, $p1, $p2);
+            }
+            if (checkdate($p1, $p2, $year)) {
+                return sprintf('%04d-%02d-%02d', $year, $p1, $p2);
+            }
+            if (checkdate($p2, $p1, $year)) {
+                return sprintf('%04d-%02d-%02d', $year, $p2, $p1);
+            }
+        }
+
+        $ts = strtotime($text);
+        if ($ts !== false && $ts > 0) {
+            return date('Y-m-d', $ts);
+        }
+
         return null;
     }
 }

@@ -1280,7 +1280,7 @@ export function POS() {
           onBack={() => setShowPaymentModal(false)}
           onPay={() => completeMutation.mutate()}
           isPending={completeMutation.isPending}
-          error={completeMutation.isError ? completeMutation.error?.response?.data?.error || 'Failed to complete' : null}
+          error={completeMutation.isError ? (completeMutation.error?.response?.data?.error || completeMutation.error?.response?.data?.detail || completeMutation.error?.message || 'Failed to complete') : null}
         />
       )}
 

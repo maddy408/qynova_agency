@@ -436,10 +436,9 @@ $router->put('/api/settings/pos-popup', fn () => $settings->updatePosPopupSettin
 try {
     $router->dispatch($method, $uri);
 } catch (\Throwable $e) {
-    $cfgPath = file_exists(__DIR__ . '/../config/config.php') ? __DIR__ . '/../config/config.php' : __DIR__ . '/config/config.php';
-    $config = require $cfgPath;
+    error_log('API Error: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
     Response::json([
-        'error' => 'Server error',
-        'detail' => $config['app']['debug'] ? $e->getMessage() : null,
-    ], 500);
+        'error' => $e->getMessage() ?: 'Server error',
+        'detail' => $e->getMessage(),
+    ], 422);
 }

@@ -82,13 +82,18 @@ class InvoiceController
 
         $body = json_decode(file_get_contents('php://input'), true) ?? [];
         $branchId = $this->resolveBranchId($claims);
-        [$header, $lines, $error] = $this->prepareInvoice($claims, $branchId, $body);
-        if ($error) {
-            Response::error($error, 422);
-        }
+        try {
+            [$header, $lines, $error] = $this->prepareInvoice($claims, $branchId, $body);
+            if ($error) {
+                Response::error($error, 422);
+            }
 
-        $id = $this->invoices->createHeld($header, $lines);
-        Response::json($this->invoices->find($id), 201);
+            $id = $this->invoices->createHeld($header, $lines);
+            $found = $this->invoices->find($id);
+            Response::json($found ?: ['id' => $id, 'status' => 'held'], 201);
+        } catch (\Throwable $e) {
+            Response::error($e->getMessage() ?: 'Failed to create bill', 422);
+        }
     }
 
     public function update(string $id): void
@@ -102,13 +107,18 @@ class InvoiceController
         }
 
         $body = json_decode(file_get_contents('php://input'), true) ?? [];
-        [$header, $lines, $error] = $this->prepareInvoice($claims, (int) $existing['branch_id'], $body);
-        if ($error) {
-            Response::error($error, 422);
-        }
+        try {
+            [$header, $lines, $error] = $this->prepareInvoice($claims, (int) $existing['branch_id'], $body);
+            if ($error) {
+                Response::error($error, 422);
+            }
 
-        $this->invoices->updateHeld((int) $id, $header, $lines);
-        Response::json($this->invoices->find((int) $id));
+            $this->invoices->updateHeld((int) $id, $header, $lines);
+            $found = $this->invoices->find((int) $id);
+            Response::json($found ?: ['id' => (int) $id, 'status' => 'held']);
+        } catch (\Throwable $e) {
+            Response::error($e->getMessage() ?: 'Failed to update bill', 422);
+        }
     }
 
     public function destroy(string $id): void
@@ -148,8 +158,8 @@ class InvoiceController
 
         try {
             $result = $this->invoices->complete((int) $id, $payments, (int) $claims['sub']);
-        } catch (\RuntimeException $e) {
-            Response::error($e->getMessage(), 422);
+        } catch (\Throwable $e) {
+            Response::error($e->getMessage() ?: 'Failed to complete invoice', 422);
         }
 
         Response::json($result);
@@ -479,11 +489,20 @@ class InvoiceController
             $invoiceFormat = $customer['is_local_customer'] ? 'local' : 'outstation';
         }
 
-        $stmtSettings = $this->pdo->prepare('SELECT allow_local_free_qty, allow_distance_free_qty FROM branch_print_settings WHERE branch_id = :branch_id');
-        $stmtSettings->execute(['branch_id' => $branchId]);
-        $freeQtyConfig = $stmtSettings->fetch();
-        $allowLocal = (int) ($freeQtyConfig['allow_local_free_qty'] ?? 1);
-        $allowDistance = (int) ($freeQtyConfig['allow_distance_free_qty'] ?? 0);
+        $allowLocal = 1;
+        $allowDistance = 0;
+        try {
+            $stmtSettings = $this->pdo->prepare('SELECT allow_local_free_qty, allow_distance_free_qty FROM branch_print_settings WHERE branch_id = :branch_id');
+            $stmtSettings->execute(['branch_id' => $branchId]);
+            $freeQtyConfig = $stmtSettings->fetch();
+            if ($freeQtyConfig) {
+                $allowLocal = (int) ($freeQtyConfig['allow_local_free_qty'] ?? 1);
+                $allowDistance = (int) ($freeQtyConfig['allow_distance_free_qty'] ?? 0);
+            }
+        } catch (\Throwable) {
+            $allowLocal = 1;
+            $allowDistance = 0;
+        }
         $isFreeQtyAllowed = $invoiceFormat === 'local' ? ($allowLocal === 1) : ($allowDistance === 1);
 
         $cartInput = $body['items'] ?? [];

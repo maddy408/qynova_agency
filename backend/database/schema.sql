@@ -275,7 +275,7 @@ CREATE TABLE IF NOT EXISTS customers (
   address VARCHAR(255) NULL,
   doj DATE NULL,
   dob DATE NULL,
-  pricing_type ENUM('normal','retail','wholesale') NOT NULL DEFAULT 'normal',
+  pricing_type VARCHAR(50) NOT NULL DEFAULT 'normal',
   credit_limit DECIMAL(12,2) NOT NULL DEFAULT 0,
   opening_balance DECIMAL(12,2) NOT NULL DEFAULT 0,
   is_local_customer TINYINT(1) NOT NULL DEFAULT 1,

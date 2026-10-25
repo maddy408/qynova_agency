@@ -119,18 +119,36 @@ class InvoiceModel
 
     public function find(int $id): ?array
     {
-        $stmt = $this->pdo->prepare(
-            'SELECT i.*, c.ledger_name AS customer_name, c.phone AS customer_phone, u.name AS employee_name,
-                    cu.name AS cancelled_by_name, du.name AS deleted_by_name
-             FROM invoices i
-             LEFT JOIN customers c ON c.id = i.customer_id
-             JOIN users u ON u.id = i.employee_id
-             LEFT JOIN users cu ON cu.id = i.cancelled_by
-             LEFT JOIN users du ON du.id = i.deleted_by
-             WHERE i.id = :id'
-        );
-        $stmt->execute(['id' => $id]);
-        $invoice = $stmt->fetch();
+        try {
+            $stmt = $this->pdo->prepare(
+                'SELECT i.*, c.ledger_name AS customer_name, c.phone AS customer_phone, u.name AS employee_name,
+                        cu.name AS cancelled_by_name, du.name AS deleted_by_name
+                 FROM invoices i
+                 LEFT JOIN customers c ON c.id = i.customer_id
+                 JOIN users u ON u.id = i.employee_id
+                 LEFT JOIN users cu ON cu.id = i.cancelled_by
+                 LEFT JOIN users du ON du.id = i.deleted_by
+                 WHERE i.id = :id'
+            );
+            $stmt->execute(['id' => $id]);
+            $invoice = $stmt->fetch();
+        } catch (\PDOException $pe) {
+            if (str_contains($pe->getMessage(), 'deleted_by') || str_contains($pe->getMessage(), 'Unknown column')) {
+                $stmt = $this->pdo->prepare(
+                    'SELECT i.*, c.ledger_name AS customer_name, c.phone AS customer_phone, u.name AS employee_name,
+                            cu.name AS cancelled_by_name
+                     FROM invoices i
+                     LEFT JOIN customers c ON c.id = i.customer_id
+                     JOIN users u ON u.id = i.employee_id
+                     LEFT JOIN users cu ON cu.id = i.cancelled_by
+                     WHERE i.id = :id'
+                );
+                $stmt->execute(['id' => $id]);
+                $invoice = $stmt->fetch();
+            } else {
+                throw $pe;
+            }
+        }
         if (!$invoice) {
             return null;
         }
@@ -198,26 +216,52 @@ class InvoiceModel
         try {
             $totals = $this->computeTotals($cartLines);
 
-            $stmt = $this->pdo->prepare(
-                'INSERT INTO invoices
-                    (branch_id, customer_id, employee_id, bill_type, price_type, invoice_format, invoice_date,
-                     subtotal, discount_amount, taxable_value, cgst_amount, sgst_amount, igst_amount,
-                     cess_amount, round_off, grand_total, vehicle_no, status)
-                 VALUES
-                    (:branch_id, :customer_id, :employee_id, :bill_type, :price_type, :invoice_format, CURDATE(),
-                     :subtotal, :discount_amount, :taxable_value, :cgst_amount, :sgst_amount, :igst_amount,
-                     :cess_amount, :round_off, :grand_total, :vehicle_no, \'held\')'
-            );
-            $stmt->execute([
-                'branch_id' => $header['branch_id'],
-                'customer_id' => $header['customer_id'],
-                'employee_id' => $header['employee_id'],
-                'bill_type' => $header['bill_type'],
-                'price_type' => $header['price_type'] ?? 'normal',
-                'invoice_format' => $header['invoice_format'],
-                'vehicle_no' => $header['vehicle_no'] ?? null,
-                ...$totals,
-            ]);
+            try {
+                $stmt = $this->pdo->prepare(
+                    'INSERT INTO invoices
+                        (branch_id, customer_id, employee_id, bill_type, price_type, invoice_format, invoice_date,
+                         subtotal, discount_amount, taxable_value, cgst_amount, sgst_amount, igst_amount,
+                         cess_amount, round_off, grand_total, vehicle_no, status)
+                     VALUES
+                        (:branch_id, :customer_id, :employee_id, :bill_type, :price_type, :invoice_format, CURDATE(),
+                         :subtotal, :discount_amount, :taxable_value, :cgst_amount, :sgst_amount, :igst_amount,
+                         :cess_amount, :round_off, :grand_total, :vehicle_no, \'held\')'
+                );
+                $stmt->execute([
+                    'branch_id' => $header['branch_id'],
+                    'customer_id' => $header['customer_id'],
+                    'employee_id' => $header['employee_id'],
+                    'bill_type' => $header['bill_type'],
+                    'price_type' => $header['price_type'] ?? 'normal',
+                    'invoice_format' => $header['invoice_format'],
+                    'vehicle_no' => $header['vehicle_no'] ?? null,
+                    ...$totals,
+                ]);
+            } catch (\PDOException $pe) {
+                if (str_contains($pe->getMessage(), 'Unknown column') && str_contains($pe->getMessage(), 'price_type')) {
+                    $stmt = $this->pdo->prepare(
+                        'INSERT INTO invoices
+                            (branch_id, customer_id, employee_id, bill_type, invoice_format, invoice_date,
+                             subtotal, discount_amount, taxable_value, cgst_amount, sgst_amount, igst_amount,
+                             cess_amount, round_off, grand_total, vehicle_no, status)
+                         VALUES
+                            (:branch_id, :customer_id, :employee_id, :bill_type, :invoice_format, CURDATE(),
+                             :subtotal, :discount_amount, :taxable_value, :cgst_amount, :sgst_amount, :igst_amount,
+                             :cess_amount, :round_off, :grand_total, :vehicle_no, \'held\')'
+                    );
+                    $stmt->execute([
+                        'branch_id' => $header['branch_id'],
+                        'customer_id' => $header['customer_id'],
+                        'employee_id' => $header['employee_id'],
+                        'bill_type' => $header['bill_type'],
+                        'invoice_format' => $header['invoice_format'],
+                        'vehicle_no' => $header['vehicle_no'] ?? null,
+                        ...$totals,
+                    ]);
+                } else {
+                    throw $pe;
+                }
+            }
             $invoiceId = (int) $this->pdo->lastInsertId();
 
             $this->insertLineItems($invoiceId, $cartLines);
@@ -236,24 +280,48 @@ class InvoiceModel
         try {
             $totals = $this->computeTotals($cartLines);
 
-            $stmt = $this->pdo->prepare(
-                'UPDATE invoices SET
-                    customer_id = :customer_id, bill_type = :bill_type, price_type = :price_type, invoice_format = :invoice_format,
-                    vehicle_no = :vehicle_no, subtotal = :subtotal, discount_amount = :discount_amount,
-                    taxable_value = :taxable_value, cgst_amount = :cgst_amount, sgst_amount = :sgst_amount,
-                    igst_amount = :igst_amount, cess_amount = :cess_amount, round_off = :round_off,
-                    grand_total = :grand_total
-                 WHERE id = :id AND status = \'held\''
-            );
-            $stmt->execute([
-                'id' => $id,
-                'customer_id' => $header['customer_id'],
-                'bill_type' => $header['bill_type'],
-                'price_type' => $header['price_type'] ?? 'normal',
-                'invoice_format' => $header['invoice_format'],
-                'vehicle_no' => $header['vehicle_no'] ?? null,
-                ...$totals,
-            ]);
+            try {
+                $stmt = $this->pdo->prepare(
+                    'UPDATE invoices SET
+                        customer_id = :customer_id, bill_type = :bill_type, price_type = :price_type, invoice_format = :invoice_format,
+                        vehicle_no = :vehicle_no, subtotal = :subtotal, discount_amount = :discount_amount,
+                        taxable_value = :taxable_value, cgst_amount = :cgst_amount, sgst_amount = :sgst_amount,
+                        igst_amount = :igst_amount, cess_amount = :cess_amount, round_off = :round_off,
+                        grand_total = :grand_total
+                     WHERE id = :id AND status = \'held\''
+                );
+                $stmt->execute([
+                    'id' => $id,
+                    'customer_id' => $header['customer_id'],
+                    'bill_type' => $header['bill_type'],
+                    'price_type' => $header['price_type'] ?? 'normal',
+                    'invoice_format' => $header['invoice_format'],
+                    'vehicle_no' => $header['vehicle_no'] ?? null,
+                    ...$totals,
+                ]);
+            } catch (\PDOException $pe) {
+                if (str_contains($pe->getMessage(), 'Unknown column') && str_contains($pe->getMessage(), 'price_type')) {
+                    $stmt = $this->pdo->prepare(
+                        'UPDATE invoices SET
+                            customer_id = :customer_id, bill_type = :bill_type, invoice_format = :invoice_format,
+                            vehicle_no = :vehicle_no, subtotal = :subtotal, discount_amount = :discount_amount,
+                            taxable_value = :taxable_value, cgst_amount = :cgst_amount, sgst_amount = :sgst_amount,
+                            igst_amount = :igst_amount, cess_amount = :cess_amount, round_off = :round_off,
+                            grand_total = :grand_total
+                         WHERE id = :id AND status = \'held\''
+                    );
+                    $stmt->execute([
+                        'id' => $id,
+                        'customer_id' => $header['customer_id'],
+                        'bill_type' => $header['bill_type'],
+                        'invoice_format' => $header['invoice_format'],
+                        'vehicle_no' => $header['vehicle_no'] ?? null,
+                        ...$totals,
+                    ]);
+                } else {
+                    throw $pe;
+                }
+            }
 
             $this->pdo->prepare('DELETE FROM invoice_items WHERE invoice_id = :id')->execute(['id' => $id]);
             $this->insertLineItems($id, $cartLines);
@@ -764,12 +832,12 @@ class InvoiceModel
         return [
             'item_id' => (int) $item['id'],
             'unit_id' => $unitId,
-            'item_name_snapshot' => $item['item_name'],
-            'hsn_snapshot' => $item['hsn_code'],
+            'item_name_snapshot' => (string) ($item['item_name'] ?? ''),
+            'hsn_snapshot' => !empty($item['hsn_code']) ? (string) $item['hsn_code'] : null,
             'qty' => $qty,
             'free_qty' => $freeQty,
             'rate' => $rate,
-            'mrp' => isset($input['mrp']) && $input['mrp'] !== '' ? (float) $input['mrp'] : $unitPricing['mrp'],
+            'mrp' => isset($input['mrp']) && $input['mrp'] !== '' ? (float) $input['mrp'] : (float) ($unitPricing['mrp'] ?? 0),
             'discount_percent' => $discountPercent,
             'discount_amount' => $discountAmount,
             'tax_percent' => $taxPercent,
