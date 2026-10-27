@@ -134,6 +134,39 @@ class PurchaseRequestModel
             ->execute(['id' => $id]);
     }
 
+    /**
+     * Orders eligible for the Van Stock "Supplier Order" dropdown: only
+     * 'approved' requests (an admin has agreed to buy; 'open' hasn't been
+     * approved yet, and nothing after 'approved' has item edits, so
+     * issued_qty is never at risk of drifting from a concurrent edit),
+     * with at least one line still short of its ordered qty.
+     */
+    public function eligibleForVanStock(int $branchId): array
+    {
+        $stmt = $this->pdo->prepare(
+            "SELECT pr.id, pr.request_no, pr.status, pr.created_at, s.id AS supplier_id, s.name AS supplier_name, s.phone AS supplier_phone
+             FROM purchase_requests pr
+             JOIN suppliers s ON s.id = pr.supplier_id
+             WHERE pr.branch_id = :branch_id AND pr.status = 'approved'
+               AND EXISTS (SELECT 1 FROM purchase_request_items pri WHERE pri.purchase_request_id = pr.id AND pri.qty > pri.issued_qty)
+             ORDER BY pr.id DESC"
+        );
+        $stmt->execute(['branch_id' => $branchId]);
+        $orders = $stmt->fetchAll();
+
+        $itemStmt = $this->pdo->prepare(
+            "SELECT pri.item_id, i.item_name, i.item_code, pri.qty, pri.issued_qty, (pri.qty - pri.issued_qty) AS remaining_qty
+             FROM purchase_request_items pri
+             JOIN items i ON i.id = pri.item_id
+             WHERE pri.purchase_request_id = :id"
+        );
+        foreach ($orders as &$order) {
+            $itemStmt->execute(['id' => $order['id']]);
+            $order['items'] = $itemStmt->fetchAll();
+        }
+        return $orders;
+    }
+
     private function insertLines(int $requestId, array $lines): void
     {
         $stmt = $this->pdo->prepare(

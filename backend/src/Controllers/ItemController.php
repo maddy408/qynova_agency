@@ -169,9 +169,19 @@ class ItemController
         $openingStock = (float) ($body['opening_stock'] ?? 0);
         if ($openingStock > 0.009) {
             $stock = new StockLedgerService($this->pdo);
-            foreach ($this->items->branchIdsFor($id) as $branchId) {
+            // branch_ids may legitimately come back empty (no "available at
+            // branch" checkbox ticked) even though an opening quantity was
+            // entered — that's a question of sale availability, not of
+            // where the stock physically lands. Fall back to the creating
+            // user's own branch (same convention update() already uses)
+            // so the quantity is never silently dropped.
+            $targetBranches = $this->items->branchIdsFor($id);
+            if (empty($targetBranches)) {
+                $targetBranches = [(int) ($claims['branch_id'] ?? 1)];
+            }
+            foreach ($targetBranches as $branchId) {
                 $stock->applyMovement(
-                    $id, 'branch', $branchId, $openingStock, 'opening_stock',
+                    $id, 'branch', (int) $branchId, $openingStock, 'opening_stock',
                     'items', $id, null, 'Opening stock at item creation', (int) $claims['sub']
                 );
             }
@@ -234,6 +244,42 @@ class ItemController
         }
         $result = $this->items->delete((int) $id);
         Response::json($result);
+    }
+
+    /**
+     * GET /api/items/{id}/usage — how many historical records reference
+     * this item, purely informational (deactivation is never blocked by
+     * this; it's a soft is_active flip either way — see ItemModel::delete()).
+     * Lets the confirm dialog tell the admin "this item has N invoices /
+     * M pre-bookings" instead of a generic "are you sure?".
+     */
+    public function usage(string $id): void
+    {
+        JwtAuthMiddleware::authenticate();
+        $itemId = (int) $id;
+        if (!$this->items->find($itemId)) {
+            Response::error('Not found', 404);
+        }
+
+        $invoiceCount = (int) $this->pdoScalar(
+            'SELECT COUNT(*) FROM invoice_items WHERE item_id = :id', $itemId
+        );
+        $prebookingCount = (int) $this->pdoScalar(
+            'SELECT COUNT(*) FROM customer_prebooking_items WHERE item_id = :id', $itemId
+        );
+
+        Response::json([
+            'invoice_line_count' => $invoiceCount,
+            'prebooking_line_count' => $prebookingCount,
+            'in_use' => ($invoiceCount + $prebookingCount) > 0,
+        ]);
+    }
+
+    private function pdoScalar(string $sql, int $itemId): string|int|false
+    {
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute(['id' => $itemId]);
+        return $stmt->fetchColumn();
     }
 
     /** POST /api/items/{id}/image — multipart upload, replaces any existing image. */

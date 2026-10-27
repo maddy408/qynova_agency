@@ -7,7 +7,10 @@ namespace App\Controllers;
 use App\Helpers\Response;
 use App\Middleware\JwtAuthMiddleware;
 use App\Middleware\PermissionMiddleware;
+use App\Models\CustomerPrebookingModel;
+use App\Models\PurchaseRequestModel;
 use App\Models\VanStockModel;
+use App\Services\StockLedgerService;
 use PDO;
 
 class VanStockController
@@ -38,15 +41,90 @@ class VanStockController
             Response::error('employee_id and items are required', 422);
         }
 
-        $id = $this->model->issue(
-            $this->resolveBranchId($claims),
-            (int) $body['employee_id'],
-            !empty($body['route_id']) ? (int) $body['route_id'] : null,
-            (int) $claims['sub'],
-            $body['notes'] ?? null,
-            $body['items']
-        );
+        $branchId = $this->resolveBranchId($claims);
+        $sourceType = in_array($body['source_type'] ?? null, ['customer_prebooking', 'purchase_request'], true)
+            ? $body['source_type'] : null;
+        $sourceId = $sourceType !== null && !empty($body['source_id']) ? (int) $body['source_id'] : null;
+
+        // Stock Warning (not a block): if any requested line exceeds what's
+        // actually on hand at the source branch right now, report it back
+        // instead of silently issuing — unless the caller already
+        // acknowledged the shortage (confirm_insufficient), in which case we
+        // always proceed. Checked fresh against the live ledger on every
+        // call so a stock change between the warning and the confirm click
+        // is still caught. Skipped entirely for a purchase_request source:
+        // that flow credits the van directly from the supplier and never
+        // debits the branch, so branch stock sufficiency is irrelevant.
+        if ($sourceType !== 'purchase_request' && empty($body['confirm_insufficient'])) {
+            $shortages = $this->insufficientStockLines($branchId, $body['items']);
+            if (!empty($shortages)) {
+                Response::json(['warning' => 'insufficient_stock', 'shortages' => $shortages], 409);
+            }
+        }
+
+        try {
+            $id = $this->model->issue(
+                $branchId,
+                (int) $body['employee_id'],
+                !empty($body['route_id']) ? (int) $body['route_id'] : null,
+                (int) $claims['sub'],
+                $body['notes'] ?? null,
+                $body['items'],
+                $sourceType,
+                $sourceId
+            );
+        } catch (\RuntimeException $e) {
+            Response::error($e->getMessage(), 422);
+        }
         Response::json(['issue_id' => $id], 201);
+    }
+
+    /** GET /api/van-stock/eligible-orders?type=customer|supplier — dropdown source for the order-linked issue flow. */
+    public function eligibleOrders(): void
+    {
+        $claims = JwtAuthMiddleware::authenticate();
+        $branchId = $this->resolveBranchId($claims);
+        $type = $_GET['type'] ?? '';
+
+        if ($type === 'customer') {
+            Response::json((new CustomerPrebookingModel($this->pdo))->eligibleForVanStock($branchId));
+        } elseif ($type === 'supplier') {
+            Response::json((new PurchaseRequestModel($this->pdo))->eligibleForVanStock($branchId));
+        } else {
+            Response::error("type must be 'customer' or 'supplier'", 422);
+        }
+    }
+
+    /**
+     * Per-line comparison of requested qty against the actual branch
+     * balance in stock_ledger (never the item master, which carries no
+     * quantity at all). Returns one entry per item that is short, each
+     * carrying product name + available/requested/excess for the warning.
+     */
+    private function insufficientStockLines(int $branchId, array $items): array
+    {
+        $stockLedger = new StockLedgerService($this->pdo);
+        $nameStmt = $this->pdo->prepare('SELECT item_name FROM items WHERE id = :id');
+        $shortages = [];
+        foreach ($items as $line) {
+            $itemId = (int) ($line['item_id'] ?? 0);
+            $qty = (float) ($line['qty'] ?? 0);
+            if ($itemId <= 0 || $qty <= 0) {
+                continue;
+            }
+            $available = $stockLedger->quantityOnHand($itemId, 'branch', $branchId);
+            if ($qty > $available + 0.0001) {
+                $nameStmt->execute(['id' => $itemId]);
+                $shortages[] = [
+                    'item_id' => $itemId,
+                    'item_name' => $nameStmt->fetchColumn() ?: "Item #{$itemId}",
+                    'available' => $available,
+                    'requested' => $qty,
+                    'excess' => round($qty - $available, 3),
+                ];
+            }
+        }
+        return $shortages;
     }
 
     public function returnStock(): void
@@ -59,14 +137,18 @@ class VanStockController
             Response::error('employee_id and items are required', 422);
         }
 
-        $id = $this->model->returnStock(
-            $this->resolveBranchId($claims),
-            (int) $body['employee_id'],
-            !empty($body['issue_id']) ? (int) $body['issue_id'] : null,
-            (int) $claims['sub'],
-            $body['notes'] ?? null,
-            $body['items']
-        );
+        try {
+            $id = $this->model->returnStock(
+                $this->resolveBranchId($claims),
+                (int) $body['employee_id'],
+                !empty($body['issue_id']) ? (int) $body['issue_id'] : null,
+                (int) $claims['sub'],
+                $body['notes'] ?? null,
+                $body['items']
+            );
+        } catch (\RuntimeException $e) {
+            Response::error($e->getMessage(), 422);
+        }
         Response::json(['return_id' => $id], 201);
     }
 

@@ -142,6 +142,7 @@ $router->post('/api/items/{id}/image', fn ($id) => $itemController->uploadImage(
 $router->delete('/api/items/{id}/image', fn ($id) => $itemController->removeImage($id));
 $router->post('/api/items/image-search', fn () => $itemController->imageSearch());
 $router->get('/api/items/{id}/previous-week-price', fn ($id) => $itemController->previousWeekPrice($id));
+$router->get('/api/items/{id}/usage', fn ($id) => $itemController->usage($id));
 $router->get('/api/pos/products/{id}/previous-week-price', fn ($id) => $itemController->previousWeekPrice($id));
 
 // ---------------------------------------------------------------
@@ -305,6 +306,7 @@ $router->post('/api/van-stock/issue', fn () => $vanStock->issue());
 $router->post('/api/van-stock/return', fn () => $vanStock->returnStock());
 $router->get('/api/van-stock/issues', fn () => $vanStock->issues());
 $router->get('/api/van-stock/issues/{id}', fn ($id) => $vanStock->showIssue($id));
+$router->get('/api/van-stock/eligible-orders', fn () => $vanStock->eligibleOrders());
 $router->get('/api/van-stock/{employeeId}', fn ($employeeId) => $vanStock->pending($employeeId));
 
 $stockHub = new StockHubController($pdo);

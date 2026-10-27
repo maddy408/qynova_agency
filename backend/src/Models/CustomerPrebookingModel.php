@@ -246,6 +246,42 @@ class CustomerPrebookingModel
         return $this->find($id);
     }
 
+    /**
+     * Orders eligible to be selected in the Van Stock "Customer Order"
+     * dropdown: not pending (nothing to fulfill until confirmed — and
+     * 'pending' is also the only status update() is allowed to touch, so
+     * excluding it guarantees issued_qty is never at risk of being wiped
+     * by a concurrent edit), not cancelled, and still carrying at least
+     * one line with qty > issued_qty. Each returned order includes its
+     * full item breakdown with the remaining-to-issue qty already
+     * computed, so the frontend never has to re-derive it.
+     */
+    public function eligibleForVanStock(int $branchId): array
+    {
+        $stmt = $this->pdo->prepare(
+            "SELECT cp.id, cp.prebooking_no, cp.status, cp.created_at, c.id AS customer_id, c.ledger_name AS customer_name, c.phone AS customer_phone
+             FROM customer_prebookings cp
+             JOIN customers c ON c.id = cp.customer_id
+             WHERE cp.branch_id = :branch_id AND cp.status NOT IN ('pending', 'cancelled')
+               AND EXISTS (SELECT 1 FROM customer_prebooking_items cpi WHERE cpi.prebooking_id = cp.id AND cpi.qty > cpi.issued_qty)
+             ORDER BY cp.id DESC"
+        );
+        $stmt->execute(['branch_id' => $branchId]);
+        $orders = $stmt->fetchAll();
+
+        $itemStmt = $this->pdo->prepare(
+            "SELECT cpi.item_id, i.item_name, i.item_code, cpi.qty, cpi.issued_qty, (cpi.qty - cpi.issued_qty) AS remaining_qty
+             FROM customer_prebooking_items cpi
+             JOIN items i ON i.id = cpi.item_id
+             WHERE cpi.prebooking_id = :id"
+        );
+        foreach ($orders as &$order) {
+            $itemStmt->execute(['id' => $order['id']]);
+            $order['items'] = $itemStmt->fetchAll();
+        }
+        return $orders;
+    }
+
     private function insertLines(int $prebookingId, array $lines): void
     {
         $stmt = $this->pdo->prepare(

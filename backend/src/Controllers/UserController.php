@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\Helpers\Response;
+use App\Helpers\Validator;
 use App\Middleware\JwtAuthMiddleware;
 use App\Middleware\PermissionMiddleware;
 use App\Models\UserModel;
@@ -63,6 +64,21 @@ class UserController
             }
         }
 
+        $body['email'] = trim((string) $body['email']);
+        if (!filter_var($body['email'], FILTER_VALIDATE_EMAIL)) {
+            Response::error('A valid email address is required', 422);
+        }
+        if ($this->model->findByEmail($body['email'])) {
+            Response::error('That email is already in use', 422);
+        }
+        if (!empty($body['phone'])) {
+            $phone = trim((string) $body['phone']);
+            if (!Validator::isValidPhone($phone)) {
+                Response::error('Phone number must be a valid 10-digit Indian mobile number', 422);
+            }
+            $body['phone'] = $phone;
+        }
+
         // resolveBranchId() returns null for a switch-context user with no
         // ?branch_id= (meaning "show every branch") — that's right for
         // reads, but a new account needs an actual home branch, so fall
@@ -93,7 +109,32 @@ class UserController
         }
 
         $body = json_decode(file_get_contents('php://input'), true) ?? [];
-        $this->model->update((int) $id, $body);
+
+        if (array_key_exists('email', $body)) {
+            $email = trim((string) $body['email']);
+            if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                Response::error('A valid email address is required', 422);
+            }
+            $existing = $this->model->findByEmail($email);
+            if ($existing && (int) $existing['id'] !== (int) $id) {
+                Response::error('That email is already in use', 422);
+            }
+            $body['email'] = $email;
+        }
+
+        if (array_key_exists('phone', $body) && $body['phone'] !== null) {
+            $phone = trim((string) $body['phone']);
+            if ($phone !== '' && !Validator::isValidPhone($phone)) {
+                Response::error('Phone number must be a valid 10-digit Indian mobile number', 422);
+            }
+            $body['phone'] = $phone === '' ? null : $phone;
+        }
+
+        try {
+            $this->model->update((int) $id, $body);
+        } catch (\PDOException $e) {
+            Response::error('That email is already in use', 422);
+        }
 
         $user = $this->model->findById((int) $id);
         unset($user['password_hash']);

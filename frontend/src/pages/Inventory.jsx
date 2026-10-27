@@ -7,6 +7,7 @@ import { stockAdjustmentsApi, stockHubApi, vanStockApi, vanStockIssuesApi } from
 import { Tabs } from '../components/Tabs';
 import { usePermission } from '../hooks/usePermission';
 import { Button } from '../components/Button.jsx';
+import { ConfirmDialog } from '../components/ConfirmDialog.jsx';
 import { downloadReportPdf, downloadVanIssuePdf } from '../utils/reportPdf';
 
 function StockHubPanel() {
@@ -248,6 +249,9 @@ function StockAdjustmentPanel({ canManage }) {
       invalidate();
       resetForm();
       showSuccess('Stock adjustment logged successfully!');
+    },
+    onError: (err) => {
+      setFormError(err?.response?.data?.error || 'Unable to save this stock adjustment. Please try again.');
     },
   });
 
@@ -494,6 +498,9 @@ function VanStockPanel({ canManage }) {
   const [selectedItemIds, setSelectedItemIds] = useState([]);
   const [exportError, setExportError] = useState('');
   const [exporting, setExporting] = useState(false);
+  const [shortageWarning, setShortageWarning] = useState(null);
+  const [orderSourceType, setOrderSourceType] = useState(''); // '' | 'customer_prebooking' | 'purchase_request'
+  const [selectedOrderId, setSelectedOrderId] = useState('');
 
   const usersQuery = useQuery({ queryKey: ['users'], queryFn: usersApi.list });
   const itemsQuery = useQuery({ queryKey: ['items', ''], queryFn: () => itemsApi.list('') });
@@ -506,6 +513,11 @@ function VanStockPanel({ canManage }) {
     queryKey: ['van-issues', employeeId],
     queryFn: () => vanStockIssuesApi.list(employeeId || undefined),
   });
+  const eligibleOrdersQuery = useQuery({
+    queryKey: ['van-stock-eligible-orders', orderSourceType],
+    queryFn: () => vanStockApi.eligibleOrders(orderSourceType === 'purchase_request' ? 'supplier' : 'customer'),
+    enabled: mode === 'issue' && orderSourceType !== '',
+  });
 
   const mutation = useMutation({
     mutationFn: (payload) => (mode === 'issue' ? vanStockApi.issue(payload) : vanStockApi.returnStock(payload)),
@@ -513,7 +525,10 @@ function VanStockPanel({ canManage }) {
       queryClient.invalidateQueries({ queryKey: ['van-pending', employeeId] });
       queryClient.invalidateQueries({ queryKey: ['van-issues'] });
       queryClient.invalidateQueries({ queryKey: ['stock-hub'] });
+      queryClient.invalidateQueries({ queryKey: ['van-stock-eligible-orders'] });
       setLines([{ item_id: '', qty: 1 }]);
+      setOrderSourceType('');
+      setSelectedOrderId('');
       setMessage(mode === 'issue' ? 'Stock issued to salesman successfully!' : 'Van stock return recorded.');
       setTimeout(() => setMessage(''), 3000);
     },
@@ -523,9 +538,28 @@ function VanStockPanel({ canManage }) {
   const addLine = () => setLines((prev) => [...prev, { item_id: '', qty: 1 }]);
   const removeLine = (idx) => setLines((prev) => prev.filter((_, i) => i !== idx));
 
+  const submitPayload = async (payload) => {
+    try {
+      await mutation.mutateAsync(payload);
+      setShortageWarning(null);
+    } catch (err) {
+      // A stock-insufficiency warning (Issue Stock to Van only) comes back
+      // as 409 with a `shortages` list — not a hard error. Surface it as a
+      // Continue/Cancel confirmation instead of a dead-end error message;
+      // any other failure (validation, server error) still just shows the
+      // inline error banner.
+      if (mode === 'issue' && err?.response?.status === 409 && err?.response?.data?.warning === 'insufficient_stock') {
+        setShortageWarning({ payload, shortages: err.response.data.shortages });
+        return;
+      }
+      setFormError(err?.response?.data?.error || 'Failed to process van stock');
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setFormError('');
+    setShortageWarning(null);
     if (!employeeId) {
       setFormError('Please select a salesman.');
       return;
@@ -536,21 +570,53 @@ function VanStockPanel({ canManage }) {
       return;
     }
 
-    try {
-      await mutation.mutateAsync({
-        employee_id: Number(employeeId),
-        items: validLines.map((l) => ({ item_id: Number(l.item_id), qty: Number(l.qty) })),
-      });
-    } catch (err) {
-      setFormError(err?.response?.data?.error || 'Failed to process van stock');
+    if (mode === 'issue' && orderSourceType !== '' && !selectedOrderId) {
+      setFormError('Please select an order to link this issue to, or switch back to a plain issue.');
+      return;
     }
+
+    await submitPayload({
+      employee_id: Number(employeeId),
+      items: validLines.map((l) => ({ item_id: Number(l.item_id), qty: Number(l.qty) })),
+      ...(mode === 'issue' && orderSourceType !== '' && selectedOrderId
+        ? { source_type: orderSourceType, source_id: Number(selectedOrderId) }
+        : {}),
+    });
+  };
+
+  const confirmShortageAndIssue = async () => {
+    if (!shortageWarning) return;
+    await submitPayload({ ...shortageWarning.payload, confirm_insufficient: true });
   };
 
   const users = usersQuery.data || [];
   const items = itemsQuery.data || [];
   const pending = pendingQuery.data || [];
   const issues = issuesQuery.data || [];
+  const eligibleOrders = eligibleOrdersQuery.data || [];
+  const selectedOrder = eligibleOrders.find((o) => String(o.id) === String(selectedOrderId)) || null;
   const selectedEmployee = users.find((u) => String(u.id) === String(employeeId));
+
+  const handleOrderSourceTypeChange = (value) => {
+    setOrderSourceType(value);
+    setSelectedOrderId('');
+    if (value === '') {
+      setLines([{ item_id: '', qty: 1 }]);
+    }
+  };
+
+  const handleSelectOrder = (orderId) => {
+    setSelectedOrderId(orderId);
+    const order = eligibleOrders.find((o) => String(o.id) === String(orderId));
+    if (order) {
+      // Pre-fill from the order's own remaining-to-issue quantities — the
+      // user can still trim lines/qty before submitting, but never above
+      // what the backend will actually allow for this order.
+      setLines(order.items.filter((it) => Number(it.remaining_qty) > 0).map((it) => ({
+        item_id: String(it.item_id), qty: Number(it.remaining_qty),
+      })));
+    }
+  };
 
   const handleSelectEmployee = (value) => {
     setEmployeeId(value);
@@ -731,7 +797,7 @@ function VanStockPanel({ canManage }) {
                 <div className="flex gap-1 bg-[#EDF5FF] p-1 rounded-xl border border-[#D5E3F7]">
                   <button
                     type="button"
-                    onClick={() => setMode('issue')}
+                    onClick={() => { setMode('issue'); setFormError(''); }}
                     className={`px-3 py-1 rounded-lg text-xs font-bold transition ${
                       mode === 'issue'
                         ? 'bg-gradient-to-r from-[#0B1B45] to-[#2449C6] text-white shadow-xs'
@@ -742,7 +808,7 @@ function VanStockPanel({ canManage }) {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setMode('return')}
+                    onClick={() => { setMode('return'); setFormError(''); setOrderSourceType(''); setSelectedOrderId(''); setLines([{ item_id: '', qty: 1 }]); }}
                     className={`px-3 py-1 rounded-lg text-xs font-bold transition ${
                       mode === 'return'
                         ? 'bg-gradient-to-r from-[#0B1B45] to-[#2449C6] text-white shadow-xs'
@@ -777,6 +843,74 @@ function VanStockPanel({ canManage }) {
                     ))}
                   </select>
                 </div>
+
+                {mode === 'issue' && (
+                  <div>
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 block mb-1.5">Link to an Order (optional)</label>
+                    <select
+                      value={orderSourceType}
+                      onChange={(e) => handleOrderSourceTypeChange(e.target.value)}
+                      className="w-full rounded-xl border border-[#D5E3F7] bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-800 transition focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/20 focus:outline-none"
+                    >
+                      <option value="">Plain Issue (no order)</option>
+                      <option value="customer_prebooking">Van Stock — Customer Order</option>
+                      <option value="purchase_request">Van Stock — Supplier Order</option>
+                    </select>
+                  </div>
+                )}
+
+                {mode === 'issue' && orderSourceType !== '' && (
+                  <div>
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 block mb-1.5">
+                      {orderSourceType === 'purchase_request' ? 'Supplier Order *' : 'Customer Order *'}
+                    </label>
+                    {eligibleOrdersQuery.isLoading ? (
+                      <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 py-2">
+                        <Package className="w-3.5 h-3.5 animate-pulse" /> Loading eligible orders…
+                      </div>
+                    ) : eligibleOrders.length === 0 ? (
+                      <div className="text-xs font-semibold text-slate-500 bg-[#F8FAFD] border border-[#D5E3F7] rounded-xl p-3">
+                        No eligible {orderSourceType === 'purchase_request' ? 'approved supplier orders' : 'confirmed customer orders'} with remaining quantity right now.
+                      </div>
+                    ) : (
+                      <select
+                        required
+                        value={selectedOrderId}
+                        onChange={(e) => handleSelectOrder(e.target.value)}
+                        className="w-full rounded-xl border border-[#D5E3F7] bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-800 transition focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/20 focus:outline-none"
+                      >
+                        <option value="">-- Select Order --</option>
+                        {eligibleOrders.map((o) => (
+                          <option key={o.id} value={o.id}>
+                            {o.prebooking_no || o.request_no} — {o.customer_name || o.supplier_name}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+
+                    {selectedOrder && (
+                      <div className="mt-2.5 rounded-xl border border-[#D5E3F7] bg-[#F8FAFD] p-3 space-y-1.5 text-xs">
+                        <div className="font-bold text-[#0B1B45]">
+                          {selectedOrder.prebooking_no || selectedOrder.request_no} · {new Date(selectedOrder.created_at).toLocaleDateString()}
+                        </div>
+                        <div className="text-slate-600 font-medium">
+                          {orderSourceType === 'purchase_request' ? 'Supplier' : 'Customer'}: {selectedOrder.customer_name || selectedOrder.supplier_name}
+                          {(selectedOrder.customer_phone || selectedOrder.supplier_phone) && ` · ${selectedOrder.customer_phone || selectedOrder.supplier_phone}`}
+                        </div>
+                        <div className="divide-y divide-[#EAF1FA] border-t border-[#EAF1FA] mt-1.5 pt-1.5">
+                          {selectedOrder.items.map((it) => (
+                            <div key={it.item_id} className="flex items-center justify-between py-1">
+                              <span className="font-semibold text-slate-700">{it.item_name}</span>
+                              <span className="text-slate-500 font-mono">
+                                {it.issued_qty}/{it.qty} issued · <span className="font-bold text-[#2449C6]">{it.remaining_qty} left</span>
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <div className="space-y-3">
                   <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 block">Stock Lines *</label>
@@ -1044,6 +1178,25 @@ function VanStockPanel({ canManage }) {
           </div>
         </div>
       </div>
+
+      {shortageWarning && (
+        <ConfirmDialog
+          variant="warning"
+          title="Stock Warning"
+          message="The requested quantity exceeds available stock for one or more items. Do you want to continue anyway?"
+          details={shortageWarning.shortages.map((s) => (
+            <div key={s.item_id} className="border-b border-[#EAF1FA] last:border-0 pb-1.5 last:pb-0">
+              <span className="font-bold text-[#0B1B45]">{s.item_name}:</span> only {s.available} unit(s) available,
+              but {s.requested} requested — exceeds by {s.excess} unit(s).
+            </div>
+          ))}
+          confirmLabel="Continue"
+          cancelLabel="Cancel"
+          loading={mutation.isPending}
+          onConfirm={confirmShortageAndIssue}
+          onCancel={() => setShortageWarning(null)}
+        />
+      )}
     </div>
   );
 }

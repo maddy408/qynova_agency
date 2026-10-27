@@ -6,6 +6,7 @@ import {
   ClipboardList, ShoppingBag, Receipt, FileSpreadsheet, Upload
 } from 'lucide-react';
 import { routesApi, citiesApi, customersApi, suppliersApi } from '../api/parties';
+import { isValidPhone, isValidGstin } from '../utils/validators';
 import { routeSuppliersApi } from '../api/purchasing';
 import { Tabs } from '../components/Tabs';
 import { Button } from '../components/Button.jsx';
@@ -70,6 +71,7 @@ function CustomersPanel({ canManage }) {
       resetForm();
       showSuccess('Customer created successfully!');
     },
+    onError: (err) => setFormError(err?.response?.data?.error || 'Unable to save customer.'),
   });
 
   const updateMutation = useMutation({
@@ -79,6 +81,7 @@ function CustomersPanel({ canManage }) {
       resetForm();
       showSuccess('Customer updated successfully!');
     },
+    onError: (err) => setFormError(err?.response?.data?.error || 'Unable to save customer.'),
   });
 
   const removeMutation = useMutation({
@@ -132,22 +135,25 @@ function CustomersPanel({ canManage }) {
     setFormError('');
   };
 
-  const GSTIN_PATTERN = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/;
-
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!ledgerName.trim()) {
       setFormError('Customer name is required.');
       return;
     }
+    const trimmedPhone = phone.trim();
+    if (trimmedPhone && !isValidPhone(trimmedPhone)) {
+      setFormError('Phone number must be a valid 10-digit Indian mobile number.');
+      return;
+    }
     const trimmedGstin = gstin.trim().toUpperCase();
-    if (trimmedGstin && !GSTIN_PATTERN.test(trimmedGstin)) {
-      setFormError('Invalid GSTIN format.');
+    if (trimmedGstin && !isValidGstin(trimmedGstin)) {
+      setFormError('Invalid GSTIN format. Expected 15 characters, e.g. 27AAPFU0939F1ZV.');
       return;
     }
     const payload = {
       ledger_name: ledgerName.trim(),
-      phone: phone.trim(),
+      phone: trimmedPhone,
       route_id: routeId ? Number(routeId) : null,
       city_id: cityId ? Number(cityId) : null,
       credit_limit: Number(creditLimit || 0),
@@ -625,11 +631,13 @@ function SuppliersPanel({ canManage }) {
   const createMutation = useMutation({
     mutationFn: suppliersApi.create,
     onSuccess: () => { invalidate(); resetForm(); showSuccess('Supplier created successfully!'); },
+    onError: (err) => setFormError(err?.response?.data?.error || 'Unable to save supplier.'),
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => suppliersApi.update(id, data),
     onSuccess: () => { invalidate(); resetForm(); showSuccess('Supplier updated successfully!'); },
+    onError: (err) => setFormError(err?.response?.data?.error || 'Unable to save supplier.'),
   });
 
   const removeMutation = useMutation({
@@ -668,10 +676,20 @@ function SuppliersPanel({ canManage }) {
       setFormError('Supplier name is required.');
       return;
     }
+    const trimmedPhone = phone.trim();
+    if (trimmedPhone && !isValidPhone(trimmedPhone)) {
+      setFormError('Phone number must be a valid 10-digit Indian mobile number.');
+      return;
+    }
+    const trimmedGstin = gstin.trim().toUpperCase();
+    if (trimmedGstin && !isValidGstin(trimmedGstin)) {
+      setFormError('Invalid GSTIN format. Expected 15 characters, e.g. 27AAPFU0939F1ZV.');
+      return;
+    }
     const payload = {
       name: name.trim(),
-      phone: phone.trim(),
-      gstin: gstin.trim(),
+      phone: trimmedPhone,
+      gstin: trimmedGstin,
       opening_balance: Number(openingBalance || 0),
       is_active: isActive ? 1 : 0,
       status: isActive ? 'active' : 'inactive',

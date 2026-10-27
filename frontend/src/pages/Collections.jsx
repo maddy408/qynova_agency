@@ -1,18 +1,18 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CheckSquare, Square, CreditCard, Wallet, X, CheckCircle2 } from 'lucide-react';
+import { CheckSquare, Square, CreditCard, Wallet, X } from 'lucide-react';
 import { collectionsApi } from '../api/postsale';
 import { usePermission } from '../hooks/usePermission';
 import { Button } from '../components/Button.jsx';
+import { Toast } from '../components/Toast.jsx';
 
-function CollectModal({ customer, onClose }) {
+function CollectModal({ customer, onClose, onCollected }) {
   const queryClient = useQueryClient();
   const [mode, setMode] = useState('fifo');
   const [amount, setAmount] = useState('');
   const [checkedIds, setCheckedIds] = useState([]);
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState(null);
 
   const unpaidQuery = useQuery({
     queryKey: ['unpaid-invoices', customer.customer_id],
@@ -21,10 +21,13 @@ function CollectModal({ customer, onClose }) {
   const createMutation = useMutation({
     mutationFn: collectionsApi.create,
     onSuccess: (data) => {
-      setSuccess(data);
       queryClient.invalidateQueries({ queryKey: ['collections-pending'] });
       queryClient.invalidateQueries({ queryKey: ['collections'] });
       queryClient.invalidateQueries({ queryKey: ['unpaid-invoices', customer.customer_id] });
+      // Close immediately on a confirmed success — never before the
+      // backend has actually responded. The receipt summary is handed to
+      // the page-level toast instead of lingering in the closed modal.
+      onCollected(data);
     },
   });
 
@@ -197,12 +200,6 @@ function CollectModal({ customer, onClose }) {
         )}
 
         {error && <p className="mb-3 text-xs font-semibold text-rose-600 bg-rose-50 p-2.5 rounded-xl border border-rose-200">{error}</p>}
-        {success && (
-          <div className="mb-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-2.5 text-xs font-bold text-emerald-800 flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-            Collected ₹{success.allocated_total} across {Object.keys(success.allocations).length} invoice(s).
-          </div>
-        )}
 
         <div className="flex justify-end gap-2.5">
           <Button variant="secondary" onClick={onClose} className="border-[#D5E3F7]">Close</Button>
@@ -224,6 +221,14 @@ export function Collections({ hideHeader = false }) {
   const canCollect = usePermission('collections.field_collection_entry');
   const canViewAll = usePermission('credit.view_shopwide_outstanding');
   const [selected, setSelected] = useState(null);
+  const [toastMsg, setToastMsg] = useState('');
+
+  const handleCollected = (data) => {
+    setSelected(null);
+    const invoiceCount = Object.keys(data?.allocations || {}).length;
+    setToastMsg(`Collected ₹${data?.allocated_total} across ${invoiceCount} invoice(s).`);
+    setTimeout(() => setToastMsg(''), 4000);
+  };
 
   const pendingQuery = useQuery({ queryKey: ['collections-pending'], queryFn: () => collectionsApi.pending(), enabled: canViewAll });
   const historyQuery = useQuery({ queryKey: ['collections'], queryFn: collectionsApi.list });
@@ -344,7 +349,8 @@ export function Collections({ hideHeader = false }) {
         </div>
       </div>
 
-      {selected && <CollectModal customer={selected} onClose={() => setSelected(null)} />}
+      {selected && <CollectModal customer={selected} onClose={() => setSelected(null)} onCollected={handleCollected} />}
+      <Toast message={toastMsg} onClose={() => setToastMsg('')} />
     </div>
   );
 }

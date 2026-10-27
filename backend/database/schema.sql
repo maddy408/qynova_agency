@@ -1328,3 +1328,24 @@ INSERT INTO role_permissions (role_id, permission_id)
   WHERE r.id IN (1, 2) AND p.code = 'pos.delete_completed_invoice'
 ON DUPLICATE KEY UPDATE role_id = role_id;
 
+-- =====================================================================
+-- Orders <-> Van Stock integration — link a van-stock issue back to the
+-- customer pre-booking or purchase request it fulfills, and track how
+-- much of each order line has already been issued so partial fulfillment
+-- and "don't double-issue the same quantity" can be enforced. All four
+-- columns are nullable or default to 0, so every existing row and every
+-- existing code path (a plain van-stock issue with no order behind it)
+-- is completely unaffected — this is purely additive.
+-- =====================================================================
+
+ALTER TABLE customer_prebooking_items
+  ADD COLUMN issued_qty DECIMAL(12,3) NOT NULL DEFAULT 0 AFTER tax_percent;
+
+ALTER TABLE purchase_request_items
+  ADD COLUMN issued_qty DECIMAL(12,3) NOT NULL DEFAULT 0 AFTER rate;
+
+ALTER TABLE stock_issue_notes
+  ADD COLUMN source_type ENUM('customer_prebooking','purchase_request') NULL AFTER route_id,
+  ADD COLUMN source_id INT UNSIGNED NULL AFTER source_type,
+  ADD INDEX idx_issue_source (source_type, source_id);
+

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Plus, Pencil, Trash2, Check, X } from 'lucide-react';
 import { Button } from './Button.jsx';
+import { ConfirmDialog } from './ConfirmDialog.jsx';
 
 function FieldInput({ f, value, onChange }) {
   if (f.type === 'select') {
@@ -44,6 +45,9 @@ export function EntityTable({ title, fields, columns, rows, onCreate, onUpdate, 
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [editError, setEditError] = useState('');
+  const [pendingDelete, setPendingDelete] = useState(null);
+  const [deleteError, setDeleteError] = useState('');
+  const [deleting, setDeleting] = useState(false);
 
   const handleChange = (name, value) => setForm((prev) => ({ ...prev, [name]: value }));
 
@@ -77,9 +81,22 @@ export function EntityTable({ title, fields, columns, rows, onCreate, onUpdate, 
     }
   };
 
-  const handleDelete = async (id, label) => {
-    if (!window.confirm(`Delete "${label}"? This cannot be undone.`)) return;
-    await onDelete(id);
+  const handleDelete = (id, label) => {
+    setDeleteError('');
+    setPendingDelete({ id, label });
+  };
+
+  const confirmDelete = async () => {
+    if (!pendingDelete) return;
+    setDeleting(true);
+    try {
+      await onDelete(pendingDelete.id);
+      setPendingDelete(null);
+    } catch (err) {
+      setDeleteError(err?.response?.data?.error || 'Unable to delete this record.');
+    } finally {
+      setDeleting(false);
+    }
   };
 
   return (
@@ -197,6 +214,19 @@ export function EntityTable({ title, fields, columns, rows, onCreate, onUpdate, 
           </tbody>
         </table>
       </div>
+
+      {pendingDelete && (
+        <ConfirmDialog
+          variant="danger"
+          title="Delete this record?"
+          message={`Delete "${pendingDelete.label}"? This cannot be undone.`}
+          details={deleteError ? <span className="text-rose-600">{deleteError}</span> : null}
+          confirmLabel="Delete"
+          loading={deleting}
+          onConfirm={confirmDelete}
+          onCancel={() => setPendingDelete(null)}
+        />
+      )}
     </div>
   );
 }

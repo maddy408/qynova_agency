@@ -120,7 +120,7 @@ class UserModel
 
     public function update(int $id, array $data): void
     {
-        $columns = ['branch_id', 'role_id', 'name', 'phone', 'status'];
+        $columns = ['branch_id', 'role_id', 'name', 'email', 'phone', 'status'];
         $set = [];
         $params = ['id' => $id];
         foreach ($columns as $col) {

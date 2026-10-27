@@ -6,6 +6,7 @@ import { suppliersApi } from '../api/parties';
 import { branchesApi } from '../api/branches';
 import { Button } from '../components/Button.jsx';
 import { Toast } from '../components/Toast.jsx';
+import { ConfirmDialog } from '../components/ConfirmDialog.jsx';
 import { Pagination } from '../components/Pagination.jsx';
 import { resolveImageUrl } from '../utils/media';
 
@@ -400,6 +401,8 @@ export function ItemsPanel({ canManage }) {
   const [importResult, setImportResult] = useState(null);
   const [importFile, setImportFile] = useState(null);
   const [importSuccessMsg, setImportSuccessMsg] = useState('');
+  const [pendingDeactivate, setPendingDeactivate] = useState(null);
+  const [deactivateError, setDeactivateError] = useState('');
   const fileInputRef = useRef(null);
 
   const itemsQuery = useQuery({
@@ -424,8 +427,24 @@ export function ItemsPanel({ canManage }) {
   };
 
   const handleDelete = async (item) => {
-    if (!window.confirm(`Deactivate "${item.item_name}"? It will be hidden from Billing and the active Items list, but its history is kept.`)) return;
-    await deleteItem.mutateAsync(item.id);
+    setDeactivateError('');
+    let usage = null;
+    try {
+      usage = await itemsApi.usage(item.id);
+    } catch {
+      // usage lookup is purely informational — never block deactivation on it
+    }
+    setPendingDeactivate({ item, usage });
+  };
+
+  const confirmDeactivate = async () => {
+    if (!pendingDeactivate) return;
+    try {
+      await deleteItem.mutateAsync(pendingDeactivate.item.id);
+      setPendingDeactivate(null);
+    } catch (err) {
+      setDeactivateError(err?.response?.data?.error || 'Unable to deactivate this item.');
+    }
   };
 
   const handleReactivate = async (item) => {
@@ -710,6 +729,23 @@ export function ItemsPanel({ canManage }) {
       )}
 
       {modalItem !== undefined && <ItemFormModal item={modalItem} onClose={() => setModalItem(undefined)} />}
+
+      {pendingDeactivate && (
+        <ConfirmDialog
+          variant={pendingDeactivate.usage?.in_use ? 'warning' : 'question'}
+          title={pendingDeactivate.usage?.in_use ? 'Product Already Used' : 'Deactivate this item?'}
+          message={
+            pendingDeactivate.usage?.in_use
+              ? `"${pendingDeactivate.item.item_name}" is referenced by ${pendingDeactivate.usage.invoice_line_count} invoice line(s) and ${pendingDeactivate.usage.prebooking_line_count} pre-booking line(s). It will be hidden from Billing and new bookings, but all existing history stays intact and unchanged.`
+              : `Deactivate "${pendingDeactivate.item.item_name}"? It will be hidden from Billing and the active Items list, but its history is kept.`
+          }
+          details={deactivateError ? <span className="text-rose-600">{deactivateError}</span> : null}
+          confirmLabel="Deactivate"
+          loading={deleteItem.isPending}
+          onConfirm={confirmDeactivate}
+          onCancel={() => setPendingDeactivate(null)}
+        />
+      )}
     </div>
   );
 }

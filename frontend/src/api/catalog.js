@@ -39,6 +39,7 @@ export const itemsApi = {
   remove: async (id) => (await apiClient.delete(`/items/${id}`)).data,
   previousWeekPrice: async (id, params = {}, signal) =>
     (await apiClient.get(`/items/${id}/previous-week-price`, { params, signal })).data,
+  usage: async (id) => (await apiClient.get(`/items/${id}/usage`)).data,
 
   async uploadImage(id, file) {
     const form = new FormData();

@@ -97,6 +97,8 @@ export const vanStockApi = {
   issue: async (data) => (await apiClient.post('/van-stock/issue', data)).data,
   returnStock: async (data) => (await apiClient.post('/van-stock/return', data)).data,
   pending: async (employeeId) => (await apiClient.get(`/van-stock/${employeeId}`)).data,
+  /** type: 'customer' | 'supplier' — eligible orders for the Van Stock order-linked issue dropdown. */
+  eligibleOrders: async (type) => (await apiClient.get('/van-stock/eligible-orders', { params: { type } })).data,
 
   /** itemIds: optional array to narrow to "Export Selected" — omit for the full (currently filtered) list. */
   async downloadExport(employeeId, itemIds) {

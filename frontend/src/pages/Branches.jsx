@@ -4,6 +4,7 @@ import { Building2, Search, Edit2, CheckCircle2, Power, Plus } from 'lucide-reac
 import { branchesApi } from '../api/branches';
 import { usePermission } from '../hooks/usePermission';
 import { Button } from '../components/Button.jsx';
+import { isValidPhone, isValidPincode, isValidGstin } from '../utils/validators';
 
 const emptyForm = {
   branch_name: '',
@@ -86,11 +87,29 @@ export function Branches({ hideHeader = false }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    if (form.phone && !isValidPhone(form.phone.trim())) {
+      setError('Phone number must be a valid 10-digit Indian mobile number.');
+      return;
+    }
+    if (form.pincode && !isValidPincode(form.pincode.trim())) {
+      setError('Pincode must be exactly 6 digits.');
+      return;
+    }
+    if (form.gstin && !isValidGstin(form.gstin.trim())) {
+      setError('Invalid GSTIN format. Expected 15 characters, e.g. 27AAPFU0939F1ZV.');
+      return;
+    }
+    const payload = {
+      ...form,
+      phone: form.phone.trim(),
+      pincode: form.pincode.trim(),
+      gstin: form.gstin.trim().toUpperCase(),
+    };
     try {
       if (editingId && branchesApi.update) {
-        await updateMutation.mutateAsync({ id: editingId, data: form });
+        await updateMutation.mutateAsync({ id: editingId, data: payload });
       } else {
-        await createMutation.mutateAsync(form);
+        await createMutation.mutateAsync(payload);
       }
     } catch (err) {
       setError(err?.response?.data?.error || err?.message || 'Failed to save branch');

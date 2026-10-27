@@ -80,11 +80,20 @@ export function StaffPermissions({ hideHeader = false }) {
       setError('Name, email, and role are required.');
       return;
     }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+      setError('Please enter a valid email address.');
+      return;
+    }
+    if (form.phone && !/^[6-9]\d{9}$/.test(form.phone.trim())) {
+      setError('Phone number must be a valid 10-digit Indian mobile number.');
+      return;
+    }
 
     try {
       if (editingId) {
         const payload = {
           name: form.name.trim(),
+          email: form.email.trim(),
           phone: form.phone || null,
           role_id: Number(form.role_id),
           branch_id: form.branch_id ? Number(form.branch_id) : null,
@@ -182,12 +191,11 @@ export function StaffPermissions({ hideHeader = false }) {
                 <label className="text-xs font-bold uppercase tracking-wider text-slate-600 block mb-1">Email Address *</label>
                 <input
                   required
-                  disabled={Boolean(editingId)}
                   type="email"
                   placeholder="john@store.com"
                   value={form.email}
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  className="w-full rounded-xl border border-[#D5E3F7] bg-white px-3.5 py-2 text-sm font-medium text-[#0B1B45] shadow-xs outline-none transition focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15 disabled:bg-[#F8FAFD] disabled:text-slate-400"
+                  className="w-full rounded-xl border border-[#D5E3F7] bg-white px-3.5 py-2 text-sm font-medium text-[#0B1B45] shadow-xs outline-none transition focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15"
                 />
               </div>
 
