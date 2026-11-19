@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -173,6 +173,100 @@ const SUMMARY_METRICS = [
   { key: 'extra_income_today', label: 'Extra Income Today' },
 ];
 
+// Spatial navigation helper: finds the best element in `items` in direction `dir` from `currentEl`
+function findNextNavElement(currentEl, items, dir) {
+  if (!currentEl || !items || items.length === 0) return null;
+
+  const currentRect = currentEl.getBoundingClientRect();
+  const cAx = currentRect.left + currentRect.width / 2;
+  const cAy = currentRect.top + currentRect.height / 2;
+
+  let bestEl = null;
+  let bestScore = Infinity;
+
+  for (const item of items) {
+    if (item === currentEl) continue;
+
+    const rect = item.getBoundingClientRect();
+    const cBx = rect.left + rect.width / 2;
+    const cBy = rect.top + rect.height / 2;
+
+    let isValid = false;
+    let score = Infinity;
+
+    if (dir === 'ArrowRight') {
+      isValid = cBx > cAx + 5 && rect.right > currentRect.right + 2;
+
+      if (isValid) {
+        const dx = Math.max(0, rect.left - currentRect.right);
+        const vOverlap = Math.max(0, Math.min(currentRect.bottom, rect.bottom) - Math.max(currentRect.top, rect.top));
+        const dyCenter = Math.abs(cAy - cBy);
+
+        if (vOverlap > 0 || dyCenter < Math.max(currentRect.height, rect.height) * 0.6) {
+          const topDiff = Math.abs(rect.top - currentRect.top);
+          score = dx * 1.0 + topDiff * 0.2 + dyCenter * 0.2;
+        } else {
+          isValid = false;
+        }
+      }
+    } else if (dir === 'ArrowLeft') {
+      isValid = cBx < cAx - 5 && rect.left < currentRect.left - 2;
+
+      if (isValid) {
+        const dx = Math.max(0, currentRect.left - rect.right);
+        const vOverlap = Math.max(0, Math.min(currentRect.bottom, rect.bottom) - Math.max(currentRect.top, rect.top));
+        const dyCenter = Math.abs(cAy - cBy);
+
+        if (vOverlap > 0 || dyCenter < Math.max(currentRect.height, rect.height) * 0.6) {
+          const topDiff = Math.abs(rect.top - currentRect.top);
+          score = dx * 1.0 + topDiff * 0.2 + dyCenter * 0.5;
+        } else {
+          isValid = false;
+        }
+      }
+    } else if (dir === 'ArrowDown') {
+      isValid = cBy > cAy + 10 && rect.bottom > currentRect.bottom + 5;
+
+      if (isValid) {
+        const dy = Math.max(0, rect.top - currentRect.bottom);
+        const hOverlap = Math.max(0, Math.min(currentRect.right, rect.right) - Math.max(currentRect.left, rect.left));
+        const dxCenter = Math.abs(cAx - cBx);
+        const dxLeft = Math.abs(currentRect.left - rect.left);
+
+        if (hOverlap > 0) {
+          score = dy * 2.5 + dxLeft * 0.3 + dxCenter * 0.2;
+        } else {
+          const dxEdge = Math.min(Math.abs(rect.left - currentRect.right), Math.abs(currentRect.left - rect.right));
+          score = dy * 2.5 + dxEdge * 1.2 + 200;
+        }
+      }
+    } else if (dir === 'ArrowUp') {
+      isValid = cBy < cAy - 10 && rect.top < currentRect.top - 5;
+
+      if (isValid) {
+        const dy = Math.max(0, currentRect.top - rect.bottom);
+        const hOverlap = Math.max(0, Math.min(currentRect.right, rect.right) - Math.max(currentRect.left, rect.left));
+        const dxCenter = Math.abs(cAx - cBx);
+        const dxLeft = Math.abs(currentRect.left - rect.left);
+
+        if (hOverlap > 0) {
+          score = dy * 2.5 + dxLeft * 0.3 + dxCenter * 0.2;
+        } else {
+          const dxEdge = Math.min(Math.abs(rect.left - currentRect.right), Math.abs(currentRect.left - rect.right));
+          score = dy * 2.5 + dxEdge * 1.2 + 200;
+        }
+      }
+    }
+
+    if (isValid && score < bestScore) {
+      bestScore = score;
+      bestEl = item;
+    }
+  }
+
+  return bestEl;
+}
+
 export function Dashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -181,6 +275,7 @@ export function Dashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [showTotalsReport, setShowTotalsReport] = useState(false);
+  const containerRef = useRef(null);
 
   const summaryQuery = useQuery({
     queryKey: ['dashboard-summary'],
@@ -200,8 +295,86 @@ export function Dashboard() {
     });
   }, [searchQuery, selectedCategory]);
 
+  // Arrow key spatial navigation on the dashboard
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Don't hijack if user is typing in search input, modal, or any input/textarea
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) {
+        return;
+      }
+
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+        const active = document.activeElement;
+        const root = containerRef.current;
+        if (!root) return;
+
+        const allCards = Array.from(root.querySelectorAll('[data-dashboard-card="true"]'));
+        const allFilters = Array.from(root.querySelectorAll('[data-dashboard-filter="true"]'));
+
+        if (!allCards.length && !allFilters.length) return;
+
+        // If nothing inside the dashboard is focused yet, focus the first card or active filter on arrow press
+        if (!root.contains(active)) {
+          e.preventDefault();
+          if (allCards.length > 0) {
+            allCards[0].focus();
+          } else if (allFilters.length > 0) {
+            allFilters[0].focus();
+          }
+          return;
+        }
+
+        // If currently focused on a category filter pill
+        if (active.hasAttribute('data-dashboard-filter')) {
+          if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            // Move down to the first card
+            if (allCards.length > 0) {
+              allCards[0].focus();
+            }
+          } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+            e.preventDefault();
+            const nextEl = findNextNavElement(active, allFilters, e.key);
+            if (nextEl) nextEl.focus();
+          }
+          return;
+        }
+
+        // If currently focused on a module card
+        if (active.hasAttribute('data-dashboard-card')) {
+          if (e.key === 'ArrowUp') {
+            // Check if there is a card above
+            const nextCard = findNextNavElement(active, allCards, 'ArrowUp');
+            if (nextCard) {
+              e.preventDefault();
+              nextCard.focus();
+            } else {
+              // Reached top row of cards -> move up to active or first filter pill
+              e.preventDefault();
+              const activeFilter = allFilters.find((f) => f.getAttribute('data-active') === 'true') || allFilters[0];
+              if (activeFilter) activeFilter.focus();
+            }
+            return;
+          }
+
+          if (e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+            const nextCard = findNextNavElement(active, allCards, e.key);
+            if (nextCard) {
+              e.preventDefault();
+              nextCard.focus();
+            }
+            return;
+          }
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   return (
-    <div className="flex flex-col flex-1 h-full justify-between gap-2 sm:gap-2.5 lg:gap-3 font-sans overflow-hidden bg-white">
+    <div ref={containerRef} className="flex flex-col flex-1 h-full justify-between gap-2 sm:gap-2.5 lg:gap-3 font-sans overflow-hidden bg-white">
       {/* Header Bar */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between shrink-0">
         <div>
@@ -254,7 +427,10 @@ export function Dashboard() {
             <button
               key={cat.id}
               onClick={() => setSelectedCategory(cat.id)}
-              className={`rounded-xl px-3.5 py-1.5 text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 ${
+              data-dashboard-filter="true"
+              data-active={isActive ? 'true' : 'false'}
+              tabIndex={0}
+              className={`rounded-xl px-3.5 py-1.5 text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 focus:outline-none focus:ring-2 focus:ring-[#2449C6] focus:ring-offset-1 ${
                 isActive
                   ? 'bg-gradient-to-r from-[#0B1B45] via-[#142B5C] to-[#1C3675] text-white shadow-md border border-[#0B1B45]'
                   : 'bg-white text-[#334155] border border-[#CBD5E1] hover:text-[#0B1B45] hover:bg-[#EDF5FF] hover:border-[#93C5FD] shadow-2xs'
@@ -296,8 +472,16 @@ export function Dashboard() {
               return (
                 <div
                   key={item.to}
+                  data-dashboard-card="true"
+                  tabIndex={0}
                   onClick={() => navigate(item.to)}
-                  className="group col-span-2 row-span-2 cursor-pointer relative rounded-2xl border-2 border-[#BFDBFE] bg-gradient-to-br from-[#FFFFFF] via-[#F0F5FF] to-[#E0EEFD] p-3.5 sm:p-4 lg:p-4.5 text-[#0B1B45] shadow-[0_6px_20px_rgba(37,99,235,0.08)] transition-all duration-200 hover:shadow-[0_12px_28px_rgba(37,99,235,0.16)] hover:border-[#2563EB] hover:-translate-y-0.5 flex flex-col justify-between overflow-hidden"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      navigate(item.to);
+                    }
+                  }}
+                  className="group col-span-2 row-span-2 cursor-pointer relative rounded-2xl border-2 border-[#BFDBFE] bg-gradient-to-br from-[#FFFFFF] via-[#F0F5FF] to-[#E0EEFD] p-3.5 sm:p-4 lg:p-4.5 text-[#0B1B45] shadow-[0_6px_20px_rgba(37,99,235,0.08)] transition-all duration-200 hover:shadow-[0_12px_28px_rgba(37,99,235,0.16)] hover:border-[#2563EB] hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-[#2449C6] focus:ring-offset-2 flex flex-col justify-between overflow-hidden"
                 >
                   {/* Subtle royal blue water glow flourish */}
                   <div className="pointer-events-none absolute -right-12 -bottom-12 w-64 h-64 rounded-full bg-gradient-to-tl from-[#3B82F6]/20 via-[#60A5FA]/10 to-transparent blur-2xl" />
@@ -339,8 +523,16 @@ export function Dashboard() {
             return (
               <div
                 key={item.to}
+                data-dashboard-card="true"
+                tabIndex={0}
                 onClick={() => navigate(item.to)}
-                className="group cursor-pointer rounded-2xl border-2 border-[#BFDBFE] bg-gradient-to-br from-[#FFFFFF] via-[#F0F5FF] to-[#E0EEFD] p-2.5 sm:p-3 lg:p-3 text-[#0B1B45] shadow-[0_2px_8px_rgba(37,99,235,0.06)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(37,99,235,0.12)] hover:border-[#2563EB] flex flex-col justify-between"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    navigate(item.to);
+                  }
+                }}
+                className="group cursor-pointer rounded-2xl border-2 border-[#BFDBFE] bg-gradient-to-br from-[#FFFFFF] via-[#F0F5FF] to-[#E0EEFD] p-2.5 sm:p-3 lg:p-3 text-[#0B1B45] shadow-[0_2px_8px_rgba(37,99,235,0.06)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(37,99,235,0.12)] hover:border-[#2563EB] focus:outline-none focus:ring-2 focus:ring-[#2449C6] focus:ring-offset-2 flex flex-col justify-between"
               >
                 <div className="flex items-center justify-between">
                   <div className={`flex h-8.5 w-8.5 sm:h-9 sm:w-9 items-center justify-center rounded-xl border ${item.iconColor} shadow-2xs transition-transform group-hover:scale-105`}>

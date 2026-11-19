@@ -782,6 +782,34 @@ export function SupplierPaymentsPanel({ canManage }) {
   const totalPayments = Array.isArray(paymentsQuery.data) ? paymentsQuery.data.length : (paymentsQuery.data?.total ?? payments.length);
   const filteredPayments = payments;
 
+  const preview = (() => {
+    let remaining = Number(amount || 0);
+    return unpaid.map((grn) => {
+      const pending = Number(grn.pending_balance);
+      const applied = Math.max(0, Math.min(remaining, pending));
+      remaining -= applied;
+      return { ...grn, applied, remAfter: pending - applied };
+    });
+  })();
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setResult(null);
+    try {
+      await createMutation.mutateAsync({
+        supplier_id: Number(supplierId),
+        amount: Number(amount),
+        payment_mode: paymentMode,
+        reference_no: referenceNo || null,
+      });
+      setAmount('');
+      setReferenceNo('');
+    } catch (err) {
+      setError(err?.response?.data?.error || 'Failed to record payment');
+    }
+  };
+
   const togglePaymentSelect = (id) => setSelectedPaymentIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   const togglePaymentSelectAll = () => setSelectedPaymentIds((prev) => (
     prev.length === filteredPayments.length ? [] : filteredPayments.map((p) => p.id)

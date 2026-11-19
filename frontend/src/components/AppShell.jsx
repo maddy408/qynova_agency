@@ -42,9 +42,9 @@ export function AppShell({ children }) {
   // If Billing: render Fullscreen POS layout without sidebar
   if (isBilling) {
     return (
-      <div className="flex min-h-screen flex-col bg-[#EDF5FF] w-full overflow-x-hidden">
+      <div className="flex h-screen flex-col bg-[#EDF5FF] w-full overflow-hidden">
         <BillingHeader />
-        <main className="flex-1 w-full">{children}</main>
+        <main className="flex-1 min-h-0 w-full overflow-hidden flex flex-col">{children}</main>
       </div>
     );
   }
