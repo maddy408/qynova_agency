@@ -344,6 +344,7 @@ export function POSScreen() {
           value={search}
           onChangeText={setSearch}
           placeholder="Search product by name, code or barcode…"
+          placeholderTextColor={colors.inkMuted}
           style={styles.searchInput}
         />
         <TouchableOpacity style={styles.cameraBtn} onPress={() => setBarcodeVisible(true)}>
@@ -616,7 +617,7 @@ const styles = StyleSheet.create({
   customerPagerLabel: { color: colors.inkMuted, fontSize: 10, fontWeight: '600', flexShrink: 1, textAlign: 'center' },
   screen: { flex: 1, backgroundColor: colors.page },
   searchRow: { flexDirection: 'row', padding: 12, gap: 8 },
-  searchInput: { flex: 1, backgroundColor: colors.card, borderRadius: 10, borderWidth: 1, borderColor: colors.borderSoft, paddingHorizontal: 12, paddingVertical: 10 },
+  searchInput: { flex: 1, backgroundColor: colors.card, borderRadius: 10, borderWidth: 1, borderColor: colors.borderSoft, paddingHorizontal: 12, paddingVertical: 10, color: colors.ink, fontSize: 13 },
   cameraBtn: { width: 44, height: 44, borderRadius: 10, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.borderSoft, alignItems: 'center', justifyContent: 'center' },
   heldBadge: { position: 'absolute', top: -4, right: -4, backgroundColor: colors.danger, borderRadius: 8, minWidth: 16, height: 16, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3 },
   heldBadgeText: { color: '#fff', fontSize: 9, fontWeight: '700' },

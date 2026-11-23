@@ -68,6 +68,19 @@ class BranchScopedCrudController
         $branchId = $this->resolveBranchId($claims);
         $where = ['branch_id' => $branchId];
 
+        if ($this->table === 'expenses') {
+            $sql = "SELECT e.*, ec.name AS category_name, u.name AS created_by_name
+                    FROM expenses e
+                    LEFT JOIN expense_categories ec ON ec.id = e.category_id
+                    LEFT JOIN users u ON u.id = e.created_by
+                    WHERE e.branch_id = :branch_id
+                    ORDER BY e.id DESC";
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute(['branch_id' => $branchId]);
+            Response::json($stmt->fetchAll());
+            return;
+        }
+
         if (isset($_GET['page'])) {
             $page = max(1, (int) $_GET['page']);
             $limit = max(1, min(100, (int) ($_GET['limit'] ?? 10)));
@@ -129,6 +142,56 @@ class BranchScopedCrudController
         }
     }
 
+    private function validateEntityData(array &$data, bool $isUpdate = false): void
+    {
+        if ($this->table === 'customers') {
+            if (isset($data['name']) && !isset($data['ledger_name'])) {
+                $data['ledger_name'] = $data['name'];
+            }
+            if (!$isUpdate && empty(trim((string) ($data['ledger_name'] ?? '')))) {
+                Response::error('Customer name is required', 422);
+            }
+            if ($isUpdate && array_key_exists('ledger_name', $data) && empty(trim((string) $data['ledger_name']))) {
+                Response::error('Customer name cannot be empty', 422);
+            }
+            if (!empty($data['phone'])) {
+                $phone = trim((string) $data['phone']);
+                if (!Validator::isValidPhone($phone)) {
+                    Response::error('Mobile number must be a valid 10-digit Indian mobile number', 422);
+                }
+            }
+        } elseif ($this->table === 'suppliers') {
+            if (!$isUpdate && empty(trim((string) ($data['name'] ?? '')))) {
+                Response::error('Supplier name is required', 422);
+            }
+            if ($isUpdate && array_key_exists('name', $data) && empty(trim((string) $data['name']))) {
+                Response::error('Supplier name cannot be empty', 422);
+            }
+            if (!empty($data['phone'])) {
+                $phone = trim((string) $data['phone']);
+                if (!Validator::isValidPhone($phone)) {
+                    Response::error('Supplier mobile number must be a valid 10-digit Indian mobile number', 422);
+                }
+            }
+        } elseif ($this->table === 'expenses') {
+            if (isset($data['expense_category_id']) && !isset($data['category_id'])) {
+                $data['category_id'] = (int) $data['expense_category_id'];
+            }
+            if (!$isUpdate && empty($data['category_id'])) {
+                Response::error('Expense category is required', 422);
+            }
+            if ($isUpdate && array_key_exists('category_id', $data) && empty($data['category_id'])) {
+                Response::error('Expense category cannot be empty', 422);
+            }
+            if (!$isUpdate && (!isset($data['amount']) || (float) $data['amount'] <= 0)) {
+                Response::error('Expense amount must be greater than zero', 422);
+            }
+            if ($isUpdate && array_key_exists('amount', $data) && (float) $data['amount'] <= 0) {
+                Response::error('Expense amount must be greater than zero', 422);
+            }
+        }
+    }
+
     public function store(): void
     {
         $claims = JwtAuthMiddleware::authenticate();
@@ -143,19 +206,32 @@ class BranchScopedCrudController
             }
         }
 
-        $id = $this->model()->create($data);
+        $this->validateEntityData($data, false);
 
-        if ($this->codePrefix !== null) {
-            $this->model()->update($id, [$this->codeColumn => CodeGenerator::fromId($this->codePrefix, $id)]);
+        try {
+            $id = $this->model()->create($data);
+
+            if ($this->codePrefix !== null) {
+                $this->model()->update($id, [$this->codeColumn => CodeGenerator::fromId($this->codePrefix, $id)]);
+            }
+
+            $saved = $this->model()->find($id);
+
+            if ($this->onCreated !== null) {
+                ($this->onCreated)($id, $saved, $claims);
+            }
+
+            Response::json($saved, 201);
+        } catch (\PDOException $e) {
+            $code = $e->errorInfo[1] ?? 0;
+            if ($code === 1062) {
+                Response::error('A record with this value already exists.', 422);
+            } elseif ($code === 1452) {
+                Response::error('Referenced related record does not exist.', 422);
+            } else {
+                Response::error('Failed to save record: ' . $e->getMessage(), 422);
+            }
         }
-
-        $saved = $this->model()->find($id);
-
-        if ($this->onCreated !== null) {
-            ($this->onCreated)($id, $saved, $claims);
-        }
-
-        Response::json($saved, 201);
     }
 
     public function update(string $id): void
@@ -168,8 +244,21 @@ class BranchScopedCrudController
         unset($data['branch_id']); // branch is fixed at creation, never reassigned via update
         $this->validateCommonFields($data);
 
-        $this->model()->update((int) $row['id'], $data);
-        Response::json($this->model()->find((int) $row['id']));
+        $this->validateEntityData($data, true);
+
+        try {
+            $this->model()->update((int) $row['id'], $data);
+            Response::json($this->model()->find((int) $row['id']));
+        } catch (\PDOException $e) {
+            $code = $e->errorInfo[1] ?? 0;
+            if ($code === 1062) {
+                Response::error('A record with this value already exists.', 422);
+            } elseif ($code === 1452) {
+                Response::error('Referenced related record does not exist.', 422);
+            } else {
+                Response::error('Failed to update record: ' . $e->getMessage(), 422);
+            }
+        }
     }
 
     public function destroy(string $id): void

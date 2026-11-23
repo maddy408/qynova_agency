@@ -26,14 +26,18 @@ export const purchasesApi = {
   list: async () => (await apiClient.get('/purchases')).data,
   get: async (id) => (await apiClient.get(`/purchases/${id}`)).data,
   create: async (data) => (await apiClient.post('/purchases', data)).data,
+  update: async (id, data) => (await apiClient.put(`/purchases/${id}`, data)).data,
   remove: async (id) => (await apiClient.delete(`/purchases/${id}`)).data,
   returnableItems: async (id) => (await apiClient.get(`/purchases/${id}/returnable-items`)).data,
 };
 
 export const supplierPaymentsApi = {
   list: async () => (await apiClient.get('/supplier-payments')).data,
-  unpaidGrns: async (supplierId) => (await apiClient.get(`/suppliers/${supplierId}/unpaid-grns`)).data,
+  get: async (id) => (await apiClient.get(`/supplier-payments/${id}`)).data,
   create: async (data) => (await apiClient.post('/supplier-payments', data)).data,
+  update: async (id, data) => (await apiClient.put(`/supplier-payments/${id}`, data)).data,
+  remove: async (id) => (await apiClient.delete(`/supplier-payments/${id}`)).data,
+  unpaidGrns: async (supplierId) => (await apiClient.get(`/suppliers/${supplierId}/unpaid-grns`)).data,
 };
 
 export const stockAdjustmentsApi = {

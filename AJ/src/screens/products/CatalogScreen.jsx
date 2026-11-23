@@ -30,21 +30,24 @@ export function CatalogScreen() {
         {tab === 'categories' && (
           <EntityListScreen
             queryKey="categories" api={categoriesApi} title="Category" canManage={canManage}
-            fields={[{ name: 'name', label: 'Category name' }]}
+            fields={[{ name: 'name', label: 'Category name', required: true }]}
             renderTitle={(r) => r.name}
           />
         )}
         {tab === 'brands' && (
           <EntityListScreen
             queryKey="brands" api={brandsApi} title="Brand" canManage={canManage}
-            fields={[{ name: 'name', label: 'Brand name' }]}
+            fields={[{ name: 'name', label: 'Brand name', required: true }]}
             renderTitle={(r) => r.name}
           />
         )}
         {tab === 'units' && (
           <EntityListScreen
             queryKey="stock-units" api={stockUnitsApi} title="Unit" canManage={canManage}
-            fields={[{ name: 'name', label: 'Unit name' }, { name: 'short_code', label: 'Short code' }]}
+            fields={[
+              { name: 'name', label: 'Unit name', required: true },
+              { name: 'short_code', label: 'Short code', required: true },
+            ]}
             renderTitle={(r) => `${r.name} (${r.short_code})`}
           />
         )}
@@ -52,7 +55,7 @@ export function CatalogScreen() {
           <EntityListScreen
             queryKey="product-lines" api={productLinesApi} title="Product Line" canManage={canManage}
             fields={[
-              { name: 'name', label: 'Line Name' },
+              { name: 'name', label: 'Line Name', required: true },
               { name: 'code', label: 'Line Code' },
               { name: 'is_active', label: 'Status', type: 'switch', default: 1 },
             ]}
@@ -65,8 +68,8 @@ export function CatalogScreen() {
           <EntityListScreen
             queryKey="tax-codes" api={taxCodesApi} title="Tax Code" canManage={canManage}
             fields={[
-              { name: 'code', label: 'Code' },
-              { name: 'name', label: 'Name' },
+              { name: 'code', label: 'Code', required: true },
+              { name: 'name', label: 'Name', required: true },
               { name: 'gst_percent', label: 'GST %', keyboardType: 'numeric' },
               { name: 'cgst_percent', label: 'CGST % (blank = auto GST/2)', keyboardType: 'numeric' },
               { name: 'sgst_percent', label: 'SGST % (blank = auto GST/2)', keyboardType: 'numeric' },

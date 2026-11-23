@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, Switch } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, Switch, PermissionsAndroid, Platform, Alert } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import { itemsApi, categoriesApi, brandsApi, productLinesApi, stockUnitsApi, taxCodesApi } from '../../api/catalog';
@@ -51,6 +51,7 @@ export function ItemFormModal({ item, onClose }) {
   const [selectedBranches, setSelectedBranches] = useState(item?.branch_ids || []);
   const [imageAsset, setImageAsset] = useState(null);
   const [imagePreview, setImagePreview] = useState(item?.image ? resolveImageUrl(item.image) : null);
+  const [imageRemoved, setImageRemoved] = useState(false);
   const [error, setError] = useState('');
 
   const set = (k, v) => setForm((p) => ({ ...p, [k]: v }));
@@ -60,12 +61,59 @@ export function ItemFormModal({ item, onClose }) {
   const updateMutation = useMutation({ mutationFn: ({ id, data }) => itemsApi.update(id, data) });
   const uploadMutation = useMutation({ mutationFn: ({ id, asset }) => itemsApi.uploadImage(id, asset) });
 
+  const requestCameraPermission = async () => {
+    if (Platform.OS !== 'android') return true;
+    try {
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.CAMERA,
+        {
+          title: 'Camera Permission',
+          message: 'AJ Agency requires camera access to take product photos.',
+          buttonPositive: 'Allow',
+          buttonNegative: 'Deny',
+        }
+      );
+      return granted === PermissionsAndroid.RESULTS.GRANTED;
+    } catch (err) {
+      console.warn('Camera permission error:', err);
+      return false;
+    }
+  };
+
   const pickImage = async (fromCamera) => {
-    const result = await (fromCamera ? launchCamera({ mediaType: 'photo', quality: 0.7 }) : launchImageLibrary({ mediaType: 'photo', quality: 0.7 }));
-    const asset = result.assets?.[0];
-    if (!asset) return;
-    setImageAsset(asset);
-    setImagePreview(asset.uri);
+    try {
+      if (fromCamera) {
+        const hasPermission = await requestCameraPermission();
+        if (!hasPermission) {
+          Alert.alert('Permission Denied', 'Camera access is required to take photos. Please allow camera permissions in device settings.');
+          return;
+        }
+      }
+      const options = {
+        mediaType: 'photo',
+        quality: 0.8,
+        saveToPhotos: false,
+      };
+      const result = await (fromCamera ? launchCamera(options) : launchImageLibrary(options));
+      if (result.didCancel) return;
+      if (result.errorCode) {
+        Alert.alert('Image Error', result.errorMessage || result.errorCode);
+        return;
+      }
+      const asset = result.assets?.[0];
+      if (!asset) return;
+      setImageAsset(asset);
+      setImagePreview(asset.uri);
+      setImageRemoved(false);
+    } catch (err) {
+      Alert.alert('Error', 'Failed to access camera/gallery: ' + (err?.message || 'Unknown error'));
+    }
+  };
+
+  const removeImage = () => {
+    setImageAsset(null);
+    setImagePreview(null);
+    setImageRemoved(true);
   };
 
   // Blank means "leave the item's existing net rate as-is" — never send 0
@@ -74,12 +122,42 @@ export function ItemFormModal({ item, onClose }) {
 
   const submit = async () => {
     setError('');
-    if (!form.item_name || !form.base_unit_id) {
-      setError('Item name and base unit are required.');
+    if (!form.item_name?.trim()) {
+      setError('Item name is required.');
       return;
     }
+    if (!form.base_unit_id) {
+      setError('Base unit is required.');
+      return;
+    }
+
+    // Number validations
+    const priceFields = [
+      { key: 'mrp', label: 'MRP' },
+      { key: 'purchase_price', label: 'Purchase Price' },
+      { key: 'cost_price', label: 'Cost Price' },
+      { key: 'wholesale_price', label: 'Wholesale Price' },
+      { key: 'retail_price', label: 'Retail Price' },
+      { key: 'min_stock_threshold', label: 'Minimum Stock Threshold' },
+      { key: 'opening_stock', label: 'Opening Stock' },
+    ];
+    for (const f of priceFields) {
+      const val = form[f.key];
+      if (val !== '' && val !== null && val !== undefined) {
+        const num = Number(val);
+        if (isNaN(num)) {
+          setError(`${f.label} must be a valid number.`);
+          return;
+        }
+        if (num < 0) {
+          setError(`${f.label} cannot be negative.`);
+          return;
+        }
+      }
+    }
+
     const payload = {
-      item_name: form.item_name,
+      item_name: form.item_name.trim(),
       category_id: form.category_id,
       brand_id: form.brand_id,
       product_line_id: form.product_line_id,
@@ -87,8 +165,8 @@ export function ItemFormModal({ item, onClose }) {
       base_unit_id: form.base_unit_id,
       secondary_unit_id: form.secondary_unit_id,
       tax_code_id: form.tax_code_id,
-      hsn_code: form.hsn_code || null,
-      barcode: form.barcode || null,
+      hsn_code: form.hsn_code ? form.hsn_code.trim() : null,
+      barcode: form.barcode ? form.barcode.trim() : null,
       purchase_price: Number(form.purchase_price || 0),
       cost_price: Number(form.cost_price || 0),
       wholesale_price: Number(form.wholesale_price || 0),
@@ -114,6 +192,8 @@ export function ItemFormModal({ item, onClose }) {
       }
       if (imageAsset) {
         await uploadMutation.mutateAsync({ id, asset: imageAsset });
+      } else if (imageRemoved && isEdit && item?.image) {
+        await itemsApi.removeImage(id);
       }
       queryClient.invalidateQueries({ queryKey: ['items'] });
       onClose();
@@ -146,8 +226,15 @@ export function ItemFormModal({ item, onClose }) {
           {imagePreview ? <Image source={{ uri: imagePreview }} style={{ width: '100%', height: '100%' }} /> : <Text style={styles.imagePlaceholder}>No image</Text>}
         </View>
         <View style={{ marginLeft: 12, gap: 8 }}>
-          <TouchableOpacity style={formStyles.secondaryBtn} onPress={() => pickImage(true)}><Text style={formStyles.secondaryBtnText}>Camera</Text></TouchableOpacity>
-          <TouchableOpacity style={formStyles.secondaryBtn} onPress={() => pickImage(false)}><Text style={formStyles.secondaryBtnText}>Gallery</Text></TouchableOpacity>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <TouchableOpacity style={formStyles.secondaryBtn} onPress={() => pickImage(true)}><Text style={formStyles.secondaryBtnText}>📷 Camera</Text></TouchableOpacity>
+            <TouchableOpacity style={formStyles.secondaryBtn} onPress={() => pickImage(false)}><Text style={formStyles.secondaryBtnText}>🖼️ Gallery</Text></TouchableOpacity>
+          </View>
+          {imagePreview ? (
+            <TouchableOpacity style={[formStyles.secondaryBtn, { borderColor: colors.danger, backgroundColor: '#FFF5F5' }]} onPress={removeImage}>
+              <Text style={[formStyles.secondaryBtnText, { color: colors.danger }]}>✕ Remove Image</Text>
+            </TouchableOpacity>
+          ) : null}
         </View>
       </View>
 

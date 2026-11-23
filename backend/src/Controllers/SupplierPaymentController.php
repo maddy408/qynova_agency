@@ -135,4 +135,122 @@ class SupplierPaymentController
 
         Response::json($result, 201);
     }
+
+    public function show(string $id): void
+    {
+        JwtAuthMiddleware::authenticate();
+        $stmt = $this->pdo->prepare(
+            "SELECT sp.*, s.name AS supplier_name, u.name AS paid_by_name
+             FROM supplier_payments sp
+             JOIN suppliers s ON s.id = sp.supplier_id
+             LEFT JOIN users u ON u.id = sp.paid_by
+             WHERE sp.id = :id LIMIT 1"
+        );
+        $stmt->execute(['id' => (int) $id]);
+        $payment = $stmt->fetch();
+        if (!$payment) {
+            Response::error('Payment not found', 404);
+        }
+
+        $allocStmt = $this->pdo->prepare(
+            "SELECT spa.*, p.grn_no, p.grand_total, p.paid_amount AS grn_paid_amount
+             FROM supplier_payment_allocations spa
+             JOIN purchases p ON p.id = spa.purchase_id
+             WHERE spa.supplier_payment_id = :id"
+        );
+        $allocStmt->execute(['id' => (int) $id]);
+        $payment['allocations'] = $allocStmt->fetchAll();
+
+        Response::json($payment);
+    }
+
+    public function update(string $id): void
+    {
+        $claims = JwtAuthMiddleware::authenticate();
+        PermissionMiddleware::require($claims, 'purchases.settle_supplier_payment');
+
+        $stmt = $this->pdo->prepare("SELECT * FROM supplier_payments WHERE id = :id LIMIT 1");
+        $stmt->execute(['id' => (int) $id]);
+        $payment = $stmt->fetch();
+        if (!$payment) {
+            Response::error('Payment not found', 404);
+        }
+
+        $body = json_decode(file_get_contents('php://input'), true) ?? [];
+        $updates = [];
+        $params = ['id' => (int) $id];
+        if (isset($body['payment_mode']) && in_array($body['payment_mode'], ['cash', 'bank_transfer', 'cheque', 'upi'], true)) {
+            $updates[] = 'payment_mode = :payment_mode';
+            $params['payment_mode'] = $body['payment_mode'];
+        }
+        if (array_key_exists('reference_no', $body)) {
+            $updates[] = 'reference_no = :reference_no';
+            $params['reference_no'] = $body['reference_no'] !== null ? trim((string) $body['reference_no']) : null;
+        }
+        if (array_key_exists('notes', $body)) {
+            $updates[] = 'notes = :notes';
+            $params['notes'] = $body['notes'] !== null ? trim((string) $body['notes']) : null;
+        }
+
+        if (!empty($updates)) {
+            $sql = "UPDATE supplier_payments SET " . implode(', ', $updates) . " WHERE id = :id";
+            $this->pdo->prepare($sql)->execute($params);
+        }
+
+        $this->show($id);
+    }
+
+    public function destroy(string $id): void
+    {
+        $claims = JwtAuthMiddleware::authenticate();
+        PermissionMiddleware::require($claims, 'purchases.settle_supplier_payment');
+
+        $this->pdo->beginTransaction();
+        try {
+            $stmt = $this->pdo->prepare("SELECT * FROM supplier_payments WHERE id = :id LIMIT 1");
+            $stmt->execute(['id' => (int) $id]);
+            $payment = $stmt->fetch();
+            if (!$payment) {
+                $this->pdo->rollBack();
+                Response::error('Payment not found', 404);
+            }
+
+            // Fetch allocations to reverse paid amounts on purchases
+            $allocStmt = $this->pdo->prepare("SELECT * FROM supplier_payment_allocations WHERE supplier_payment_id = :id");
+            $allocStmt->execute(['id' => (int) $id]);
+            $allocations = $allocStmt->fetchAll();
+
+            $revertStmt = $this->pdo->prepare("UPDATE purchases SET paid_amount = GREATEST(0, paid_amount - :amount) WHERE id = :id");
+            foreach ($allocations as $alloc) {
+                $revertStmt->execute([
+                    'amount' => (float) $alloc['allocated_amount'],
+                    'id' => (int) $alloc['purchase_id'],
+                ]);
+            }
+
+            // Delete allocations
+            $this->pdo->prepare("DELETE FROM supplier_payment_allocations WHERE supplier_payment_id = :id")->execute(['id' => (int) $id]);
+
+            // Revert ledger entry
+            $ledger = new \App\Services\SupplierLedgerService($this->pdo);
+            $ledger->record(
+                (int) $payment['supplier_id'],
+                'payment_reversal',
+                (float) $payment['amount'],
+                null,
+                (int) $id,
+                'Reversal of deleted payment ' . ($payment['payment_code'] ?? ('PAY' . $id)),
+                (int) ($claims['sub'] ?? 1)
+            );
+
+            // Delete payment row
+            $this->pdo->prepare("DELETE FROM supplier_payments WHERE id = :id")->execute(['id' => (int) $id]);
+
+            $this->pdo->commit();
+            Response::json(['deleted' => true, 'id' => (int) $id]);
+        } catch (\Throwable $e) {
+            $this->pdo->rollBack();
+            Response::error('Failed to delete payment: ' . $e->getMessage(), 422);
+        }
+    }
 }

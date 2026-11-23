@@ -33,8 +33,17 @@ export const itemsApi = {
   /** asset: { uri, type, fileName } from react-native-image-picker */
   async uploadImage(id, asset) {
     const form = new FormData();
-    form.append('image', { uri: asset.uri, type: asset.type || 'image/jpeg', name: asset.fileName || 'photo.jpg' });
-    return (await apiClient.post(`/items/${id}/image`, form, { headers: { 'Content-Type': 'multipart/form-data' } })).data;
+    form.append('image', {
+      uri: asset.uri,
+      type: asset.type || 'image/jpeg',
+      name: asset.fileName || `product_${id}.jpg`,
+    });
+    return (
+      await apiClient.post(`/items/${id}/image`, form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        transformRequest: (data) => data,
+      })
+    ).data;
   },
   removeImage: async (id) => (await apiClient.delete(`/items/${id}/image`)).data,
 

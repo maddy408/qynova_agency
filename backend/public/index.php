@@ -295,6 +295,9 @@ $router->delete('/api/purchases/{id}', fn ($id) => $purchases->destroy($id));
 $supplierPayments = new SupplierPaymentController($pdo);
 $router->get('/api/supplier-payments', fn () => $supplierPayments->index());
 $router->post('/api/supplier-payments', fn () => $supplierPayments->store());
+$router->get('/api/supplier-payments/{id}', fn ($id) => $supplierPayments->show($id));
+$router->put('/api/supplier-payments/{id}', fn ($id) => $supplierPayments->update($id));
+$router->delete('/api/supplier-payments/{id}', fn ($id) => $supplierPayments->destroy($id));
 $router->get('/api/suppliers/{id}/unpaid-grns', fn ($id) => $supplierPayments->unpaidGrns($id));
 
 $stockAdjustments = new StockAdjustmentController($pdo);
@@ -372,6 +375,7 @@ $expenses = new BranchScopedCrudController(
 );
 $router->get('/api/expenses', fn () => $expenses->index());
 $router->post('/api/expenses', fn () => $expenses->store());
+$router->put('/api/expenses/{id}', fn ($id) => $expenses->update($id));
 $router->delete('/api/expenses/{id}', fn ($id) => $expenses->destroy($id));
 
 $otherIncome = new BranchScopedCrudController(

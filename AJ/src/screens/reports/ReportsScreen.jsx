@@ -81,6 +81,16 @@ function sumColumn(rows, key) {
   return rows.reduce((s, r) => s + (Number(r[key]) || 0), 0);
 }
 
+function getColumnWidth(k) {
+  if (k === 'invoice_no' || k === 'item_code' || k === 'barcode' || k === 'phone' || k === 'reference_no') return 140;
+  if (k === 'item_name' || k === 'customer_name' || k === 'supplier_name') return 180;
+  if (k.endsWith('_name')) return 150;
+  if (k === 'invoice_date' || k === 'date' || k.endsWith('_date') || k.endsWith('_at')) return 110;
+  if (k === 'qty' || k === 'bills' || k === 'items' || k === 'items_sold' || k === 'total_bills' || k === 'total_items' || k === 'quantity' || k === 'customers') return 90;
+  if (NUMERIC_REPORT_KEYS.has(k) || k.includes('price') || k.includes('amount') || k.includes('sales') || k.includes('profit') || k.includes('balance') || k.includes('gst')) return 130;
+  return 120;
+}
+
 function SalesReportDetail({ report, onBack }) {
   const [from, setFrom] = useState(monthStartStr());
   const [to, setTo] = useState(todayStr());
@@ -200,8 +210,12 @@ function SalesReportDetail({ report, onBack }) {
       ) : rows.length === 0 ? (
         <Text style={styles.empty}>No data for this date range.</Text>
       ) : (
-        <ScrollView horizontal contentContainerStyle={{ flexGrow: 1 }}>
-          <View>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={true}
+          contentContainerStyle={{ minWidth: 44 + Object.keys(report.columns).reduce((s, k) => s + getColumnWidth(k), 0) }}
+        >
+          <View style={{ flex: 1 }}>
             <View style={styles.tableHeaderRow}>
               <TouchableOpacity
                 style={styles.checkboxCell}
@@ -215,29 +229,67 @@ function SalesReportDetail({ report, onBack }) {
                   {selectedKeys.length > 0 && selectedKeys.length < rows.length && <View style={styles.checkboxIndeterminateMark} />}
                 </View>
               </TouchableOpacity>
-              {Object.entries(report.columns).map(([k, label]) => (
-                <Text key={k} style={styles.tableHeaderCell}>{label}</Text>
-              ))}
+              {Object.entries(report.columns).map(([k, label]) => {
+                const isNum = NUMERIC_REPORT_KEYS.has(k);
+                const colWidth = getColumnWidth(k);
+                return (
+                  <Text
+                    key={k}
+                    style={[
+                      styles.tableHeaderCell,
+                      { width: colWidth, textAlign: isNum ? 'right' : 'left' },
+                    ]}
+                  >
+                    {label}
+                  </Text>
+                );
+              })}
             </View>
             <FlatList
               data={rows}
-              keyExtractor={(r, idx) => `${r[report.rowKey]}-${idx}`}
+              keyExtractor={(r, idx) => `${r[report.rowKey] || idx}-${idx}`}
+              nestedScrollEnabled={true}
               refreshing={query.isFetching}
               onRefresh={query.refetch}
               initialNumToRender={20}
               maxToRenderPerBatch={20}
               windowSize={10}
               removeClippedSubviews
-              renderItem={({ item }) => {
-                const rk = String(item[report.rowKey]);
+              renderItem={({ item, index }) => {
+                const rk = String(item[report.rowKey] || index);
+                const isSelected = selectedKeys.includes(rk);
+                const isEven = index % 2 === 0;
                 return (
-                  <TouchableOpacity style={styles.tableRow} onPress={() => toggleSelect(rk)}>
+                  <TouchableOpacity
+                    style={[
+                      styles.tableRow,
+                      isEven && styles.tableRowAlt,
+                      isSelected && styles.tableRowSelected,
+                    ]}
+                    onPress={() => toggleSelect(rk)}
+                  >
                     <View style={styles.checkboxCell}>
-                      <View style={[styles.checkbox, selectedKeys.includes(rk) && styles.checkboxChecked]} />
+                      <View style={[styles.checkbox, isSelected && styles.checkboxChecked]} />
                     </View>
-                    {Object.keys(report.columns).map((k) => (
-                      <Text key={k} style={styles.tableCell}>{String(item[k] ?? '')}</Text>
-                    ))}
+                    {Object.keys(report.columns).map((k) => {
+                      const isNum = NUMERIC_REPORT_KEYS.has(k);
+                      const colWidth = getColumnWidth(k);
+                      const val = item[k];
+                      const displayVal = isNum && typeof val === 'number' ? val.toFixed(2) : String(val ?? '');
+                      return (
+                        <Text
+                          key={k}
+                          style={[
+                            styles.tableCell,
+                            { width: colWidth, textAlign: isNum ? 'right' : 'left' },
+                            isNum && { fontWeight: '600' },
+                          ]}
+                          numberOfLines={2}
+                        >
+                          {displayVal}
+                        </Text>
+                      );
+                    })}
                   </TouchableOpacity>
                 );
               }}
@@ -245,8 +297,19 @@ function SalesReportDetail({ report, onBack }) {
                 <View style={styles.totalsRow}>
                   <View style={styles.checkboxCell} />
                   {Object.keys(report.columns).map((k) => {
-                    if (NUMERIC_REPORT_KEYS.has(k)) return <Text key={k} style={styles.totalsCell}>{totals[k] !== undefined ? totals[k].toFixed(2) : ''}</Text>;
-                    return <Text key={k} style={styles.totalsCell}>{k === firstTextColumnKey ? 'Grand Total' : ''}</Text>;
+                    const isNum = NUMERIC_REPORT_KEYS.has(k);
+                    const colWidth = getColumnWidth(k);
+                    return (
+                      <Text
+                        key={k}
+                        style={[
+                          styles.totalsCell,
+                          { width: colWidth, textAlign: isNum ? 'right' : 'left' },
+                        ]}
+                      >
+                        {isNum ? (totals[k] !== undefined ? totals[k].toFixed(2) : '') : (k === firstTextColumnKey ? 'Grand Total' : '')}
+                      </Text>
+                    );
                   })}
                 </View>
               }
@@ -351,28 +414,98 @@ function ReportDetail({ report, onBack }) {
         </>
       )}
 
-      <FlatList
-        data={rows}
-        keyExtractor={(_, idx) => String(idx)}
-        refreshing={query.isFetching}
-        onRefresh={query.refetch}
-        contentContainerStyle={styles.detailListContent}
-        initialNumToRender={15}
-        maxToRenderPerBatch={15}
-        windowSize={10}
-        removeClippedSubviews
-        ListEmptyComponent={<Text style={styles.empty}>No data for this report yet.</Text>}
-        renderItem={({ item, index }) => (
-          <TouchableOpacity style={[styles.card, selectedKeys.includes(index) && styles.cardSelected]} onPress={() => toggleSelect(index)}>
-            {Object.keys(columns).map((c) => (
-              <View key={c} style={styles.fieldRow}>
-                <Text style={styles.fieldLabel}>{columns[c]}</Text>
-                <Text style={styles.fieldValue} numberOfLines={1}>{String(item[c] ?? '')}</Text>
-              </View>
-            ))}
-          </TouchableOpacity>
-        )}
-      />
+      {rows.length === 0 ? (
+        query.isLoading ? (
+          <Text style={styles.empty}>Loading report data...</Text>
+        ) : query.isError ? (
+          <Text style={styles.errorText}>{friendlyErrorMessage(query.error)}</Text>
+        ) : (
+          <Text style={styles.empty}>No data for this report yet.</Text>
+        )
+      ) : (
+        <ScrollView horizontal showsHorizontalScrollIndicator={true} style={{ flex: 1 }}>
+          <View>
+            <View style={styles.tableHeaderRow}>
+              <TouchableOpacity style={styles.checkboxCell} onPress={selectedKeys.length === rows.length ? clearSelection : selectAll}>
+                <View
+                  style={[
+                    styles.checkbox,
+                    selectedKeys.length === rows.length && styles.checkboxChecked,
+                    selectedKeys.length > 0 && selectedKeys.length < rows.length && styles.checkboxIndeterminate,
+                  ]}
+                >
+                  {selectedKeys.length > 0 && selectedKeys.length < rows.length && (
+                    <View style={styles.checkboxIndeterminateMark} />
+                  )}
+                </View>
+              </TouchableOpacity>
+              {Object.keys(columns).map((c) => {
+                const isNum = NUMERIC_REPORT_KEYS.has(c);
+                const colWidth = getColumnWidth(c);
+                return (
+                  <Text
+                    key={c}
+                    style={[
+                      styles.tableHeaderCell,
+                      { width: colWidth, textAlign: isNum ? 'right' : 'left' },
+                    ]}
+                  >
+                    {columns[c]}
+                  </Text>
+                );
+              })}
+            </View>
+            <FlatList
+              data={rows}
+              keyExtractor={(_, idx) => String(idx)}
+              nestedScrollEnabled={true}
+              refreshing={query.isFetching}
+              onRefresh={query.refetch}
+              initialNumToRender={20}
+              maxToRenderPerBatch={20}
+              windowSize={10}
+              removeClippedSubviews
+              renderItem={({ item, index }) => {
+                const isSelected = selectedKeys.includes(index);
+                const isEven = index % 2 === 0;
+                return (
+                  <TouchableOpacity
+                    style={[
+                      styles.tableRow,
+                      isEven && styles.tableRowAlt,
+                      isSelected && styles.tableRowSelected,
+                    ]}
+                    onPress={() => toggleSelect(index)}
+                  >
+                    <View style={styles.checkboxCell}>
+                      <View style={[styles.checkbox, isSelected && styles.checkboxChecked]} />
+                    </View>
+                    {Object.keys(columns).map((c) => {
+                      const isNum = NUMERIC_REPORT_KEYS.has(c);
+                      const colWidth = getColumnWidth(c);
+                      const val = item[c];
+                      const displayVal = isNum && typeof val === 'number' ? val.toFixed(2) : String(val ?? '');
+                      return (
+                        <Text
+                          key={c}
+                          style={[
+                            styles.tableCell,
+                            { width: colWidth, textAlign: isNum ? 'right' : 'left' },
+                            isNum && { fontWeight: '600' },
+                          ]}
+                          numberOfLines={2}
+                        >
+                          {displayVal}
+                        </Text>
+                      );
+                    })}
+                  </TouchableOpacity>
+                );
+              }}
+            />
+          </View>
+        </ScrollView>
+      )}
     </View>
   );
 }
@@ -451,7 +584,9 @@ const styles = StyleSheet.create({
 
   tableHeaderRow: { flexDirection: 'row', backgroundColor: colors.card, borderBottomWidth: 2, borderBottomColor: colors.borderSoft, paddingVertical: 10 },
   tableHeaderCell: { width: 120, fontWeight: '700', color: colors.ink, fontSize: 11, paddingHorizontal: 8 },
-  tableRow: { flexDirection: 'row', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.borderSoft, alignItems: 'center' },
+  tableRow: { flexDirection: 'row', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.borderSoft, alignItems: 'center', backgroundColor: colors.card },
+  tableRowAlt: { backgroundColor: '#F9FAFB' },
+  tableRowSelected: { backgroundColor: '#FFFBEB' },
   tableCell: { width: 120, color: colors.ink, fontSize: 12, paddingHorizontal: 8 },
   checkboxCell: { width: 36, alignItems: 'center', justifyContent: 'center' },
   checkbox: { width: 18, height: 18, borderRadius: 4, borderWidth: 1, borderColor: colors.borderSoft },

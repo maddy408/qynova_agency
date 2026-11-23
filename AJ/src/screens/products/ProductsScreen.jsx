@@ -44,7 +44,14 @@ export function ProductsScreen() {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return items;
-    return items.filter((i) => i.item_name.toLowerCase().includes(q) || (i.item_code || '').toLowerCase().includes(q));
+    return items.filter(
+      (i) =>
+        (i.item_name || '').toLowerCase().includes(q) ||
+        (i.item_code || '').toLowerCase().includes(q) ||
+        (i.barcode || '').toLowerCase().includes(q) ||
+        (i.category_name || '').toLowerCase().includes(q) ||
+        (i.brand_name || '').toLowerCase().includes(q)
+    );
   }, [items, search]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
@@ -74,16 +81,26 @@ export function ProductsScreen() {
     <View style={styles.screen}>
       {/* Top Header Controls: Search Input + Top-Right "+ Add Product" Button */}
       <View style={styles.topHeader}>
-        <TextInput
-          value={search}
-          onChangeText={handleSearchChange}
-          placeholder="Search products…"
-          style={styles.search}
-        />
+        <View style={styles.searchWrap}>
+          <Icon name="search" size={16} color={colors.inkMuted} style={{ marginRight: 6 }} />
+          <TextInput
+            value={search}
+            onChangeText={handleSearchChange}
+            placeholder="Search by product name, code, barcode..."
+            placeholderTextColor={colors.inkMuted}
+            style={styles.search}
+            autoCapitalize="none"
+          />
+          {search.length > 0 && (
+            <TouchableOpacity onPress={() => handleSearchChange('')} style={{ padding: 4 }}>
+              <Text style={{ color: colors.inkMuted, fontSize: 13, fontWeight: '700' }}>✕</Text>
+            </TouchableOpacity>
+          )}
+        </View>
         {canManage && (
           <TouchableOpacity style={styles.topRightBtn} onPress={() => setModal(null)}>
             <Icon name="plus" size={14} color={colors.gold} style={{ marginRight: 4 }} />
-            <Text style={styles.topRightBtnText}>+ Add Product</Text>
+            <Text style={styles.topRightBtnText}>+ Add</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -114,7 +131,22 @@ export function ProductsScreen() {
         keyExtractor={(i) => String(i.id)}
         refreshing={itemsQuery.isFetching}
         onRefresh={itemsQuery.refetch}
+        keyboardShouldPersistTaps="handled"
         contentContainerStyle={{ padding: 12, paddingBottom: 140, flexGrow: 1 }}
+        ListEmptyComponent={
+          itemsQuery.isLoading ? (
+            <Text style={styles.empty}>Loading products...</Text>
+          ) : items.length === 0 ? (
+            <Text style={styles.empty}>No products in catalog yet.</Text>
+          ) : (
+            <View style={{ alignItems: 'center', marginTop: 30 }}>
+              <Text style={styles.empty}>No products found matching "{search}".</Text>
+              <TouchableOpacity onPress={() => handleSearchChange('')} style={styles.resetSearchBtn}>
+                <Text style={styles.resetSearchBtnText}>Clear Search</Text>
+              </TouchableOpacity>
+            </View>
+          )
+        }
         ListFooterComponent={filtered.length > 0 ? (
           <View style={styles.pagerRow}>
             <TouchableOpacity
@@ -241,16 +273,36 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.borderSoft,
   },
-  search: {
+  searchWrap: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: colors.page,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: colors.borderSoft,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    fontSize: 13,
+    paddingHorizontal: 10,
+    height: 40,
   },
+  search: {
+    flex: 1,
+    fontSize: 13,
+    color: colors.ink,
+    paddingVertical: 6,
+  },
+  resetSearchBtn: {
+    marginTop: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: colors.navbar,
+  },
+  resetSearchBtnText: {
+    color: colors.gold,
+    fontWeight: '700',
+    fontSize: 12,
+  },
+  empty: { textAlign: 'center', color: colors.inkMuted, marginTop: 40 },
   topRightBtn: {
     flexDirection: 'row',
     alignItems: 'center',

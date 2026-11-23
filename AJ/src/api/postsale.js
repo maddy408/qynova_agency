@@ -34,6 +34,7 @@ export const expenseCategoriesApi = {
 export const expensesApi = {
   list: async () => (await apiClient.get('/expenses')).data,
   create: async (data) => (await apiClient.post('/expenses', data)).data,
+  update: async (id, data) => (await apiClient.put(`/expenses/${id}`, data)).data,
   remove: async (id) => (await apiClient.delete(`/expenses/${id}`)).data,
 };
 

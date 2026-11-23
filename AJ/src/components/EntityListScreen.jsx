@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, FlatList, Alert, Switch, StyleSheet } from 'react-native';
+import { useState, useMemo } from 'react';
+import { View, Text, TextInput, TouchableOpacity, FlatList, Alert, Switch, ScrollView, StyleSheet } from 'react-native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { friendlyErrorMessage } from '../api/client';
 import { FormModal, formStyles } from './FormModal';
@@ -19,6 +19,7 @@ import { colors } from '../theme/colors';
  */
 export function EntityListScreen({ queryKey, api, title, fields, renderTitle, renderSubtitle, canManage = true, transformSubmit, excelImport }) {
   const queryClient = useQueryClient();
+  const [search, setSearch] = useState('');
   const [modal, setModal] = useState(null); // null closed, {} create, {...row} edit
   const [viewItem, setViewItem] = useState(null);
   const [form, setForm] = useState({});
@@ -38,8 +39,57 @@ export function EntityListScreen({ queryKey, api, title, fields, renderTitle, re
   const openView = (row) => setViewItem(row);
   const closeModal = () => setModal(null);
 
+  const validateForm = () => {
+    for (const f of fields) {
+      const val = form[f.name];
+      const strVal = String(val ?? '').trim();
+
+      // Required field check
+      if (f.required && !strVal) {
+        return `${f.label.replace(/\*$/, '').trim()} is required.`;
+      }
+
+      // Phone / Mobile number validation
+      if ((f.name === 'phone' || f.type === 'phone') && strVal) {
+        if (!/^\d+$/.test(strVal)) {
+          return `${f.label}: Phone number must contain numeric digits only.`;
+        }
+        if (strVal.length !== 10) {
+          return `${f.label}: Mobile number must be exactly 10 digits (currently ${strVal.length}).`;
+        }
+        if (!/^[6-9]/.test(strVal)) {
+          return `${f.label}: Mobile number must start with 6, 7, 8 or 9.`;
+        }
+      }
+
+      // Email validation
+      if ((f.name === 'email' || f.type === 'email') && strVal) {
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(strVal)) {
+          return `Please enter a valid email address.`;
+        }
+      }
+
+      // Numeric check
+      if (f.keyboardType === 'numeric' && strVal) {
+        const num = Number(strVal);
+        if (isNaN(num)) {
+          return `${f.label} must be a valid numeric value.`;
+        }
+        if (f.noNegative && num < 0) {
+          return `${f.label} cannot be negative.`;
+        }
+      }
+    }
+    return null;
+  };
+
   const submit = () => {
     setError('');
+    const validationError = validateForm();
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
     const payload = transformSubmit ? transformSubmit(form) : form;
     if (modal && modal.id) {
       updateMutation.mutate({ id: modal.id, data: payload });
@@ -56,6 +106,21 @@ export function EntityListScreen({ queryKey, api, title, fields, renderTitle, re
   };
 
   const rows = listQuery.data || [];
+  const filteredRows = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return rows;
+    return rows.filter((r) => {
+      const titleMatch = renderTitle ? String(renderTitle(r) || '').toLowerCase().includes(q) : false;
+      const subtitleMatch = renderSubtitle ? String(renderSubtitle(r) || '').toLowerCase().includes(q) : false;
+      const idMatch = String(r.id || '') === q;
+      const fieldMatch = fields.some((f) => {
+        const v = r[f.name];
+        return v !== null && v !== undefined && String(v).toLowerCase().includes(q);
+      });
+      return titleMatch || subtitleMatch || idMatch || fieldMatch;
+    });
+  }, [rows, search, renderTitle, renderSubtitle, fields]);
+
   const saving = createMutation.isPending || updateMutation.isPending;
 
   return (
@@ -67,6 +132,24 @@ export function EntityListScreen({ queryKey, api, title, fields, renderTitle, re
           <TouchableOpacity style={styles.topRightBtn} onPress={openCreate}>
             <Icon name="plus" size={14} color={colors.gold} style={{ marginRight: 4 }} />
             <Text style={styles.topRightBtnText}>+ Add {title}</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {/* Global Dynamic Search Input with Clear Button */}
+      <View style={styles.searchBar}>
+        <Icon name="search" size={16} color={colors.inkMuted} style={{ marginRight: 8 }} />
+        <TextInput
+          value={search}
+          onChangeText={setSearch}
+          placeholder={`Search ${title.toLowerCase()}s...`}
+          placeholderTextColor={colors.inkMuted}
+          style={styles.searchInput}
+          autoCapitalize="none"
+        />
+        {search.length > 0 && (
+          <TouchableOpacity onPress={() => setSearch('')} style={styles.clearSearchBtn}>
+            <Text style={styles.clearSearchText}>✕</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -85,12 +168,23 @@ export function EntityListScreen({ queryKey, api, title, fields, renderTitle, re
       )}
 
       <FlatList
-        data={rows}
+        data={filteredRows}
         keyExtractor={(r) => String(r.id)}
         contentContainerStyle={{ padding: 12, paddingBottom: 140, flexGrow: 1 }}
         refreshing={listQuery.isFetching}
         onRefresh={listQuery.refetch}
-        ListEmptyComponent={<Text style={styles.empty}>No {title.toLowerCase()} yet.</Text>}
+        ListEmptyComponent={
+          rows.length === 0 ? (
+            <Text style={styles.empty}>No {title.toLowerCase()}s yet.</Text>
+          ) : (
+            <View style={styles.noResultsBox}>
+              <Text style={styles.empty}>No {title.toLowerCase()}s match "{search}".</Text>
+              <TouchableOpacity onPress={() => setSearch('')} style={styles.resetSearchBtn}>
+                <Text style={styles.resetSearchBtnText}>Clear Search</Text>
+              </TouchableOpacity>
+            </View>
+          )
+        }
         renderItem={({ item }) => (
           <View style={styles.row}>
             <TouchableOpacity style={{ flex: 1 }} onPress={() => openView(item)}>
@@ -134,30 +228,51 @@ export function EntityListScreen({ queryKey, api, title, fields, renderTitle, re
       >
         {fields.map((f) => (
           <View key={f.name}>
-            <Text style={formStyles.label}>{f.label}</Text>
+            <Text style={formStyles.label}>
+              {f.label} {f.required ? <Text style={{ color: colors.danger }}>*</Text> : null}
+            </Text>
             {f.type === 'switch' ? (
               <View style={styles.switchRow}>
                 <Text style={styles.switchLabel}>{form[f.name] ? 'Active' : 'Inactive'}</Text>
-                <Switch value={!!form[f.name]} onValueChange={(v) => setForm((p) => ({ ...p, [f.name]: v ? 1 : 0 }))} />
+                <Switch
+                  value={!!form[f.name]}
+                  onValueChange={(v) => {
+                    setError('');
+                    setForm((p) => ({ ...p, [f.name]: v ? 1 : 0 }));
+                  }}
+                />
               </View>
             ) : f.type === 'select' ? (
-              <View style={styles.selectRow}>
-                {f.options.map((opt) => (
-                  <TouchableOpacity
-                    key={opt.value}
-                    onPress={() => setForm((p) => ({ ...p, [f.name]: opt.value }))}
-                    style={[styles.selectChip, form[f.name] === opt.value && styles.selectChipActive]}
-                  >
-                    <Text style={[styles.selectChipText, form[f.name] === opt.value && styles.selectChipTextActive]}>{opt.label}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.selectRow}>
+                {(f.options || []).map((opt) => {
+                  const optVal = opt.value !== undefined ? opt.value : opt.id;
+                  const optLabel = opt.label !== undefined ? opt.label : (opt.name || opt.short_code);
+                  const isSelected = String(form[f.name]) === String(optVal);
+                  return (
+                    <TouchableOpacity
+                      key={String(optVal)}
+                      onPress={() => {
+                        setError('');
+                        setForm((p) => ({ ...p, [f.name]: optVal }));
+                      }}
+                      style={[styles.selectChip, isSelected && styles.selectChipActive]}
+                    >
+                      <Text style={[styles.selectChipText, isSelected && styles.selectChipTextActive]}>{optLabel}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
             ) : (
               <TextInput
                 value={String(form[f.name] ?? '')}
-                onChangeText={(v) => setForm((p) => ({ ...p, [f.name]: v }))}
+                onChangeText={(v) => {
+                  setError('');
+                  setForm((p) => ({ ...p, [f.name]: v }));
+                }}
                 keyboardType={f.keyboardType || 'default'}
-                style={formStyles.input}
+                placeholder={f.placeholder || `Enter ${f.label.replace(/\*$/, '').trim()}`}
+                placeholderTextColor={colors.inkMuted}
+                style={[formStyles.input, { color: colors.ink }]}
               />
             )}
           </View>
@@ -178,14 +293,23 @@ export function EntityListScreen({ queryKey, api, title, fields, renderTitle, re
           }
         >
           <View style={styles.detailBox}>
-            {fields.map((f) => (
-              <View key={f.name} style={styles.detailRow}>
-                <Text style={styles.detailLabel}>{f.label}:</Text>
-                <Text style={styles.detailVal}>
-                  {f.type === 'switch' ? (Number(viewItem[f.name] ?? 1) ? 'Active' : 'Inactive') : String(viewItem[f.name] ?? '-')}
-                </Text>
-              </View>
-            ))}
+            {fields.map((f) => {
+              let val = viewItem[f.name];
+              if (f.type === 'switch') {
+                val = Number(val ?? 1) ? 'Active' : 'Inactive';
+              } else if (f.type === 'select' && f.options) {
+                const opt = f.options.find(
+                  (o) => String(o.value !== undefined ? o.value : o.id) === String(val)
+                );
+                if (opt) val = opt.label || opt.name || val;
+              }
+              return (
+                <View key={f.name} style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>{f.label.replace(/\*$/, '').trim()}:</Text>
+                  <Text style={styles.detailVal}>{val !== null && val !== undefined && val !== '' ? String(val) : '-'}</Text>
+                </View>
+              );
+            })}
           </View>
         </FormModal>
       )}
@@ -225,7 +349,47 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   topRightBtnText: { color: colors.gold, fontWeight: '700', fontSize: 12 },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.borderSoft,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    marginHorizontal: 12,
+    marginTop: 10,
+    marginBottom: 4,
+    height: 42,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 13,
+    color: colors.ink,
+    paddingVertical: 6,
+  },
+  clearSearchBtn: {
+    padding: 6,
+  },
+  clearSearchText: {
+    color: colors.inkMuted,
+    fontSize: 14,
+    fontWeight: '700',
+  },
   empty: { textAlign: 'center', color: colors.inkMuted, marginTop: 40 },
+  noResultsBox: { alignItems: 'center', marginTop: 30 },
+  resetSearchBtn: {
+    marginTop: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: colors.navbar,
+  },
+  resetSearchBtnText: {
+    color: colors.gold,
+    fontWeight: '700',
+    fontSize: 12,
+  },
   row: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderRadius: 10, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: colors.borderSoft },
   rowTitle: { fontWeight: '600', color: colors.ink, fontSize: 14 },
   rowSubtitle: { color: colors.inkMuted, fontSize: 12, marginTop: 2 },
