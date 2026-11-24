@@ -45,6 +45,23 @@ export const stockAdjustmentsApi = {
   create: async (data) => (await apiClient.post('/stock-adjustments', data)).data,
 };
 
+export const vanStockApi = {
+  issue: async (data) => (await apiClient.post('/van-stock/issue', data)).data,
+  returnStock: async (data) => (await apiClient.post('/van-stock/return', data)).data,
+  pending: async (employeeId) => (await apiClient.get(`/van-stock/${employeeId}`)).data,
+  eligibleOrders: async (type) => (await apiClient.get('/van-stock/eligible-orders', { params: { type } })).data,
+};
+
+export const vanStockIssuesApi = {
+  list: async (employeeId) => (await apiClient.get('/van-stock/issues', { params: employeeId ? { employee_id: employeeId } : {} })).data,
+  get: async (id) => (await apiClient.get(`/van-stock/issues/${id}`)).data,
+  detail: async (ids) => {
+    const params = { detail: 1 };
+    if (ids?.length) params.ids = ids.join(',');
+    return (await apiClient.get('/van-stock/issues', { params })).data;
+  },
+};
+
 export const stockHubApi = {
   list: async (params = {}) => (await apiClient.get('/stock-hub', { params })).data,
   lowStock: async () => (await apiClient.get('/stock-hub/low-stock')).data,

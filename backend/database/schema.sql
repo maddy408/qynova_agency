@@ -515,6 +515,7 @@ CREATE TABLE IF NOT EXISTS purchase_request_items (
   purchase_request_id INT UNSIGNED NOT NULL,
   item_id INT UNSIGNED NOT NULL,
   qty DECIMAL(12,3) NOT NULL,
+  issued_qty DECIMAL(12,3) NOT NULL DEFAULT 0.000,
   rate DECIMAL(12,2) NOT NULL DEFAULT 0,
   CONSTRAINT fk_pri_request FOREIGN KEY (purchase_request_id) REFERENCES purchase_requests(id) ON DELETE CASCADE,
   CONSTRAINT fk_pri_item FOREIGN KEY (item_id) REFERENCES items(id)
@@ -1097,6 +1098,7 @@ CREATE TABLE IF NOT EXISTS customer_prebooking_items (
   prebooking_id INT UNSIGNED NOT NULL,
   item_id INT UNSIGNED NOT NULL,
   qty DECIMAL(12,3) NOT NULL,
+  issued_qty DECIMAL(12,3) NOT NULL DEFAULT 0.000,
   rate DECIMAL(12,2) NOT NULL DEFAULT 0,
   tax_percent DECIMAL(5,2) NOT NULL DEFAULT 0,
   CONSTRAINT fk_cpbi_prebooking FOREIGN KEY (prebooking_id) REFERENCES customer_prebookings(id) ON DELETE CASCADE,
