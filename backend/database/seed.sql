@@ -211,3 +211,9 @@ INSERT INTO expense_categories (name) VALUES
 ('Packing Material'), ('Maintenance'), ('Miscellaneous')
 ON DUPLICATE KEY UPDATE name = VALUES(name);
 
+INSERT INTO pricing_types (name, code, is_default) VALUES
+('Normal', 'normal', 1),
+('Retail', 'retail', 0),
+('Wholesale', 'wholesale', 0)
+ON DUPLICATE KEY UPDATE name = VALUES(name);
+

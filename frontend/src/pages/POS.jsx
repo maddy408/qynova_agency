@@ -1347,7 +1347,8 @@ export function POS() {
           {showCustomerDropdown && (
             <div
               ref={customerDropdownRef}
-              className="absolute left-3 right-3 top-[calc(100%-4px)] z-40 rounded-xl border border-[#CBD5E1] bg-white shadow-soft-lg overflow-x-auto max-h-52 overflow-y-auto scrollbar-thin"
+              className="absolute left-3 right-3 top-[calc(100%-4px)] z-40 rounded-xl border border-[#CBD5E1] bg-white shadow-soft-lg overflow-x-auto max-h-52 overflow-y-auto overscroll-contain touch-pan-y scrollbar-thin select-auto"
+              style={{ WebkitOverflowScrolling: 'touch' }}
             >
               <table className="w-full text-xs text-left">
                 <thead className="sticky top-0 bg-[#F1F5F9] border-b border-[#CBD5E1] z-10">
@@ -1366,10 +1367,7 @@ export function POS() {
                     return (
                       <tr
                         key={c.id}
-                        onMouseDown={(e) => {
-                          e.preventDefault();
-                          selectCustomer(c);
-                        }}
+                        onClick={() => selectCustomer(c)}
                         onMouseMove={() => {
                           if (customerSelectedIndex !== index) setCustomerSelectedIndex(index);
                         }}
@@ -1513,7 +1511,8 @@ export function POS() {
           {showProductDropdown && (
             <div
               ref={productDropdownRef}
-              className="absolute left-3 right-3 top-[calc(100%-4px)] z-40 rounded-xl border border-[#CBD5E1] bg-white shadow-soft-lg overflow-x-auto max-h-52 overflow-y-auto scrollbar-thin"
+              className="absolute left-3 right-3 top-[calc(100%-4px)] z-40 rounded-xl border border-[#CBD5E1] bg-white shadow-soft-lg overflow-x-auto max-h-52 overflow-y-auto overscroll-contain touch-pan-y scrollbar-thin select-auto"
+              style={{ WebkitOverflowScrolling: 'touch' }}
             >
               <table className="w-full text-xs text-left">
                 <thead className="sticky top-0 bg-[#F1F5F9] border-b border-[#CBD5E1] z-10">
@@ -1536,10 +1535,7 @@ export function POS() {
                     return (
                       <tr
                         key={item.id}
-                        onMouseDown={(e) => {
-                          e.preventDefault();
-                          addItem(item);
-                        }}
+                        onClick={() => addItem(item)}
                         onMouseMove={() => {
                           if (productSelectedIndex !== index) setProductSelectedIndex(index);
                         }}

@@ -5,7 +5,7 @@ import {
   Users, Truck, MapPin, Building2, CheckCircle2, Power, Edit2, Trash2, Search, Plus, Phone, CreditCard, Tag,
   ClipboardList, ShoppingBag, Receipt, FileSpreadsheet, Upload
 } from 'lucide-react';
-import { routesApi, citiesApi, customersApi, suppliersApi } from '../api/parties';
+import { routesApi, citiesApi, customersApi, suppliersApi, pricingTypesApi } from '../api/parties';
 import { isValidPhone, isValidGstin } from '../utils/validators';
 import { routeSuppliersApi } from '../api/purchasing';
 import { Tabs } from '../components/Tabs';

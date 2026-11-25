@@ -26,11 +26,17 @@ export const customersApi = {
     form.append('file', { uri: pickedFile.uri, type: pickedFile.type || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', name: pickedFile.name || 'import.xlsx' });
     return (await apiClient.post('/customers/import/preview', form, { headers: { 'Content-Type': 'multipart/form-data' } })).data;
   },
-  async importCommit(pickedFile) {
+  async importCommit(pickedFile, autoCreatePricingTypes = true) {
     const form = new FormData();
     form.append('file', { uri: pickedFile.uri, type: pickedFile.type || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', name: pickedFile.name || 'import.xlsx' });
+    form.append('auto_create_pricing_types', autoCreatePricingTypes ? '1' : '0');
     return (await apiClient.post('/customers/import/commit', form, { headers: { 'Content-Type': 'multipart/form-data' } })).data;
   },
+};
+
+export const pricingTypesApi = {
+  list: async () => (await apiClient.get('/pricing-types')).data,
+  create: async (data) => (await apiClient.post('/pricing-types', data)).data,
 };
 export const suppliersApi = {
   ...makeCrud('/suppliers'),

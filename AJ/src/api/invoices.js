@@ -1,7 +1,12 @@
 import { apiClient } from './client';
 
 export const invoicesApi = {
-  list: async (status) => (await apiClient.get('/invoices', { params: status ? { status } : {} })).data,
+  list: async (paramsOrStatus) => {
+    const params = typeof paramsOrStatus === 'string'
+      ? { status: paramsOrStatus }
+      : (paramsOrStatus || {});
+    return (await apiClient.get('/invoices', { params })).data;
+  },
   get: async (id) => (await apiClient.get(`/invoices/${id}`)).data,
   create: async (data) => (await apiClient.post('/invoices', data)).data,
   update: async (id, data) => (await apiClient.put(`/invoices/${id}`, data)).data,
@@ -9,6 +14,7 @@ export const invoicesApi = {
   complete: async (id, payments) => (await apiClient.post(`/invoices/${id}/complete`, { payments })).data,
   print: async (id) => (await apiClient.get(`/invoices/${id}/print`)).data,
   cancel: async (id, reason) => (await apiClient.post(`/invoices/${id}/cancel`, { reason })).data,
+  deleteCompleted: async (id, reason) => (await apiClient.post(`/invoices/${id}/delete`, { reason })).data,
   editCompleted: async (id, data) => (await apiClient.put(`/invoices/${id}/edit`, data)).data,
   returnableItems: async (id) => (await apiClient.get(`/invoices/${id}/returnable-items`)).data,
 

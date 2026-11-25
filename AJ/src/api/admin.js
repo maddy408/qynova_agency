@@ -29,6 +29,8 @@ export const settingsApi = {
   updateFreeQty: async (data) => (await apiClient.put('/settings/free-qty', data)).data,
   getSequences: async () => (await apiClient.get('/settings/sequences')).data,
   updateSequence: async (id, prefix) => (await apiClient.put(`/settings/sequences/${id}`, { prefix })).data,
+  getPosPopup: async () => (await apiClient.get('/settings/pos-popup')).data,
+  updatePosPopup: async (data) => (await apiClient.put('/settings/pos-popup', data)).data,
 };
 
 function reportUrl(path, params) {

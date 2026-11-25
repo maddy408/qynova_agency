@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { useState, useMemo } from 'react';
+import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, Alert, ScrollView } from 'react-native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { customerPrebookingsApi, purchaseRequestsApi, routeSuppliersApi } from '../../api/purchasing';
 import { customersApi, suppliersApi, routesApi } from '../../api/parties';
@@ -11,14 +11,39 @@ import { SelectField } from '../../components/SelectField';
 import { ItemLineEditor } from '../../components/ItemLineEditor';
 import { SegmentedTabs } from '../../components/SegmentedTabs';
 import { Icon } from '../../components/Icon';
+import { downloadReportPdf } from '../../utils/pdfExport';
 import { colors } from '../../theme/colors';
 import { usePermission } from '../../hooks/useAuth';
 
-const PB_STATUS_COLOR = { pending: colors.warning, confirmed: colors.gold, processing: colors.gold, ready: colors.success, completed: colors.success, cancelled: colors.danger };
-const PR_STATUS_COLOR = { open: colors.warning, approved: colors.gold, partially_received: colors.gold, converted_to_grn: colors.success, cancelled: colors.danger };
+const PB_STATUS_COLOR = {
+  pending: colors.warning,
+  confirmed: colors.gold,
+  processing: colors.gold,
+  ready: colors.success,
+  completed: colors.success,
+  cancelled: colors.danger,
+};
+
+const PREBOOKING_NEXT_STATUS = {
+  pending: ['confirmed', 'cancelled'],
+  confirmed: ['processing', 'cancelled'],
+  processing: ['ready', 'cancelled'],
+  ready: ['completed', 'cancelled'],
+};
+
+const PR_STATUS_COLOR = {
+  open: colors.warning,
+  approved: colors.gold,
+  partially_received: colors.gold,
+  converted_to_grn: colors.success,
+  cancelled: colors.danger,
+};
+
 const BOOKING_SOURCES = [
-  { id: 'direct', name: 'Direct Walk-in' }, { id: 'salesman', name: 'Salesman' },
-  { id: 'phone', name: 'Phone' }, { id: 'whatsapp', name: 'WhatsApp' },
+  { id: 'direct', name: 'Direct Walk-in' },
+  { id: 'salesman', name: 'Salesman' },
+  { id: 'phone', name: 'Phone' },
+  { id: 'whatsapp', name: 'WhatsApp' },
 ];
 
 function PrebookingFormModal({ visible, onClose }) {
@@ -35,6 +60,7 @@ function PrebookingFormModal({ visible, onClose }) {
   const [customEstimatedTotal, setCustomEstimatedTotal] = useState('');
   const [lines, setLines] = useState([{ key: '1', item_id: null, qty: '1', rate: '' }]);
   const [error, setError] = useState('');
+  const [touched, setTouched] = useState({});
 
   const items = itemsQuery.data || [];
   const validLines = lines.filter((l) => l.item_id);
@@ -56,15 +82,22 @@ function PrebookingFormModal({ visible, onClose }) {
   });
 
   const reset = () => {
-    setCustomerId(null); setRouteId(null); setEmployeeId(null); setBookingSource('direct'); setCustomEstimatedTotal('');
+    setCustomerId(null);
+    setRouteId(null);
+    setEmployeeId(null);
+    setBookingSource('direct');
+    setCustomEstimatedTotal('');
     setLines([{ key: '1', item_id: null, qty: '1', rate: '' }]);
     setError('');
+    setTouched({});
   };
 
   const submit = () => {
+    setTouched({ customer: true, items: true });
     setError('');
-    if (!customerId) return setError('Select a customer.');
-    if (validLines.length === 0) return setError('Add at least one item.');
+    if (!customerId) return setError('Please select a customer.');
+    if (validLines.length === 0) return setError('Please add at least one item.');
+
     createMutation.mutate({
       customer_id: customerId,
       route_id: routeId,
@@ -95,21 +128,36 @@ function PrebookingFormModal({ visible, onClose }) {
         </>
       }
     >
-      <SelectField label="Customer" required value={customerId} options={customersQuery.data || []} labelKey="ledger_name" onChange={setCustomerId} />
-      <SelectField label="Booking Source" value={bookingSource} options={BOOKING_SOURCES} onChange={setBookingSource} />
-      <SelectField label="Route" value={routeId} options={routesQuery.data || []} onChange={setRouteId} />
-      <SelectField label="Salesman / Employee" value={employeeId} options={usersQuery.data || []} onChange={setEmployeeId} />
+      <SelectField
+        label="Customer *"
+        required
+        value={customerId}
+        options={customersQuery.data || []}
+        labelKey="ledger_name"
+        onChange={(v) => { setError(''); setCustomerId(v); }}
+      />
+      {touched.customer && !customerId ? (
+        <Text style={[formStyles.error, { marginTop: -4, marginBottom: 8 }]}>Customer is required.</Text>
+      ) : null}
 
-      <Text style={formStyles.label}>Items</Text>
+      <SelectField label="Booking Source" value={bookingSource} options={BOOKING_SOURCES} onChange={setBookingSource} />
+      <SelectField label="Route (Optional)" value={routeId} options={routesQuery.data || []} onChange={setRouteId} />
+      <SelectField label="Salesman / Employee (Optional)" value={employeeId} options={usersQuery.data || []} onChange={setEmployeeId} />
+
+      <Text style={formStyles.label}>Items *</Text>
       <ItemLineEditor lines={lines} setLines={setLines} items={items} />
+      {touched.items && validLines.length === 0 ? (
+        <Text style={[formStyles.error, { marginTop: 4, marginBottom: 8 }]}>At least one item is required.</Text>
+      ) : null}
 
       <Text style={formStyles.label}>Estimated Total (Rs.) (Editable)</Text>
       <TextInput
         keyboardType="numeric"
         value={customEstimatedTotal !== '' ? customEstimatedTotal : autoEstimatedTotal}
         onChangeText={setCustomEstimatedTotal}
-        style={formStyles.input}
+        style={[formStyles.input, { color: colors.ink }]}
         placeholder={autoEstimatedTotal}
+        placeholderTextColor={colors.inkMuted}
       />
 
       <View style={styles.totalsBox}>
@@ -136,6 +184,7 @@ function RequestFormModal({ visible, onClose }) {
   const [supplierId, setSupplierId] = useState(null);
   const [lines, setLines] = useState([{ key: '1', item_id: null, qty: '1', rate: '' }]);
   const [error, setError] = useState('');
+  const [touched, setTouched] = useState({});
 
   const mappedSuppliersQuery = useQuery({
     queryKey: ['route-suppliers', routeId],
@@ -161,15 +210,19 @@ function RequestFormModal({ visible, onClose }) {
   });
 
   const reset = () => {
-    setRouteId(null); setSupplierId(null);
+    setRouteId(null);
+    setSupplierId(null);
     setLines([{ key: '1', item_id: null, qty: '1', rate: '' }]);
     setError('');
+    setTouched({});
   };
 
   const submit = () => {
+    setTouched({ supplier: true, items: true });
     setError('');
-    if (!supplierId) return setError('Select a supplier.');
-    if (validLines.length === 0) return setError('Add at least one item.');
+    if (!supplierId) return setError('Please select a supplier.');
+    if (validLines.length === 0) return setError('Please add at least one item.');
+
     createMutation.mutate({
       supplier_id: supplierId,
       route_id: routeId,
@@ -197,11 +250,28 @@ function RequestFormModal({ visible, onClose }) {
         </>
       }
     >
-      <SelectField label="Route (optional — filters suppliers)" value={routeId} options={routesQuery.data || []} onChange={(v) => { setRouteId(v); setSupplierId(null); }} />
-      <SelectField label="Supplier" required value={supplierId} options={suppliers} onChange={setSupplierId} />
+      <SelectField
+        label="Route (optional — filters suppliers)"
+        value={routeId}
+        options={routesQuery.data || []}
+        onChange={(v) => { setRouteId(v); setSupplierId(null); }}
+      />
+      <SelectField
+        label="Supplier *"
+        required
+        value={supplierId}
+        options={suppliers}
+        onChange={(v) => { setError(''); setSupplierId(v); }}
+      />
+      {touched.supplier && !supplierId ? (
+        <Text style={[formStyles.error, { marginTop: -4, marginBottom: 8 }]}>Supplier is required.</Text>
+      ) : null}
 
-      <Text style={formStyles.label}>Items</Text>
+      <Text style={formStyles.label}>Items *</Text>
       <ItemLineEditor lines={lines} setLines={setLines} items={items} rateLabel="Purchase Rate" />
+      {touched.items && validLines.length === 0 ? (
+        <Text style={[formStyles.error, { marginTop: 4, marginBottom: 8 }]}>At least one item is required.</Text>
+      ) : null}
 
       <View style={styles.totalsBox}>
         <View style={[styles.totalRow, styles.grandRow]}>
@@ -218,50 +288,182 @@ function RequestFormModal({ visible, onClose }) {
 function PrebookingsTab({ modalVisible, setModalVisible }) {
   const canManageStatus = usePermission('orders.manage_prebooking_status');
   const queryClient = useQueryClient();
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [viewBooking, setViewBooking] = useState(null);
+  const [detailedBooking, setDetailedBooking] = useState(null);
+
   const listQuery = useQuery({ queryKey: ['customer-prebookings'], queryFn: customerPrebookingsApi.list });
+
   const cancelMutation = useMutation({
     mutationFn: customerPrebookingsApi.cancel,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['customer-prebookings'] }),
+    onError: (e) => Alert.alert('Error', friendlyErrorMessage(e)),
   });
+
+  const statusMutation = useMutation({
+    mutationFn: ({ id, status }) => customerPrebookingsApi.setStatus(id, status),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['customer-prebookings'] }),
+    onError: (e) => Alert.alert('Error', friendlyErrorMessage(e)),
+  });
+
   const rows = listQuery.data || [];
+
+  const filteredRows = useMemo(() => {
+    let out = rows;
+    if (statusFilter !== 'all') {
+      out = out.filter((r) => r.status === statusFilter);
+    }
+    const q = search.trim().toLowerCase();
+    if (q) {
+      out = out.filter((r) => {
+        const no = (r.prebooking_no || '').toLowerCase();
+        const cust = (r.customer_name || '').toLowerCase();
+        const phone = (r.customer_phone || '').toLowerCase();
+        const route = (r.route_name || '').toLowerCase();
+        const status = (r.status || '').toLowerCase();
+        return no.includes(q) || cust.includes(q) || phone.includes(q) || route.includes(q) || status.includes(q);
+      });
+    }
+    return out;
+  }, [rows, search, statusFilter]);
+
+  const openView = async (booking) => {
+    setViewBooking(booking);
+    try {
+      const full = await customerPrebookingsApi.get(booking.id);
+      setDetailedBooking(full);
+    } catch {
+      setDetailedBooking(booking);
+    }
+  };
+
+  const handlePrintBooking = (booking) => {
+    const items = booking.items || [];
+    downloadReportPdf({
+      title: `Customer Pre-Booking ${booking.prebooking_no || '#' + booking.id}`,
+      columns: [
+        { header: 'Item', key: 'item_name' },
+        { header: 'Qty', key: 'qty' },
+        { header: 'Rate (Rs.)', key: 'rate' },
+        { header: 'Total (Rs.)', key: 'line_total' },
+      ],
+      data: items.length > 0 ? items.map((i) => ({
+        item_name: i.item_name || i.name || 'Item',
+        qty: String(i.qty || 1),
+        rate: Number(i.rate || 0).toFixed(2),
+        line_total: (Number(i.qty || 1) * Number(i.rate || 0)).toFixed(2),
+      })) : [
+        { item_name: 'Total Items', qty: String(booking.item_count || 1), rate: '-', line_total: Number(booking.estimated_total || 0).toFixed(2) }
+      ],
+    });
+  };
+
+  const nextStatuses = (status) => PREBOOKING_NEXT_STATUS[status] || [];
 
   return (
     <>
+      {/* Search & Filter Bar */}
+      <View style={styles.topActionRow}>
+        <View style={styles.searchBar}>
+          <Icon name="search" size={16} color={colors.inkMuted} style={{ marginRight: 8 }} />
+          <TextInput
+            value={search}
+            onChangeText={setSearch}
+            placeholder="Search booking #, customer, phone..."
+            placeholderTextColor={colors.inkMuted}
+            style={styles.searchInput}
+            autoCapitalize="none"
+          />
+          {search.length > 0 && (
+            <TouchableOpacity onPress={() => setSearch('')} style={styles.clearSearchBtn}>
+              <Text style={styles.clearSearchText}>✕</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+
+      {/* Status Pills */}
+      <View style={styles.filterPillsRow}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 12, gap: 6 }}>
+          {['all', 'pending', 'confirmed', 'processing', 'ready', 'completed', 'cancelled'].map((st) => (
+            <TouchableOpacity
+              key={st}
+              onPress={() => setStatusFilter(st)}
+              style={[styles.filterPill, statusFilter === st && styles.filterPillActive]}
+            >
+              <Text style={[styles.filterPillText, statusFilter === st && styles.filterPillTextActive]}>
+                {st.toUpperCase()}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+
       <FlatList
-        data={rows}
+        data={filteredRows}
         keyExtractor={(r) => String(r.id)}
         contentContainerStyle={{ padding: 12, paddingBottom: 140, flexGrow: 1 }}
         refreshing={listQuery.isFetching}
         onRefresh={listQuery.refetch}
-        ListEmptyComponent={<Text style={styles.empty}>No pre-bookings yet.</Text>}
+        ListEmptyComponent={
+          <View style={styles.noResultsBox}>
+            <Text style={styles.empty}>No pre-bookings found.</Text>
+            {search ? (
+              <TouchableOpacity onPress={() => setSearch('')} style={styles.resetSearchBtn}>
+                <Text style={styles.resetSearchBtnText}>Clear Search</Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        }
         renderItem={({ item: r }) => (
           <View style={styles.card}>
             <View style={styles.cardHeader}>
               <Text style={styles.cardTitle}>{r.prebooking_no}</Text>
-              <Text style={[styles.status, { color: PB_STATUS_COLOR[r.status] }]}>{r.status}</Text>
+              <View style={[styles.statusBadge, { borderColor: PB_STATUS_COLOR[r.status] || colors.borderSoft }]}>
+                <Text style={[styles.statusText, { color: PB_STATUS_COLOR[r.status] || colors.ink }]}>
+                  {r.status.toUpperCase()}
+                </Text>
+              </View>
             </View>
-            <Text style={styles.cardMeta}>{r.customer_name} · {r.item_count} item(s)</Text>
-            {r.route_name ? <Text style={styles.cardMeta}>Route: {r.route_name}</Text> : null}
-            <Text style={styles.cardTotal}>Rs. {Number(r.estimated_total).toFixed(2)}</Text>
+            <Text style={styles.cardSubtitle}>{r.customer_name} {r.customer_phone ? `(${r.customer_phone})` : ''}</Text>
+            <Text style={styles.cardMeta}>
+              {r.booking_date || r.created_at || 'Date N/A'} · {r.item_count} item(s)
+              {r.route_name ? ` · Route: ${r.route_name}` : ''}
+            </Text>
+            <Text style={styles.cardTotal}>Rs. {Number(r.estimated_total || 0).toFixed(2)}</Text>
 
             <View style={styles.cardActions}>
-              <TouchableOpacity onPress={() => setViewBooking(r)} style={styles.actionBtn}>
+              <TouchableOpacity onPress={() => openView(r)} style={styles.actionBtn}>
                 <Icon name="view" size={14} color={colors.ink} style={{ marginRight: 4 }} />
                 <Text style={styles.actionBtnText}>View</Text>
               </TouchableOpacity>
 
-              {canManageStatus && r.status === 'pending' && (
+              <TouchableOpacity onPress={() => handlePrintBooking(r)} style={styles.actionBtn}>
+                <Icon name="printer" size={14} color={colors.gold} style={{ marginRight: 4 }} />
+                <Text style={styles.actionBtnText}>Print</Text>
+              </TouchableOpacity>
+
+              {canManageStatus && nextStatuses(r.status).map((nst) => (
                 <TouchableOpacity
-                  style={styles.actionBtnDanger}
-                  onPress={() => Alert.alert('Cancel pre-booking?', r.prebooking_no, [
-                    { text: 'No' }, { text: 'Yes, cancel', style: 'destructive', onPress: () => cancelMutation.mutate(r.id) },
-                  ])}
+                  key={nst}
+                  style={[styles.actionBtn, nst === 'cancelled' ? styles.actionBtnDanger : styles.actionBtnSuccess]}
+                  onPress={() => {
+                    if (nst === 'cancelled') {
+                      Alert.alert('Cancel pre-booking?', r.prebooking_no, [
+                        { text: 'No', style: 'cancel' },
+                        { text: 'Yes, cancel', style: 'destructive', onPress: () => cancelMutation.mutate(r.id) },
+                      ]);
+                    } else {
+                      statusMutation.mutate({ id: r.id, status: nst });
+                    }
+                  }}
                 >
-                  <Icon name="delete" size={14} color={colors.danger} style={{ marginRight: 4 }} />
-                  <Text style={styles.actionBtnDangerText}>Cancel</Text>
+                  <Text style={nst === 'cancelled' ? styles.actionBtnDangerText : styles.actionBtnSuccessText}>
+                    {nst.toUpperCase()}
+                  </Text>
                 </TouchableOpacity>
-              )}
+              ))}
             </View>
           </View>
         )}
@@ -273,20 +475,46 @@ function PrebookingsTab({ modalVisible, setModalVisible }) {
         <FormModal
           visible
           title={`Pre-Booking: ${viewBooking.prebooking_no}`}
-          onClose={() => setViewBooking(null)}
+          onClose={() => { setViewBooking(null); setDetailedBooking(null); }}
           footer={
-            <TouchableOpacity style={formStyles.primaryBtn} onPress={() => setViewBooking(null)}>
-              <Text style={formStyles.primaryBtnText}>Close</Text>
-            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', gap: 10, width: '100%' }}>
+              <TouchableOpacity
+                style={[formStyles.secondaryBtn, { flex: 1 }]}
+                onPress={() => handlePrintBooking(detailedBooking || viewBooking)}
+              >
+                <Text style={formStyles.secondaryBtnText}>Print / PDF</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[formStyles.primaryBtn, { flex: 1 }]}
+                onPress={() => { setViewBooking(null); setDetailedBooking(null); }}
+              >
+                <Text style={formStyles.primaryBtnText}>Close</Text>
+              </TouchableOpacity>
+            </View>
           }
         >
           <View style={styles.detailBox}>
             <DetailRow label="Pre-Booking #" value={viewBooking.prebooking_no} />
             <DetailRow label="Customer" value={viewBooking.customer_name} />
+            <DetailRow label="Phone" value={viewBooking.customer_phone || '-'} />
             <DetailRow label="Route" value={viewBooking.route_name || '-'} />
-            <DetailRow label="Items Count" value={viewBooking.item_count} />
-            <DetailRow label="Estimated Total" value={`Rs. ${Number(viewBooking.estimated_total).toFixed(2)}`} />
-            <DetailRow label="Status" value={viewBooking.status} />
+            <DetailRow label="Booking Source" value={(viewBooking.booking_source || 'direct').toUpperCase()} />
+            <DetailRow label="Status" value={viewBooking.status.toUpperCase()} />
+            <DetailRow label="Estimated Total" value={`Rs. ${Number(viewBooking.estimated_total || 0).toFixed(2)}`} />
+
+            {detailedBooking?.items && detailedBooking.items.length > 0 && (
+              <View style={{ marginTop: 12 }}>
+                <Text style={[styles.detailLabel, { marginBottom: 6, fontWeight: '700' }]}>Item Lines:</Text>
+                {detailedBooking.items.map((line, idx) => (
+                  <View key={idx} style={styles.itemLineRow}>
+                    <Text style={styles.itemLineName}>{line.item_name || `Item #${line.item_id}`}</Text>
+                    <Text style={styles.itemLineQty}>Qty: {line.qty}</Text>
+                    <Text style={styles.itemLineRate}>@ Rs. {Number(line.rate || 0).toFixed(2)}</Text>
+                    <Text style={styles.itemLineTotal}>Rs. {(Number(line.qty || 0) * Number(line.rate || 0)).toFixed(2)}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
           </View>
         </FormModal>
       )}
@@ -297,43 +525,182 @@ function PrebookingsTab({ modalVisible, setModalVisible }) {
 function RequestsTab({ modalVisible, setModalVisible }) {
   const canApprove = usePermission('orders.approve_purchase_request');
   const queryClient = useQueryClient();
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [viewRequest, setViewRequest] = useState(null);
+  const [detailedRequest, setDetailedRequest] = useState(null);
+
   const listQuery = useQuery({ queryKey: ['purchase-requests'], queryFn: purchaseRequestsApi.list });
+
   const approveMutation = useMutation({
     mutationFn: purchaseRequestsApi.approve,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['purchase-requests'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['purchase-requests'] });
+      Alert.alert('Success', 'Purchase request approved successfully.');
+    },
+    onError: (e) => Alert.alert('Approval Error', friendlyErrorMessage(e)),
   });
+
+  const cancelMutation = useMutation({
+    mutationFn: purchaseRequestsApi.cancel,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['purchase-requests'] }),
+    onError: (e) => Alert.alert('Error', friendlyErrorMessage(e)),
+  });
+
   const rows = listQuery.data || [];
+
+  const filteredRows = useMemo(() => {
+    let out = rows;
+    if (statusFilter !== 'all') {
+      out = out.filter((r) => r.status === statusFilter);
+    }
+    const q = search.trim().toLowerCase();
+    if (q) {
+      out = out.filter((r) => {
+        const no = (r.request_no || '').toLowerCase();
+        const supp = (r.supplier_name || '').toLowerCase();
+        const route = (r.route_name || '').toLowerCase();
+        const status = (r.status || '').toLowerCase();
+        return no.includes(q) || supp.includes(q) || route.includes(q) || status.includes(q);
+      });
+    }
+    return out;
+  }, [rows, search, statusFilter]);
+
+  const openView = async (req) => {
+    setViewRequest(req);
+    try {
+      const full = await purchaseRequestsApi.get(req.id);
+      setDetailedRequest(full);
+    } catch {
+      setDetailedRequest(req);
+    }
+  };
+
+  const handlePrintRequest = (req) => {
+    const items = req.items || [];
+    downloadReportPdf({
+      title: `Purchase Request ${req.request_no || '#' + req.id}`,
+      columns: [
+        { header: 'Item', key: 'item_name' },
+        { header: 'Qty', key: 'qty' },
+        { header: 'Rate (Rs.)', key: 'rate' },
+        { header: 'Total (Rs.)', key: 'line_total' },
+      ],
+      data: items.length > 0 ? items.map((i) => ({
+        item_name: i.item_name || i.name || 'Item',
+        qty: String(i.qty || 1),
+        rate: Number(i.rate || 0).toFixed(2),
+        line_total: (Number(i.qty || 1) * Number(i.rate || 0)).toFixed(2),
+      })) : [
+        { item_name: 'Total Items', qty: String(req.item_count || 1), rate: '-', line_total: Number(req.estimated_total || 0).toFixed(2) }
+      ],
+    });
+  };
 
   return (
     <>
+      {/* Search & Filter Bar */}
+      <View style={styles.topActionRow}>
+        <View style={styles.searchBar}>
+          <Icon name="search" size={16} color={colors.inkMuted} style={{ marginRight: 8 }} />
+          <TextInput
+            value={search}
+            onChangeText={setSearch}
+            placeholder="Search request #, supplier, route..."
+            placeholderTextColor={colors.inkMuted}
+            style={styles.searchInput}
+            autoCapitalize="none"
+          />
+          {search.length > 0 && (
+            <TouchableOpacity onPress={() => setSearch('')} style={styles.clearSearchBtn}>
+              <Text style={styles.clearSearchText}>✕</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+
+      {/* Status Pills */}
+      <View style={styles.filterPillsRow}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 12, gap: 6 }}>
+          {['all', 'open', 'approved', 'partially_received', 'converted_to_grn', 'cancelled'].map((st) => (
+            <TouchableOpacity
+              key={st}
+              onPress={() => setStatusFilter(st)}
+              style={[styles.filterPill, statusFilter === st && styles.filterPillActive]}
+            >
+              <Text style={[styles.filterPillText, statusFilter === st && styles.filterPillTextActive]}>
+                {st.replace(/_/g, ' ').toUpperCase()}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+
       <FlatList
-        data={rows}
+        data={filteredRows}
         keyExtractor={(r) => String(r.id)}
         contentContainerStyle={{ padding: 12, paddingBottom: 140, flexGrow: 1 }}
         refreshing={listQuery.isFetching}
         onRefresh={listQuery.refetch}
-        ListEmptyComponent={<Text style={styles.empty}>No requests yet.</Text>}
+        ListEmptyComponent={
+          <View style={styles.noResultsBox}>
+            <Text style={styles.empty}>No purchase requests found.</Text>
+            {search ? (
+              <TouchableOpacity onPress={() => setSearch('')} style={styles.resetSearchBtn}>
+                <Text style={styles.resetSearchBtnText}>Clear Search</Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        }
         renderItem={({ item: r }) => (
           <View style={styles.card}>
             <View style={styles.cardHeader}>
               <Text style={styles.cardTitle}>{r.request_no}</Text>
-              <Text style={[styles.status, { color: PR_STATUS_COLOR[r.status] }]}>{r.status.replace(/_/g, ' ')}</Text>
+              <View style={[styles.statusBadge, { borderColor: PR_STATUS_COLOR[r.status] || colors.borderSoft }]}>
+                <Text style={[styles.statusText, { color: PR_STATUS_COLOR[r.status] || colors.ink }]}>
+                  {r.status.replace(/_/g, ' ').toUpperCase()}
+                </Text>
+              </View>
             </View>
-            <Text style={styles.cardMeta}>{r.supplier_name} · {r.item_count} item(s)</Text>
-            {r.route_name ? <Text style={styles.cardMeta}>Route: {r.route_name}</Text> : null}
-            <Text style={styles.cardTotal}>Rs. {Number(r.estimated_total).toFixed(2)}</Text>
+            <Text style={styles.cardSubtitle}>{r.supplier_name}</Text>
+            <Text style={styles.cardMeta}>
+              {r.created_at || 'Date N/A'} · {r.item_count} item(s)
+              {r.route_name ? ` · Route: ${r.route_name}` : ''}
+            </Text>
+            <Text style={styles.cardTotal}>Rs. {Number(r.estimated_total || 0).toFixed(2)}</Text>
 
             <View style={styles.cardActions}>
-              <TouchableOpacity onPress={() => setViewRequest(r)} style={styles.actionBtn}>
+              <TouchableOpacity onPress={() => openView(r)} style={styles.actionBtn}>
                 <Icon name="view" size={14} color={colors.ink} style={{ marginRight: 4 }} />
                 <Text style={styles.actionBtnText}>View</Text>
               </TouchableOpacity>
 
+              <TouchableOpacity onPress={() => handlePrintRequest(r)} style={styles.actionBtn}>
+                <Icon name="printer" size={14} color={colors.gold} style={{ marginRight: 4 }} />
+                <Text style={styles.actionBtnText}>Print</Text>
+              </TouchableOpacity>
+
               {canApprove && r.status === 'open' && (
-                <TouchableOpacity style={styles.actionBtnSuccess} onPress={() => approveMutation.mutate(r.id)}>
+                <TouchableOpacity
+                  style={styles.actionBtnSuccess}
+                  onPress={() => approveMutation.mutate(r.id)}
+                  disabled={approveMutation.isPending}
+                >
                   <Icon name="check" size={14} color={colors.success} style={{ marginRight: 4 }} />
                   <Text style={styles.actionBtnSuccessText}>Approve</Text>
+                </TouchableOpacity>
+              )}
+
+              {r.status === 'open' && (
+                <TouchableOpacity
+                  style={styles.actionBtnDanger}
+                  onPress={() => Alert.alert('Cancel Request?', r.request_no, [
+                    { text: 'No', style: 'cancel' },
+                    { text: 'Yes, cancel', style: 'destructive', onPress: () => cancelMutation.mutate(r.id) },
+                  ])}
+                >
+                  <Text style={styles.actionBtnDangerText}>Cancel</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -347,11 +714,22 @@ function RequestsTab({ modalVisible, setModalVisible }) {
         <FormModal
           visible
           title={`Request: ${viewRequest.request_no}`}
-          onClose={() => setViewRequest(null)}
+          onClose={() => { setViewRequest(null); setDetailedRequest(null); }}
           footer={
-            <TouchableOpacity style={formStyles.primaryBtn} onPress={() => setViewRequest(null)}>
-              <Text style={formStyles.primaryBtnText}>Close</Text>
-            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', gap: 10, width: '100%' }}>
+              <TouchableOpacity
+                style={[formStyles.secondaryBtn, { flex: 1 }]}
+                onPress={() => handlePrintRequest(detailedRequest || viewRequest)}
+              >
+                <Text style={formStyles.secondaryBtnText}>Print / PDF</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[formStyles.primaryBtn, { flex: 1 }]}
+                onPress={() => { setViewRequest(null); setDetailedRequest(null); }}
+              >
+                <Text style={formStyles.primaryBtnText}>Close</Text>
+              </TouchableOpacity>
+            </View>
           }
         >
           <View style={styles.detailBox}>
@@ -359,8 +737,22 @@ function RequestsTab({ modalVisible, setModalVisible }) {
             <DetailRow label="Supplier" value={viewRequest.supplier_name} />
             <DetailRow label="Route" value={viewRequest.route_name || '-'} />
             <DetailRow label="Items Count" value={viewRequest.item_count} />
-            <DetailRow label="Estimated Total" value={`Rs. ${Number(viewRequest.estimated_total).toFixed(2)}`} />
-            <DetailRow label="Status" value={viewRequest.status} />
+            <DetailRow label="Estimated Total" value={`Rs. ${Number(viewRequest.estimated_total || 0).toFixed(2)}`} />
+            <DetailRow label="Status" value={viewRequest.status.replace(/_/g, ' ').toUpperCase()} />
+
+            {detailedRequest?.items && detailedRequest.items.length > 0 && (
+              <View style={{ marginTop: 12 }}>
+                <Text style={[styles.detailLabel, { marginBottom: 6, fontWeight: '700' }]}>Item Lines:</Text>
+                {detailedRequest.items.map((line, idx) => (
+                  <View key={idx} style={styles.itemLineRow}>
+                    <Text style={styles.itemLineName}>{line.item_name || `Item #${line.item_id}`}</Text>
+                    <Text style={styles.itemLineQty}>Qty: {line.qty}</Text>
+                    <Text style={styles.itemLineRate}>@ Rs. {Number(line.rate || 0).toFixed(2)}</Text>
+                    <Text style={styles.itemLineTotal}>Rs. {(Number(line.qty || 0) * Number(line.rate || 0)).toFixed(2)}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
           </View>
         </FormModal>
       )}
@@ -377,7 +769,10 @@ export function OrdersScreen() {
       <View style={styles.topHeader}>
         <View style={{ flex: 1 }}>
           <SegmentedTabs
-            tabs={[{ key: 'prebookings', label: 'Customer Pre-Bookings' }, { key: 'requests', label: 'Supplier Requests' }]}
+            tabs={[
+              { key: 'prebookings', label: 'Customer Pre-Bookings' },
+              { key: 'requests', label: 'Supplier Requests' },
+            ]}
             active={tab}
             onChange={(t) => { setTab(t); setModalVisible(false); }}
           />
@@ -427,14 +822,73 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   topRightBtnText: { color: colors.gold, fontWeight: '700', fontSize: 12 },
-  empty: { textAlign: 'center', color: colors.inkMuted, marginTop: 40 },
+  topActionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    marginTop: 10,
+    marginBottom: 4,
+    gap: 8,
+  },
+  searchBar: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.borderSoft,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    height: 40,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 13,
+    color: colors.ink,
+    paddingVertical: 6,
+  },
+  clearSearchBtn: { padding: 4 },
+  clearSearchText: { color: colors.inkMuted, fontSize: 13, fontWeight: '700' },
+  filterPillsRow: { marginVertical: 6 },
+  filterPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 16,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.borderSoft,
+  },
+  filterPillActive: {
+    backgroundColor: colors.navbar,
+    borderColor: colors.navbar,
+  },
+  filterPillText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.inkMuted,
+  },
+  filterPillTextActive: {
+    color: colors.gold,
+  },
+  empty: { textAlign: 'center', color: colors.inkMuted, marginTop: 40, fontSize: 13 },
+  noResultsBox: { alignItems: 'center', marginTop: 30 },
+  resetSearchBtn: {
+    marginTop: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: colors.navbar,
+  },
+  resetSearchBtnText: { color: colors.gold, fontWeight: '700', fontSize: 12 },
   card: { backgroundColor: colors.card, borderRadius: 12, padding: 14, marginBottom: 10, borderWidth: 1, borderColor: colors.borderSoft },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between' },
-  cardTitle: { fontWeight: '700', color: colors.ink },
-  status: { fontWeight: '700', fontSize: 11, textTransform: 'uppercase' },
+  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  cardTitle: { fontWeight: '700', color: colors.ink, fontSize: 14 },
+  cardSubtitle: { fontWeight: '600', color: colors.inkSoft, fontSize: 13, marginTop: 2 },
+  statusBadge: { borderWidth: 1, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
+  statusText: { fontWeight: '700', fontSize: 10 },
   cardMeta: { color: colors.inkMuted, fontSize: 12, marginTop: 4 },
-  cardTotal: { fontWeight: '700', color: colors.ink, marginTop: 6 },
-  cardActions: { flexDirection: 'row', gap: 8, marginTop: 10, paddingTop: 8, borderTopWidth: 1, borderTopColor: colors.borderSoft },
+  cardTotal: { fontWeight: '800', color: colors.ink, fontSize: 14, marginTop: 6 },
+  cardActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10, paddingTop: 8, borderTopWidth: 1, borderTopColor: colors.borderSoft },
   actionBtn: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, backgroundColor: colors.page, borderWidth: 1, borderColor: colors.borderSoft },
   actionBtnText: { color: colors.ink, fontWeight: '600', fontSize: 12 },
   actionBtnDanger: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: colors.danger },
@@ -452,4 +906,16 @@ const styles = StyleSheet.create({
   detailRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: colors.borderSoft },
   detailLabel: { fontWeight: '600', color: colors.inkMuted, fontSize: 13 },
   detailVal: { fontWeight: '700', color: colors.ink, fontSize: 13 },
+  itemLineRow: {
+    paddingVertical: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderSoft,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  itemLineName: { fontSize: 12, fontWeight: '700', color: colors.ink, flex: 2 },
+  itemLineQty: { fontSize: 12, color: colors.inkMuted, flex: 1, textAlign: 'center' },
+  itemLineRate: { fontSize: 12, color: colors.inkMuted, flex: 1.2, textAlign: 'right' },
+  itemLineTotal: { fontSize: 12, fontWeight: '700', color: colors.primary, flex: 1.2, textAlign: 'right' },
 });

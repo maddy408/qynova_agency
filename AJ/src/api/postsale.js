@@ -41,5 +41,6 @@ export const expensesApi = {
 export const otherIncomeApi = {
   list: async () => (await apiClient.get('/other-income')).data,
   create: async (data) => (await apiClient.post('/other-income', data)).data,
+  update: async (id, data) => (await apiClient.put(`/other-income/${id}`, data)).data,
   remove: async (id) => (await apiClient.delete(`/other-income/${id}`)).data,
 };

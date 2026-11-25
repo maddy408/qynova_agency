@@ -213,6 +213,10 @@ $router->get('/api/customers/import/template', fn () => $customerImport->importT
 $router->post('/api/customers/import/preview', fn () => $customerImport->importPreview());
 $router->post('/api/customers/import/commit', fn () => $customerImport->importCommit());
 
+$pricingTypes = new \App\Controllers\PricingTypeController($pdo);
+$router->get('/api/pricing-types', fn () => $pricingTypes->index());
+$router->post('/api/pricing-types', fn () => $pricingTypes->store());
+
 $suppliers = new BranchScopedCrudController(
     $pdo, 'suppliers',
     ['branch_id', 'name', 'phone', 'address', 'gstin', 'opening_balance', 'status'],

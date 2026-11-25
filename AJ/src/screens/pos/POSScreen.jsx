@@ -609,7 +609,7 @@ export function POSScreen() {
 }
 
 const styles = StyleSheet.create({
-  customerListMaxHeight: { maxHeight: 200 },
+  customerListMaxHeight: { maxHeight: 240 },
   customerPagerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8, paddingHorizontal: 4, borderTopWidth: 1, borderTopColor: colors.borderSoft },
   customerPagerBtn: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, backgroundColor: colors.page },
   customerPagerBtnDisabled: { opacity: 0.4 },

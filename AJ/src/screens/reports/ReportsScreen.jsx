@@ -11,12 +11,12 @@ import { buildXlsxBase64 } from '../../utils/excelWriter';
 import { colors } from '../../theme/colors';
 
 const REPORTS = [
-  { key: 'credit_outstanding', label: 'Credit Outstanding', fetch: reportsApi.creditOutstanding },
-  { key: 'low_stock', label: 'Low Stock', fetch: reportsApi.lowStock },
-  { key: 'gst_register', label: 'GST Register (this month)', fetch: () => reportsApi.gstRegister({}) },
-  { key: 'purchase_register', label: 'Purchase Register (this month)', fetch: () => reportsApi.purchaseRegister({}) },
-  { key: 'expense_income', label: 'Expense vs Income (this month)', fetch: () => reportsApi.expenseIncome({}) },
-  { key: 'profit', label: 'Profit (this month)', fetch: () => reportsApi.profit({}) },
+  { key: 'credit_outstanding', label: 'Credit Outstanding', fetch: (params) => reportsApi.creditOutstanding(params) },
+  { key: 'low_stock', label: 'Low Stock', fetch: (params) => reportsApi.lowStock(params) },
+  { key: 'gst_register', label: 'GST Register', fetch: (params) => reportsApi.gstRegister(params) },
+  { key: 'purchase_register', label: 'Purchase Register', fetch: (params) => reportsApi.purchaseRegister(params) },
+  { key: 'expense_income', label: 'Expense vs Income', fetch: (params) => reportsApi.expenseIncome(params) },
+  { key: 'profit', label: 'Profit', fetch: (params) => reportsApi.profit(params) },
 ];
 
 const SALES_REPORTS = [
@@ -334,7 +334,15 @@ function titleCase(key) {
 }
 
 function ReportDetail({ report, onBack }) {
-  const query = useQuery({ queryKey: ['report', report.key], queryFn: report.fetch });
+  const [from, setFrom] = useState(monthStartStr());
+  const [to, setTo] = useState(todayStr());
+  const [appliedFrom, setAppliedFrom] = useState(monthStartStr());
+  const [appliedTo, setAppliedTo] = useState(todayStr());
+
+  const query = useQuery({
+    queryKey: ['report', report.key, appliedFrom, appliedTo],
+    queryFn: () => report.fetch({ from: appliedFrom, to: appliedTo }),
+  });
   const rows = useMemo(() => (Array.isArray(query.data) ? query.data : query.data ? [query.data] : []), [query.data]);
   const columns = useMemo(() => {
     const map = {};
@@ -344,11 +352,30 @@ function ReportDetail({ report, onBack }) {
   const [selectedKeys, setSelectedKeys] = useState([]);
   const [busy, setBusy] = useState(false);
 
+  const applyFilters = () => {
+    if (from && to && from > to) {
+      Alert.alert('Invalid Date Range', 'From date cannot be later than To date.');
+      return;
+    }
+    setAppliedFrom(from);
+    setAppliedTo(to);
+    setSelectedKeys([]);
+  };
+
+  const clearFilters = () => {
+    setFrom(monthStartStr());
+    setTo(todayStr());
+    setAppliedFrom(monthStartStr());
+    setAppliedTo(todayStr());
+    setSelectedKeys([]);
+  };
+
   const toggleSelect = (idx) => setSelectedKeys((prev) => (prev.includes(idx) ? prev.filter((x) => x !== idx) : [...prev, idx]));
   const selectAll = () => setSelectedKeys(rows.map((_, idx) => idx));
   const clearSelection = () => setSelectedKeys([]);
   const selectedRows = selectedKeys.map((idx) => rows[idx]);
   const fileBase = report.key.replace(/-/g, '_');
+  const filtersText = `From ${appliedFrom} to ${appliedTo}`;
 
   const runExport = async (fn) => {
     setBusy(true);
@@ -365,7 +392,7 @@ function ReportDetail({ report, onBack }) {
     const base64 = buildXlsxBase64(columns, rows, report.label);
     await saveAndShareBase64(base64, `${fileBase}.xlsx`, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
   });
-  const exportPdf = () => runExport(() => downloadReportPdf({ title: report.label, filtersText: 'Current data', columns, rows }, `${fileBase}.pdf`));
+  const exportPdf = () => runExport(() => downloadReportPdf({ title: report.label, filtersText, columns, rows }, `${fileBase}.pdf`));
   const exportSelectedExcel = () => {
     if (selectedKeys.length === 0) return Alert.alert('Nothing selected', 'Select at least one row to export.');
     runExport(async () => {
@@ -375,7 +402,7 @@ function ReportDetail({ report, onBack }) {
   };
   const exportSelectedPdf = () => {
     if (selectedKeys.length === 0) return Alert.alert('Nothing selected', 'Select at least one row to export.');
-    runExport(() => downloadReportPdf({ title: `${report.label} — Selected`, filtersText: `${selectedRows.length} row(s) selected`, columns, rows: selectedRows }, `${fileBase}_selected.pdf`));
+    runExport(() => downloadReportPdf({ title: `${report.label} — Selected`, filtersText: `${selectedRows.length} row(s) selected · ${filtersText}`, columns, rows: selectedRows }, `${fileBase}_selected.pdf`));
   };
 
   return (
@@ -388,30 +415,40 @@ function ReportDetail({ report, onBack }) {
         <Text style={styles.detailTitle}>{report.label}</Text>
       </View>
 
-      {rows.length > 0 && (
-        <>
-          <View style={styles.toolbar}>
-            <ToolbarBtn label="Export Excel" onPress={exportExcel} disabled={busy} />
-            <ToolbarBtn label="Export PDF" onPress={exportPdf} disabled={busy} />
-          </View>
-          <View style={styles.selectionBar}>
-            <Text style={styles.selectionText}>{selectedKeys.length > 0 ? `${selectedKeys.length} selected` : `${rows.length} row(s)`}</Text>
-            <View style={styles.selectionActions}>
-              <TouchableOpacity onPress={selectAll}><Text style={styles.linkBtn}>Select All</Text></TouchableOpacity>
-              <TouchableOpacity onPress={clearSelection}><Text style={styles.linkBtn}>Clear Selection</Text></TouchableOpacity>
-            </View>
-          </View>
-          {selectedKeys.length > 0 && (
-            <View style={styles.selectionBar}>
-              <TouchableOpacity style={styles.selectedExportBtn} onPress={exportSelectedExcel} disabled={busy}>
-                <Text style={styles.selectedExportText}>Export Selected Excel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.selectedExportBtn} onPress={exportSelectedPdf} disabled={busy}>
-                <Text style={styles.selectedExportText}>Export Selected PDF</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </>
+      <View style={styles.filterBar}>
+        <View style={styles.dateField}>
+          <Text style={styles.filterLabel}>From</Text>
+          <TextInput value={from} onChangeText={setFrom} placeholder="YYYY-MM-DD" style={styles.dateInput} />
+        </View>
+        <View style={styles.dateField}>
+          <Text style={styles.filterLabel}>To</Text>
+          <TextInput value={to} onChangeText={setTo} placeholder="YYYY-MM-DD" style={styles.dateInput} />
+        </View>
+        <TouchableOpacity style={styles.applyBtn} onPress={applyFilters}><Text style={styles.applyBtnText}>Apply</Text></TouchableOpacity>
+        <TouchableOpacity style={styles.clearBtn} onPress={clearFilters}><Text style={styles.clearBtnText}>Clear</Text></TouchableOpacity>
+      </View>
+
+      <View style={styles.toolbar}>
+        <ToolbarBtn label="Export Excel" onPress={exportExcel} disabled={busy} />
+        <ToolbarBtn label="Export PDF" onPress={exportPdf} disabled={busy} />
+      </View>
+
+      <View style={styles.selectionBar}>
+        <Text style={styles.selectionText}>{selectedKeys.length > 0 ? `${selectedKeys.length} selected` : `${rows.length} row(s)`}</Text>
+        <View style={styles.selectionActions}>
+          <TouchableOpacity onPress={selectAll}><Text style={styles.linkBtn}>Select All</Text></TouchableOpacity>
+          <TouchableOpacity onPress={clearSelection}><Text style={styles.linkBtn}>Clear Selection</Text></TouchableOpacity>
+        </View>
+      </View>
+      {selectedKeys.length > 0 && (
+        <View style={styles.selectionBar}>
+          <TouchableOpacity style={styles.selectedExportBtn} onPress={exportSelectedExcel} disabled={busy}>
+            <Text style={styles.selectedExportText}>Export Selected Excel</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.selectedExportBtn} onPress={exportSelectedPdf} disabled={busy}>
+            <Text style={styles.selectedExportText}>Export Selected PDF</Text>
+          </TouchableOpacity>
+        </View>
       )}
 
       {rows.length === 0 ? (

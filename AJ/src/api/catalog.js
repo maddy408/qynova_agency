@@ -69,3 +69,8 @@ export const itemsApi = {
     return (await apiClient.post('/items/import/commit', form, { headers: { 'Content-Type': 'multipart/form-data' } })).data;
   },
 };
+
+export const pricingApi = {
+  list: async (type, search = '') => (await apiClient.get('/items/pricing', { params: { type, search } })).data,
+  bulkSave: async (type, items) => (await apiClient.put('/items/pricing', { pricing_type: type, items })).data,
+};

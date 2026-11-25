@@ -160,6 +160,28 @@ class BranchScopedCrudController
                     Response::error('Mobile number must be a valid 10-digit Indian mobile number', 422);
                 }
             }
+
+            // DOB and DOJ are completely optional — convert empty strings to null for MySQL DATE
+            if (array_key_exists('doj', $data)) {
+                $data['doj'] = !empty(trim((string) $data['doj'])) ? trim((string) $data['doj']) : null;
+            }
+            if (array_key_exists('dob', $data)) {
+                $data['dob'] = !empty(trim((string) $data['dob'])) ? trim((string) $data['dob']) : null;
+            }
+
+            // Dynamic pricing type handling
+            if (array_key_exists('pricing_type', $data) && !empty($data['pricing_type'])) {
+                $rawPt = trim((string) $data['pricing_type']);
+                $code = strtolower(trim(preg_replace('/[^a-zA-Z0-9]+/', '_', $rawPt), '_'));
+                if ($code !== '') {
+                    $ptName = ucwords(strtolower(preg_replace('/\s+/', ' ', $rawPt)));
+                    try {
+                        $ptStmt = $this->pdo->prepare('INSERT IGNORE INTO pricing_types (name, code, is_default) VALUES (:name, :code, 0)');
+                        $ptStmt->execute(['name' => $ptName, 'code' => $code]);
+                    } catch (\Throwable) {}
+                    $data['pricing_type'] = $code;
+                }
+            }
         } elseif ($this->table === 'suppliers') {
             if (!$isUpdate && empty(trim((string) ($data['name'] ?? '')))) {
                 Response::error('Supplier name is required', 422);

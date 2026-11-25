@@ -41,11 +41,17 @@ export const customersApi = {
     return (await apiClient.post('/customers/import/preview', form)).data;
   },
 
-  async importCommit(file) {
+  async importCommit(file, autoCreatePricingTypes = true) {
     const form = new FormData();
     form.append('file', file);
+    form.append('auto_create_pricing_types', autoCreatePricingTypes ? '1' : '0');
     return (await apiClient.post('/customers/import/commit', form)).data;
   },
+};
+
+export const pricingTypesApi = {
+  list: async () => (await apiClient.get('/pricing-types')).data,
+  create: async (data) => (await apiClient.post('/pricing-types', data)).data,
 };
 export const suppliersApi = {
   ...makeCrud('/suppliers'),

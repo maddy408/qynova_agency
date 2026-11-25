@@ -28,7 +28,7 @@ class InvoiceModel
 
     public function all(int $branchId, ?string $status = null): array
     {
-        $sql = "SELECT i.*, c.ledger_name AS customer_name, u.name AS employee_name
+        $sql = "SELECT i.*, c.ledger_name AS customer_name, c.phone AS customer_phone, u.name AS employee_name
                 FROM invoices i
                 LEFT JOIN customers c ON c.id = i.customer_id
                 JOIN users u ON u.id = i.employee_id

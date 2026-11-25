@@ -287,6 +287,8 @@ export function InvoiceManagementScreen() {
       (r) =>
         (r.invoice_no || '').toLowerCase().includes(q) ||
         (r.customer_name || '').toLowerCase().includes(q) ||
+        (r.customer_phone || r.phone || '').toLowerCase().includes(q) ||
+        (r.vehicle_no || '').toLowerCase().includes(q) ||
         String(r.grand_total || '').includes(q)
     );
   }, [rows, search, statusFilter]);

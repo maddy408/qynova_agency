@@ -38,8 +38,8 @@ class CustomerController
         'city' => 'CITY',
         'gstin' => 'GST NO',
         'address' => 'ADDRESS',
-        'doj' => 'DOJ',
-        'dob' => 'DOB',
+        'doj' => 'DOJ (OPTIONAL)',
+        'dob' => 'DOB (OPTIONAL)',
         'pricing_type' => 'PRICING TYPE',
     ];
 
@@ -57,8 +57,7 @@ class CustomerController
     }
 
     // -------------------------------------------------------------
-    // Export — current branch's customers, cost/internal columns none
-    // (customers have no cost-style restricted fields the way items do).
+    // Export — current branch's customers
     // -------------------------------------------------------------
     public function exportExcel(): void
     {
@@ -108,7 +107,7 @@ class CustomerController
         exit;
     }
 
-    /** GET /api/customers/import/template — a blank starter workbook with headers + one sample row. */
+    /** GET /api/customers/import/template — a blank starter workbook with headers + sample rows. */
     public function importTemplate(): void
     {
         JwtAuthMiddleware::authenticate();
@@ -122,8 +121,9 @@ class CustomerController
             null,
             'A2'
         );
+        // Second sample with empty DOB and DOJ, showing they are completely optional
         $sheet->fromArray(
-            [2, 'VASAN MEDICAL', 0, 0, 'Wholesaler', '9944395718', 'THIPPANAMPATTI', '', 'MAINROAD, AVUDAYANOOR', '01-04-2016', '01-04-2016', 'wholesale'],
+            [2, 'VASAN MEDICAL', 0, 0, 'Wholesaler Shop', '9944395718', 'THIPPANAMPATTI', '', 'MAINROAD, AVUDAYANOOR', '', '', 'Wholesaler Shop'],
             null,
             'A3'
         );
@@ -151,6 +151,32 @@ class CustomerController
         $this->import(true);
     }
 
+    /** Helper to load and normalize all pricing types from the database */
+    private function getPricingTypesLookup(): array
+    {
+        $stmt = $this->pdo->query('SELECT id, name, code FROM pricing_types ORDER BY id ASC');
+        $lookup = [];
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $pt) {
+            $codeKey = strtolower(trim($pt['code']));
+            $nameKey = strtolower(trim(preg_replace('/\s+/', ' ', $pt['name'])));
+            $lookup[$codeKey] = $pt;
+            $lookup[$nameKey] = $pt;
+        }
+        return $lookup;
+    }
+
+    private function normalizePricingTypeCode(string $raw): string
+    {
+        $slug = strtolower(trim($raw));
+        $slug = preg_replace('/[^a-z0-9]+/', '_', $slug);
+        return trim($slug, '_');
+    }
+
+    private function normalizePricingTypeName(string $raw): string
+    {
+        return ucwords(strtolower(trim(preg_replace('/\s+/', ' ', $raw))));
+    }
+
     private function import(bool $commit): void
     {
         $claims = JwtAuthMiddleware::authenticate();
@@ -161,6 +187,12 @@ class CustomerController
             Response::error('No file uploaded (expected multipart field "file")', 422);
         }
 
+        $autoCreatePricing = true;
+        if (isset($_POST['auto_create_pricing_types'])) {
+            $val = $_POST['auto_create_pricing_types'];
+            $autoCreatePricing = ($val === '1' || $val === 'true' || $val === 1 || $val === true);
+        }
+
         $spreadsheet = IOFactory::load($_FILES['file']['tmp_name']);
         $sheet = $spreadsheet->getActiveSheet();
         $rows = $sheet->toArray(null, true, true, false);
@@ -168,10 +200,7 @@ class CustomerController
         $rawHeader = array_map(fn ($h) => trim((string) $h), array_shift($rows) ?? []);
         $header = array_map(fn ($h) => $this->normalizeHeader($h), $rawHeader);
 
-        // Existing customers in THIS branch, keyed for dedup-on-reimport:
-        // phone is the more reliable key when present (mirrors item_code),
-        // normalized ledger_name is the fallback (mirrors item_name) so
-        // re-importing the same file updates instead of duplicating.
+        // Existing customers in THIS branch, keyed for dedup-on-reimport
         $existingByPhone = [];
         $existingByName = [];
         $stmt = $this->pdo->prepare('SELECT id, ledger_name, phone FROM customers WHERE branch_id = :b');
@@ -189,11 +218,6 @@ class CustomerController
             $cityLookup[strtolower(trim((string) $row['name']))] = (int) $row['id'];
         }
 
-        // Group is free text on the customer row (no separate master table —
-        // nothing else in the app manages/lists groups); "reuse existing
-        // group" just means matching an already-used spelling case/space-
-        // insensitively and storing that spelling, not creating a near-dup
-        // like "Wholesaler" vs "wholesaler" side by side.
         $groupLookup = [];
         $groupStmt = $this->pdo->query(
             "SELECT DISTINCT customer_group FROM customers WHERE customer_group IS NOT NULL AND customer_group <> ''"
@@ -202,15 +226,39 @@ class CustomerController
             $groupLookup[$this->normalizeName((string) $row['customer_group'])] = $row['customer_group'];
         }
 
+        $pricingLookup = $this->getPricingTypesLookup();
+        $newPricingTypesFound = []; // [ code => Display Name ]
+        $missingDobCount = 0;
+        $missingDojCount = 0;
+
         $results = [];
         $toUpsert = [];
 
         foreach ($rows as $rowNumber => $row) {
             if (empty(array_filter($row, fn ($v) => $v !== null && $v !== ''))) {
-                continue; // skip blank rows
+                continue; // skip completely blank rows
             }
             $record = array_combine($header, array_pad($row, count($header), null));
-            [$mapped, $rowErrors] = $this->mapImportRow($record, $existingByPhone, $existingByName, $cityLookup, $groupLookup);
+
+            // Track missing optional fields for reporting
+            if (empty(trim((string) ($record['dob'] ?? '')))) {
+                $missingDobCount++;
+            }
+            if (empty(trim((string) ($record['doj'] ?? '')))) {
+                $missingDojCount++;
+            }
+
+            [$mapped, $rowErrors] = $this->mapImportRow(
+                $record,
+                $existingByPhone,
+                $existingByName,
+                $cityLookup,
+                $groupLookup,
+                $pricingLookup,
+                $newPricingTypesFound,
+                $autoCreatePricing,
+                $commit
+            );
 
             $results[] = [
                 'row' => $rowNumber + 2,
@@ -225,23 +273,47 @@ class CustomerController
 
         $inserted = 0;
         $updated = 0;
+
         if ($commit) {
-            foreach ($toUpsert as $mapped) {
-                ['data' => $data, 'existing_id' => $existingId] = $mapped;
-                $data['branch_id'] = $branchId;
-                if ($existingId !== null) {
-                    $set = implode(',', array_map(fn ($c) => "$c = :$c", array_keys($data)));
-                    $this->pdo->prepare("UPDATE customers SET {$set} WHERE id = :id")
-                        ->execute([...$data, 'id' => $existingId]);
-                    $updated++;
-                } else {
-                    $cols = array_keys($data);
-                    $placeholders = array_map(fn ($c) => ":$c", $cols);
-                    $this->pdo->prepare('INSERT INTO customers (' . implode(',', $cols) . ') VALUES (' . implode(',', $placeholders) . ')')
-                        ->execute($data);
-                    $inserted++;
+            $this->pdo->beginTransaction();
+            try {
+                // If auto-create pricing types is enabled, ensure all new pricing types exist in pricing_types table
+                if ($autoCreatePricing && !empty($newPricingTypesFound)) {
+                    $insertPt = $this->pdo->prepare(
+                        'INSERT IGNORE INTO pricing_types (name, code, is_default) VALUES (:name, :code, 0)'
+                    );
+                    foreach ($newPricingTypesFound as $ptCode => $ptName) {
+                        $insertPt->execute(['name' => $ptName, 'code' => $ptCode]);
+                    }
                 }
+
+                foreach ($toUpsert as $mapped) {
+                    ['data' => $data, 'existing_id' => $existingId] = $mapped;
+                    $data['branch_id'] = $branchId;
+                    if ($existingId !== null) {
+                        $set = implode(',', array_map(fn ($c) => "$c = :$c", array_keys($data)));
+                        $this->pdo->prepare("UPDATE customers SET {$set} WHERE id = :id")
+                            ->execute([...$data, 'id' => $existingId]);
+                        $updated++;
+                    } else {
+                        $cols = array_keys($data);
+                        $placeholders = array_map(fn ($c) => ":$c", $cols);
+                        $this->pdo->prepare('INSERT INTO customers (' . implode(',', $cols) . ') VALUES (' . implode(',', $placeholders) . ')')
+                            ->execute($data);
+                        $inserted++;
+                    }
+                }
+                $this->pdo->commit();
+            } catch (\Throwable $e) {
+                $this->pdo->rollBack();
+                Response::error('Failed to commit import: ' . $e->getMessage(), 500);
             }
+        }
+
+        // Get unique existing pricing type names
+        $existingPricingNames = [];
+        foreach ($pricingLookup as $item) {
+            $existingPricingNames[$item['name']] = $item['name'];
         }
 
         Response::json([
@@ -251,6 +323,10 @@ class CustomerController
             'inserted' => $commit ? $inserted : 0,
             'updated' => $commit ? $updated : 0,
             'committed' => $commit,
+            'existing_pricing_types' => array_values($existingPricingNames),
+            'new_pricing_types' => array_values($newPricingTypesFound),
+            'missing_optional_dob_count' => $missingDobCount,
+            'missing_optional_doj_count' => $missingDojCount,
             'rows' => $results,
         ]);
     }
@@ -258,6 +334,41 @@ class CustomerController
     /** Accepts either the required Excel label (CUSTOMER, GST NO, ...) or the internal key spelling. */
     private function normalizeHeader(string $rawHeader): string
     {
+        $normalized = strtolower(trim($rawHeader));
+        if (str_contains($normalized, 'dob') || str_contains($normalized, 'birth')) {
+            return 'dob';
+        }
+        if (str_contains($normalized, 'doj') || str_contains($normalized, 'joining')) {
+            return 'doj';
+        }
+        if (str_contains($normalized, 'pricing') || str_contains($normalized, 'price_type')) {
+            return 'pricing_type';
+        }
+        if (str_contains($normalized, 'customer') || str_contains($normalized, 'ledger')) {
+            return 'ledger_name';
+        }
+        if (str_contains($normalized, 'mobile') || str_contains($normalized, 'phone')) {
+            return 'phone';
+        }
+        if (str_contains($normalized, 'credit')) {
+            return 'credit_limit';
+        }
+        if (str_contains($normalized, 'open')) {
+            return 'opening_balance';
+        }
+        if (str_contains($normalized, 'group')) {
+            return 'customer_group';
+        }
+        if (str_contains($normalized, 'gst')) {
+            return 'gstin';
+        }
+        if (str_contains($normalized, 'address')) {
+            return 'address';
+        }
+        if (str_contains($normalized, 'city')) {
+            return 'city';
+        }
+
         static $reverse = null;
         if ($reverse === null) {
             $reverse = [];
@@ -266,7 +377,6 @@ class CustomerController
                 $reverse[strtolower($label)] = $key;
             }
         }
-        $normalized = strtolower(trim($rawHeader));
         return $reverse[$normalized] ?? $rawHeader;
     }
 
@@ -276,7 +386,11 @@ class CustomerController
         array &$existingByPhone,
         array &$existingByName,
         array &$cityLookup,
-        array &$groupLookup
+        array &$groupLookup,
+        array &$pricingLookup,
+        array &$newPricingTypesFound,
+        bool $autoCreatePricing,
+        bool $commit
     ): array {
         $errors = [];
 
@@ -285,8 +399,7 @@ class CustomerController
             $errors[] = 'CUSTOMER (name) is required';
         }
 
-        // MOBILE: read as text so a leading zero survives; Excel sometimes
-        // hands back a plain int/float even for a text-formatted cell.
+        // MOBILE: read as text so a leading zero survives
         $phoneRaw = $record['phone'] ?? '';
         $phone = is_float($phoneRaw) ? number_format($phoneRaw, 0, '', '') : trim((string) $phoneRaw);
         if ($phone !== '' && !preg_match('/^[0-9+\-\s()]{6,20}$/', $phone)) {
@@ -308,9 +421,6 @@ class CustomerController
         $creditLimit = isset($record['credit_limit']) && $record['credit_limit'] !== '' ? (float) $record['credit_limit'] : 0.0;
         $openingBalance = isset($record['opening_balance']) && $record['opening_balance'] !== '' ? (float) $record['opening_balance'] : 0.0;
 
-        // GST NO: the reference data uses "0" as a placeholder for "no
-        // GSTIN" (real-world exports also commonly use NA/N/A/-/NIL) —
-        // none of those must be stored literally as a GSTIN.
         $gstinRaw = trim((string) ($record['gstin'] ?? ''));
         $gstin = in_array(strtoupper($gstinRaw), ['', '0', 'NA', 'N/A', '-', 'NIL'], true) ? null : $gstinRaw;
         if ($gstin !== null && !preg_match('/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/', strtoupper($gstin))) {
@@ -319,37 +429,43 @@ class CustomerController
 
         $cityName = trim((string) ($record['city'] ?? ''));
         $cityId = $cityName !== '' ? ($cityLookup[strtolower($cityName)] ?? null) : null;
-        // Unmatched city is not an error — city_id is optional/supplementary
-        // and there is no safe way to auto-create a city without a route
-        // (cities.route_id is required and no route is given in this format).
 
         $groupRaw = trim((string) ($record['customer_group'] ?? ''));
         $group = null;
         if ($groupRaw !== '') {
             $normalized = $this->normalizeName($groupRaw);
             $group = $groupLookup[$normalized] ?? $groupRaw;
-            $groupLookup[$normalized] = $group; // reuse this exact spelling for later rows in the same file
+            $groupLookup[$normalized] = $group;
         }
 
+        // DOB & DOJ ARE COMPLETELY OPTIONAL
+        // Missing or blank date never causes an error, it simply saves as null.
         $doj = $this->parseExcelDate($record['doj'] ?? null);
         $dob = $this->parseExcelDate($record['dob'] ?? null);
 
-        // Flexible pricing_type normalization:
-        // - Wholesale variations (wholesaler, wholesaler shop, wholesale) -> 'wholesale'
-        // - Retail variations (retailer, retail shop, retail) -> 'retail'
-        // - Normal/standard/empty variations -> 'normal'
-        // - Any other custom tier (e.g. sundry debtors) auto-accepted and preserved cleanly without error
-        $rawPricing = strtolower(trim((string) ($record['pricing_type'] ?? '')));
-        if ($rawPricing === '' || in_array($rawPricing, ['normal', 'standard', 'regular', 'general'], true)) {
+        // DYNAMIC PRICING TYPE MANAGEMENT
+        $rawPricing = trim((string) ($record['pricing_type'] ?? ''));
+        if ($rawPricing === '') {
             $pricingType = 'normal';
-        } elseif (str_contains($rawPricing, 'whole')) {
-            $pricingType = 'wholesale';
-        } elseif (str_contains($rawPricing, 'retail')) {
-            $pricingType = 'retail';
         } else {
-            $pricingType = preg_replace('/[^a-zA-Z0-9_\-\s]/', '', $rawPricing);
-            if ($pricingType === '') {
-                $pricingType = 'normal';
+            $lookupKey = strtolower(preg_replace('/\s+/', ' ', $rawPricing));
+            $codeKey = $this->normalizePricingTypeCode($rawPricing);
+
+            if (isset($pricingLookup[$lookupKey])) {
+                $pricingType = $pricingLookup[$lookupKey]['code'];
+            } elseif (isset($pricingLookup[$codeKey])) {
+                $pricingType = $pricingLookup[$codeKey]['code'];
+            } else {
+                // New pricing type encountered
+                $displayName = $this->normalizePricingTypeName($rawPricing);
+                $newPricingTypesFound[$codeKey] = $displayName;
+
+                if ($commit && !$autoCreatePricing) {
+                    $errors[] = "Pricing type '{$rawPricing}' does not exist and auto-create is disabled.";
+                    $pricingType = 'normal';
+                } else {
+                    $pricingType = $codeKey;
+                }
             }
         }
 
@@ -383,7 +499,8 @@ class CustomerController
     /**
      * Robust Excel & text date parser:
      * Handles Excel numeric serial dates, D/M/Y, M/D/Y, single-digit day/month (4/1/2016, 9/1/2017),
-     * Y-m-d, textual dates, and fallbacks. Never throws or fails the customer import row.
+     * Y-m-d, textual dates, and fallbacks.
+     * If blank/missing, returns null without any error.
      */
     private function parseExcelDate(mixed $value): ?string
     {
@@ -424,6 +541,7 @@ class CustomerController
             }
         }
 
+        // Handle slash or dash or dot formats like 4/1/2016 or 04/01/2016
         if (preg_match('/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})$/', $text, $m)) {
             $p1 = (int) $m[1];
             $p2 = (int) $m[2];
@@ -431,17 +549,21 @@ class CustomerController
             if ($year < 100) {
                 $year += ($year > 50 ? 1900 : 2000);
             }
+            // If p1 > 12, it must be day-month-year
             if ($p1 > 12 && $p2 <= 12 && checkdate($p2, $p1, $year)) {
                 return sprintf('%04d-%02d-%02d', $year, $p2, $p1);
             }
+            // If p2 > 12, it must be month-day-year
             if ($p2 > 12 && $p1 <= 12 && checkdate($p1, $p2, $year)) {
                 return sprintf('%04d-%02d-%02d', $year, $p1, $p2);
             }
-            if (checkdate($p1, $p2, $year)) {
-                return sprintf('%04d-%02d-%02d', $year, $p1, $p2);
-            }
+            // Default Indian convention: Day / Month / Year
             if (checkdate($p2, $p1, $year)) {
                 return sprintf('%04d-%02d-%02d', $year, $p2, $p1);
+            }
+            // Fallback Month / Day / Year
+            if (checkdate($p1, $p2, $year)) {
+                return sprintf('%04d-%02d-%02d', $year, $p1, $p2);
             }
         }
 

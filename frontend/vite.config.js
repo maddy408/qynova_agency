@@ -55,4 +55,7 @@ export default defineConfig({
       },
     },
   },
+  optimizeDeps: {
+    include: ['html5-qrcode', 'lucide-react', 'jspdf', 'jspdf-autotable', '@tanstack/react-query', 'axios', 'zustand'],
+  },
 });
