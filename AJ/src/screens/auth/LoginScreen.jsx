@@ -10,11 +10,61 @@ export function LoginScreen() {
   const [email, setEmail] = useState('admin@example.com');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [touched, setTouched] = useState({ email: false, password: false });
+  const [fieldErrors, setFieldErrors] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const validateEmail = (val) => {
+    const trimmed = String(val ?? '').trim();
+    if (!trimmed) return 'Email is required.';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      return 'Please enter a valid email address.';
+    }
+    return '';
+  };
+
+  const validatePassword = (val) => {
+    if (!val) return 'Password is required.';
+    return '';
+  };
+
+  const handleBlur = (field) => {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+    if (field === 'email') {
+      setFieldErrors((prev) => ({ ...prev, email: validateEmail(email) }));
+    } else if (field === 'password') {
+      setFieldErrors((prev) => ({ ...prev, password: validatePassword(password) }));
+    }
+  };
+
+  const handleEmailChange = (val) => {
+    setEmail(val);
+    setError('');
+    if (touched.email) {
+      setFieldErrors((prev) => ({ ...prev, email: validateEmail(val) }));
+    }
+  };
+
+  const handlePasswordChange = (val) => {
+    setPassword(val);
+    setError('');
+    if (touched.password) {
+      setFieldErrors((prev) => ({ ...prev, password: validatePassword(val) }));
+    }
+  };
+
   const submit = async () => {
     setError('');
+    const emailErr = validateEmail(email);
+    const passErr = validatePassword(password);
+    setTouched({ email: true, password: true });
+    setFieldErrors({ email: emailErr, password: passErr });
+
+    if (emailErr || passErr) {
+      return;
+    }
+
     setLoading(true);
     try {
       await login(email.trim(), password);
@@ -24,6 +74,8 @@ export function LoginScreen() {
       setLoading(false);
     }
   };
+
+  const hasErrors = (touched.email && !!fieldErrors.email) || (touched.password && !!fieldErrors.password);
 
   return (
     <KeyboardAvoidingView
@@ -40,21 +92,38 @@ export function LoginScreen() {
           <Text style={styles.brand}>AJ Agency</Text>
           <Text style={styles.subtitle}>DISTRIBUTOR BILLING &amp; INVENTORY</Text>
 
-          <Text style={styles.label}>Email</Text>
+          <Text style={styles.label}>
+            Email <Text style={{ color: colors.danger }}>*</Text>
+          </Text>
           <TextInput
             value={email}
-            onChangeText={setEmail}
+            onChangeText={handleEmailChange}
+            onBlur={() => handleBlur('email')}
             autoCapitalize="none"
             keyboardType="email-address"
             returnKeyType="next"
-            style={styles.input}
+            style={[
+              styles.input,
+              touched.email && fieldErrors.email ? styles.inputError : null,
+            ]}
           />
+          {touched.email && fieldErrors.email ? (
+            <Text style={styles.fieldError}>{fieldErrors.email}</Text>
+          ) : null}
 
-          <Text style={styles.label}>Password</Text>
-          <View style={styles.passwordRow}>
+          <Text style={styles.label}>
+            Password <Text style={{ color: colors.danger }}>*</Text>
+          </Text>
+          <View
+            style={[
+              styles.passwordRow,
+              touched.password && fieldErrors.password ? styles.inputError : null,
+            ]}
+          >
             <TextInput
               value={password}
-              onChangeText={setPassword}
+              onChangeText={handlePasswordChange}
+              onBlur={() => handleBlur('password')}
               secureTextEntry={!showPassword}
               returnKeyType="done"
               onSubmitEditing={submit}
@@ -68,10 +137,17 @@ export function LoginScreen() {
               <Icon name={showPassword ? 'eyeOff' : 'eye'} size={20} color={colors.inkMuted} />
             </TouchableOpacity>
           </View>
+          {touched.password && fieldErrors.password ? (
+            <Text style={styles.fieldError}>{fieldErrors.password}</Text>
+          ) : null}
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
-          <TouchableOpacity style={styles.button} onPress={submit} disabled={loading}>
+          <TouchableOpacity
+            style={[styles.button, (loading || hasErrors) && styles.buttonDisabled]}
+            onPress={submit}
+            disabled={loading || hasErrors}
+          >
             {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Sign in</Text>}
           </TouchableOpacity>
         </View>
@@ -88,10 +164,13 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 10, letterSpacing: 1.5, color: colors.inkMuted, textAlign: 'center', marginBottom: 24 },
   label: { fontSize: 12, fontWeight: '600', color: colors.inkMuted, marginBottom: 4, marginTop: 12 },
   input: { borderWidth: 1, borderColor: colors.borderSoft, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 15, color: colors.ink },
+  inputError: { borderColor: colors.danger, borderWidth: 1.5 },
+  fieldError: { color: colors.danger, fontSize: 11, marginTop: 3, fontWeight: '600' },
   passwordRow: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: colors.borderSoft, borderRadius: 10, paddingRight: 8 },
   passwordInput: { flex: 1, paddingHorizontal: 12, paddingVertical: 10, fontSize: 15, color: colors.ink },
   eyeButton: { padding: 6 },
-  error: { color: colors.danger, fontSize: 13, marginTop: 12 },
+  error: { color: colors.danger, fontSize: 13, marginTop: 12, textAlign: 'center' },
   button: { backgroundColor: colors.success, borderRadius: 10, paddingVertical: 14, alignItems: 'center', marginTop: 20 },
+  buttonDisabled: { opacity: 0.6 },
   buttonText: { color: '#fff', fontWeight: '700', fontSize: 15 },
 });

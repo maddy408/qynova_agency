@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
-import { View, Text, TextInput, TouchableOpacity, FlatList, Alert, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, FlatList, ScrollView, Alert, StyleSheet } from 'react-native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { itemsApi } from '../../api/catalog';
+import { itemsApi, categoriesApi } from '../../api/catalog';
 import { friendlyErrorMessage } from '../../api/client';
 import { ProductImage } from '../../components/ProductImage';
 import { FormModal, formStyles } from '../../components/FormModal';
@@ -19,11 +19,15 @@ export function ProductsScreen() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('active'); // active | inactive | all
+  const [selectedCategoryId, setSelectedCategoryId] = useState(null);
   const [page, setPage] = useState(1);
   const [modal, setModal] = useState(undefined); // undefined closed, null create, obj edit
   const [viewProduct, setViewProduct] = useState(null);
   const [importOpen, setImportOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+
+  const categoriesQuery = useQuery({ queryKey: ['categories'], queryFn: categoriesApi.list });
+  const categories = useMemo(() => categoriesQuery.data || [], [categoriesQuery.data]);
 
   const itemsQuery = useQuery({
     queryKey: ['items', '', statusFilter],
@@ -31,20 +35,36 @@ export function ProductsScreen() {
   });
   const removeMutation = useMutation({
     mutationFn: itemsApi.remove,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['items'] }),
-    onError: (e) => Alert.alert('Error', friendlyErrorMessage(e)),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['items'] });
+      itemsQuery.refetch();
+      Alert.alert('Item Deleted', 'The item was deleted permanently.');
+    },
+    onError: (e) => Alert.alert('Delete Failed', friendlyErrorMessage(e)),
   });
-  const reactivateMutation = useMutation({
-    mutationFn: (id) => itemsApi.update(id, { is_active: 1 }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['items'] }),
-    onError: (e) => Alert.alert('Error', friendlyErrorMessage(e)),
+  const toggleActiveMutation = useMutation({
+    mutationFn: ({ id, is_active }) => itemsApi.update(id, { is_active }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['items'] });
+      itemsQuery.refetch();
+    },
+    onError: (e) => Alert.alert('Status Update Failed', friendlyErrorMessage(e)),
   });
+
+  const toggleActive = (item) => {
+    const nextStatus = Number(item.is_active) ? 0 : 1;
+    toggleActiveMutation.mutate({ id: item.id, is_active: nextStatus });
+  };
 
   const items = useMemo(() => itemsQuery.data || [], [itemsQuery.data]);
   const filtered = useMemo(() => {
+    let res = items;
+    if (selectedCategoryId) {
+      res = res.filter((i) => Number(i.category_id) === Number(selectedCategoryId));
+    }
     const q = search.trim().toLowerCase();
-    if (!q) return items;
-    return items.filter(
+    if (!q) return res;
+    return res.filter(
       (i) =>
         (i.item_name || '').toLowerCase().includes(q) ||
         (i.item_code || '').toLowerCase().includes(q) ||
@@ -52,7 +72,7 @@ export function ProductsScreen() {
         (i.category_name || '').toLowerCase().includes(q) ||
         (i.brand_name || '').toLowerCase().includes(q)
     );
-  }, [items, search]);
+  }, [items, search, selectedCategoryId]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
@@ -62,17 +82,19 @@ export function ProductsScreen() {
   );
 
   const handleSearchChange = (v) => { setSearch(v); setPage(1); };
+  const handleCategorySelect = (catId) => { setSelectedCategoryId(catId); setPage(1); };
+  const resetFilters = () => { setSearch(''); setSelectedCategoryId(null); setPage(1); };
 
   const openEdit = async (item) => setModal(await itemsApi.get(item.id));
   const openView = (item) => setViewProduct(item);
 
   const confirmDelete = (item) => {
     Alert.alert(
-      'Deactivate item?',
-      `"${item.item_name}" will be hidden from Billing and the active list, but its history is kept.`,
+      'Delete Product Permanently?',
+      `Are you sure you want to permanently delete "${item.item_name}"? If this item has existing transactions (sales, purchases, stock movements), deletion will be rejected to protect data integrity.`,
       [
-        { text: 'Cancel' },
-        { text: 'Deactivate', style: 'destructive', onPress: () => removeMutation.mutate(item.id) },
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete Permanently', style: 'destructive', onPress: () => removeMutation.mutate(item.id) },
       ]
     );
   };
@@ -126,6 +148,31 @@ export function ProductsScreen() {
         ))}
       </View>
 
+      {/* Category Filter Pills (Horizontal Scrollable) */}
+      <View style={styles.categoryFilterContainer}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryFilterScroll}>
+          <TouchableOpacity
+            onPress={() => handleCategorySelect(null)}
+            style={[styles.categoryPill, selectedCategoryId === null && styles.categoryPillActive]}
+          >
+            <Text style={[styles.categoryPillText, selectedCategoryId === null && styles.categoryPillTextActive]}>
+              All Categories
+            </Text>
+          </TouchableOpacity>
+          {categories.map((cat) => (
+            <TouchableOpacity
+              key={cat.id}
+              onPress={() => handleCategorySelect(cat.id)}
+              style={[styles.categoryPill, selectedCategoryId === cat.id && styles.categoryPillActive]}
+            >
+              <Text style={[styles.categoryPillText, selectedCategoryId === cat.id && styles.categoryPillTextActive]}>
+                {cat.name}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+
       <FlatList
         data={pagedItems}
         keyExtractor={(i) => String(i.id)}
@@ -140,9 +187,11 @@ export function ProductsScreen() {
             <Text style={styles.empty}>No products in catalog yet.</Text>
           ) : (
             <View style={{ alignItems: 'center', marginTop: 30 }}>
-              <Text style={styles.empty}>No products found matching "{search}".</Text>
-              <TouchableOpacity onPress={() => handleSearchChange('')} style={styles.resetSearchBtn}>
-                <Text style={styles.resetSearchBtnText}>Clear Search</Text>
+              <Text style={styles.empty}>
+                No products found matching "{search}"{selectedCategoryId ? ' in this category' : ''}.
+              </Text>
+              <TouchableOpacity onPress={resetFilters} style={styles.resetSearchBtn}>
+                <Text style={styles.resetSearchBtnText}>Reset Filters</Text>
               </TouchableOpacity>
             </View>
           )
@@ -178,7 +227,7 @@ export function ProductsScreen() {
               <Text style={styles.price}>Rs. {item.retail_price}</Text>
             </TouchableOpacity>
 
-            {/* Explicit CRUD Action Buttons: View, Edit, Delete/Reactivate */}
+            {/* Explicit 4 CRUD Action Buttons: View, Edit, Active/Inactive Toggle, Delete */}
             <View style={styles.actionBtns}>
               <TouchableOpacity onPress={() => openView(item)} style={styles.actionBtn}>
                 <Icon name="view" size={16} color={colors.inkMuted} />
@@ -189,15 +238,18 @@ export function ProductsScreen() {
                   <TouchableOpacity onPress={() => openEdit(item)} style={styles.actionBtn}>
                     <Icon name="edit" size={16} color={colors.gold} />
                   </TouchableOpacity>
-                  {Number(item.is_active) ? (
-                    <TouchableOpacity onPress={() => confirmDelete(item)} style={styles.actionBtn}>
-                      <Icon name="delete" size={16} color={colors.danger} />
-                    </TouchableOpacity>
-                  ) : (
-                    <TouchableOpacity onPress={() => reactivateMutation.mutate(item.id)} style={styles.actionBtn}>
-                      <Icon name="undo" size={16} color={colors.gold} />
-                    </TouchableOpacity>
-                  )}
+
+                  <TouchableOpacity onPress={() => toggleActive(item)} style={styles.actionBtn}>
+                    <Icon
+                      name={Number(item.is_active) ? 'toggleRight' : 'toggleLeft'}
+                      size={18}
+                      color={Number(item.is_active) ? colors.gold : colors.inkMuted}
+                    />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity onPress={() => confirmDelete(item)} style={styles.actionBtn}>
+                    <Icon name="delete" size={16} color={colors.danger} />
+                  </TouchableOpacity>
                 </>
               )}
             </View>
@@ -253,6 +305,29 @@ function DetailRow({ label, value }) {
 }
 
 const styles = StyleSheet.create({
+  categoryFilterContainer: { paddingHorizontal: 12, paddingTop: 8, paddingBottom: 4 },
+  categoryFilterScroll: { gap: 6, alignItems: 'center' },
+  categoryPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.borderSoft,
+  },
+  categoryPillActive: {
+    backgroundColor: colors.navbar,
+    borderColor: colors.gold,
+  },
+  categoryPillText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: colors.inkMuted,
+  },
+  categoryPillTextActive: {
+    color: colors.gold,
+    fontWeight: '700',
+  },
   statusFilterRow: { flexDirection: 'row', paddingHorizontal: 12, paddingTop: 10, gap: 6 },
   statusFilterBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: colors.borderSoft, backgroundColor: colors.card },
   statusFilterBtnActive: { backgroundColor: colors.navbar, borderColor: colors.navbar },

@@ -169,13 +169,13 @@ INSERT INTO tax_codes (code, name, gst_percent, cgst_percent, sgst_percent, igst
 ON DUPLICATE KEY UPDATE name = VALUES(name);
 
 -- Common stock units
-INSERT INTO stock_units (name, short_code, is_decimal) VALUES
-('Pieces', 'PCS', 0),
-('Kilogram', 'KG', 1),
-('Litre', 'LTR', 1),
-('Box', 'BOX', 0),
-('Carton', 'CTN', 0)
-ON DUPLICATE KEY UPDATE name = VALUES(name);
+INSERT INTO stock_units (name, short_code, is_decimal, is_active) VALUES
+('Pieces', 'PCS', 0, 1),
+('Kilogram', 'KG', 1, 1),
+('Litre', 'LTR', 1, 1),
+('Box', 'BOX', 0, 1),
+('Carton', 'CTN', 0, 1)
+ON DUPLICATE KEY UPDATE name = VALUES(name), is_active = VALUES(is_active);
 
 -- ---------------------------------------------------------------------
 -- Source: seed_phase3.sql

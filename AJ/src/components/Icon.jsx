@@ -303,6 +303,27 @@ export function Icon({ name, size = 20, color = '#000', style }) {
       case 'Check':
       case 'check':
         return <Polyline points="20 6 9 17 4 12" stroke={color} strokeWidth={strokeWidth} fill="none" strokeLinecap="round" strokeLinejoin="round" />;
+      case 'power':
+        return (
+          <>
+            <Path d="M18.36 6.64a9 9 0 1 1-12.73 0" stroke={color} strokeWidth={strokeWidth} fill="none" strokeLinecap="round" />
+            <Line x1="12" y1="2" x2="12" y2="12" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" />
+          </>
+        );
+      case 'toggleRight':
+        return (
+          <>
+            <Rect x="1" y="5" width="22" height="14" rx="7" stroke={color} strokeWidth={strokeWidth} fill="none" />
+            <Circle cx="16" cy="12" r="3" stroke={color} strokeWidth={strokeWidth} fill={color} />
+          </>
+        );
+      case 'toggleLeft':
+        return (
+          <>
+            <Rect x="1" y="5" width="22" height="14" rx="7" stroke={color} strokeWidth={strokeWidth} fill="none" />
+            <Circle cx="8" cy="12" r="3" stroke={color} strokeWidth={strokeWidth} fill="none" />
+          </>
+        );
       default:
         return <Circle cx="12" cy="12" r="8" stroke={color} strokeWidth={strokeWidth} fill="none" />;
     }

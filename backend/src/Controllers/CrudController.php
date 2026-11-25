@@ -151,7 +151,14 @@ class CrudController
         if (!$this->model()->find((int) $id)) {
             Response::error('Not found', 404);
         }
-        $this->model()->delete((int) $id);
-        Response::json(['deleted' => true]);
+        try {
+            $this->model()->delete((int) $id);
+            Response::json(['deleted' => true]);
+        } catch (\PDOException $e) {
+            if ($e->getCode() === '23000' || str_contains($e->getMessage(), '1451')) {
+                Response::error('Cannot delete this record because it is referenced by other existing transactions or items.', 422);
+            }
+            throw $e;
+        }
     }
 }

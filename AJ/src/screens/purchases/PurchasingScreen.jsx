@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, Alert, StyleSheet } from 'react-native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { purchasesApi, supplierPaymentsApi } from '../../api/purchasing';
@@ -18,6 +18,8 @@ function GrnFormModal({ visible, onClose }) {
   const suppliersQuery = useQuery({ queryKey: ['suppliers'], queryFn: suppliersApi.list, enabled: visible });
   const itemsQuery = useQuery({ queryKey: ['items', ''], queryFn: () => itemsApi.list(''), enabled: visible });
   const [supplierId, setSupplierId] = useState(null);
+  const [supplierInvoiceNo, setSupplierInvoiceNo] = useState('');
+  const [paymentMode, setPaymentMode] = useState('credit');
   const [paidAmount, setPaidAmount] = useState('0');
   const [userEditedPaid, setUserEditedPaid] = useState(false);
   const emptyLine = () => ({ key: `${Date.now()}`, item_id: null, qty: '1', free_qty: '0', mrp: '', rate: '', discount_mode: 'percent', discount_percent: '0', discount_amount: '' });
@@ -25,23 +27,33 @@ function GrnFormModal({ visible, onClose }) {
   const [error, setError] = useState('');
 
   const validLines = lines.filter((l) => l.item_id);
-  const total = validLines.reduce((s, l) => {
+  const totalQty = validLines.reduce((s, l) => s + Number(l.qty || 0), 0);
+  const totalFreeQty = validLines.reduce((s, l) => s + Number(l.free_qty || 0), 0);
+  const grossTotal = validLines.reduce((s, l) => s + Number(l.qty || 0) * Number(l.rate || 0), 0);
+  const totalDiscount = validLines.reduce((s, l) => {
     const gross = Number(l.qty || 0) * Number(l.rate || 0);
     const disc = l.discount_mode === 'amount' ? Number(l.discount_amount || 0) : gross * (Number(l.discount_percent || 0) / 100);
-    return s + Math.max(gross - disc, 0);
+    return s + disc;
   }, 0);
+  const total = Math.max(0, grossTotal - totalDiscount);
+  const balanceAmount = Math.max(0, total - Number(paidAmount || 0));
 
   useEffect(() => {
     if (visible && !userEditedPaid) {
-      setPaidAmount(total > 0 ? total.toFixed(2) : '0');
+      setPaidAmount(paymentMode === 'credit' ? '0' : (total > 0 ? total.toFixed(2) : '0'));
     }
-  }, [total, visible, userEditedPaid]);
+  }, [total, visible, userEditedPaid, paymentMode]);
 
   const createMutation = useMutation({
     mutationFn: purchasesApi.create,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['purchases'] });
-      setSupplierId(null); setPaidAmount('0'); setUserEditedPaid(false); setLines([emptyLine()]);
+      setSupplierId(null);
+      setSupplierInvoiceNo('');
+      setPaymentMode('credit');
+      setPaidAmount('0');
+      setUserEditedPaid(false);
+      setLines([emptyLine()]);
       onClose();
     },
     onError: (e) => setError(friendlyErrorMessage(e)),
@@ -68,7 +80,8 @@ function GrnFormModal({ visible, onClose }) {
     }
     createMutation.mutate({
       supplier_id: supplierId,
-      payment_mode: 'credit',
+      supplier_invoice_no: supplierInvoiceNo.trim() || null,
+      payment_mode: paymentMode,
       paid_amount: Number(paidAmount || 0),
       items: validLines.map((l) => ({
         item_id: l.item_id,
@@ -81,6 +94,13 @@ function GrnFormModal({ visible, onClose }) {
     });
   };
 
+  const paymentModes = [
+    { id: 'credit', name: 'Credit' },
+    { id: 'cash', name: 'Cash' },
+    { id: 'bank_transfer', name: 'Bank Transfer' },
+    { id: 'upi', name: 'UPI' },
+  ];
+
   return (
     <FormModal
       visible={visible} title="New GRN (Goods Received)" onClose={onClose}
@@ -88,17 +108,70 @@ function GrnFormModal({ visible, onClose }) {
         <>
           <TouchableOpacity style={formStyles.secondaryBtn} onPress={onClose}><Text style={formStyles.secondaryBtnText}>Cancel</Text></TouchableOpacity>
           <TouchableOpacity style={[formStyles.primaryBtn, createMutation.isPending && formStyles.disabled]} onPress={submit} disabled={createMutation.isPending}>
-            <Text style={formStyles.primaryBtnText}>Save GRN</Text>
+            <Text style={formStyles.primaryBtnText}>{createMutation.isPending ? 'Saving…' : 'Save GRN'}</Text>
           </TouchableOpacity>
         </>
       }
     >
-      <SelectField label="Supplier" required value={supplierId} options={suppliersQuery.data || []} onChange={setSupplierId} />
+      <SelectField label="Supplier *" required value={supplierId} options={suppliersQuery.data || []} onChange={setSupplierId} />
+      
+      <Text style={formStyles.label}>Supplier Invoice #</Text>
+      <TextInput
+        placeholder="e.g. INV-98765"
+        placeholderTextColor={colors.inkMuted}
+        value={supplierInvoiceNo}
+        onChangeText={setSupplierInvoiceNo}
+        style={formStyles.input}
+      />
+
+      <SelectField
+        label="Payment Mode *"
+        value={paymentMode}
+        options={paymentModes}
+        onChange={(val) => {
+          setPaymentMode(val);
+          if (!userEditedPaid) {
+            setPaidAmount(val === 'credit' ? '0' : (total > 0 ? total.toFixed(2) : '0'));
+          }
+        }}
+      />
+
       <Text style={formStyles.label}>Items</Text>
       <GrnItemLineEditor lines={lines} setLines={setLines} items={itemsQuery.data || []} />
+
       <Text style={formStyles.label}>Paid Amount (Max Rs. {total.toFixed(2)})</Text>
       <TextInput keyboardType="numeric" value={paidAmount} onChangeText={handlePaidChange} style={formStyles.input} />
-      <Text style={styles.total}>Grand Total: Rs. {total.toFixed(2)}</Text>
+
+      {/* Structured Summary Calculation Card */}
+      <View style={styles.summaryCard}>
+        <View style={styles.summaryRow}>
+          <Text style={styles.summaryLabel}>Total Quantity:</Text>
+          <Text style={styles.summaryValue}>{totalQty} (Free: {totalFreeQty})</Text>
+        </View>
+        <View style={styles.summaryRow}>
+          <Text style={styles.summaryLabel}>Gross Total:</Text>
+          <Text style={styles.summaryValue}>Rs. {grossTotal.toFixed(2)}</Text>
+        </View>
+        <View style={styles.summaryRow}>
+          <Text style={styles.summaryLabel}>Total Discount:</Text>
+          <Text style={styles.summaryValue}>Rs. {totalDiscount.toFixed(2)}</Text>
+        </View>
+        <View style={[styles.summaryRow, styles.summaryDivider]}>
+          <Text style={styles.summaryGrandLabel}>Grand Total:</Text>
+          <Text style={styles.summaryGrandValue}>Rs. {total.toFixed(2)}</Text>
+        </View>
+        <View style={styles.summaryRow}>
+          <Text style={styles.summaryLabel}>Paid Amount:</Text>
+          <Text style={[styles.summaryValue, { color: colors.success }]}>Rs. {Number(paidAmount || 0).toFixed(2)}</Text>
+        </View>
+        <View style={styles.summaryRow}>
+          <Text style={styles.summaryLabel}>Balance Amount:</Text>
+          <Text style={[styles.summaryValue, { color: balanceAmount > 0 ? colors.danger : colors.inkMuted }]}>
+            Rs. {balanceAmount.toFixed(2)}
+          </Text>
+        </View>
+      </View>
+
       {error ? <Text style={formStyles.error}>{error}</Text> : null}
     </FormModal>
   );
@@ -182,7 +255,10 @@ function GrnTab({ modalVisible, setModalVisible }) {
 
   const removeMutation = useMutation({
     mutationFn: purchasesApi.remove,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['purchases'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['purchases'] });
+      listQuery.refetch();
+    },
     onError: (e) => Alert.alert('Error', friendlyErrorMessage(e)),
   });
 
@@ -411,7 +487,10 @@ function PaymentsTab({ modalVisible, setModalVisible }) {
 
   const removeMutation = useMutation({
     mutationFn: supplierPaymentsApi.remove,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['supplier-payments'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['supplier-payments'] });
+      paymentsQuery.refetch();
+    },
     onError: (e) => Alert.alert('Error', friendlyErrorMessage(e)),
   });
 
@@ -722,6 +801,13 @@ const styles = StyleSheet.create({
   actionBtn: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, backgroundColor: colors.page, borderWidth: 1, borderColor: colors.borderSoft },
   actionBtnText: { color: colors.ink, fontWeight: '600', fontSize: 12 },
   total: { textAlign: 'right', fontWeight: '700', marginTop: 8, color: colors.ink },
+  summaryCard: { backgroundColor: colors.page, borderRadius: 10, padding: 12, marginTop: 12, borderWidth: 1, borderColor: colors.borderSoft },
+  summaryRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 },
+  summaryLabel: { fontSize: 12, color: colors.inkMuted, fontWeight: '600' },
+  summaryValue: { fontSize: 12, color: colors.ink, fontWeight: '700' },
+  summaryDivider: { borderTopWidth: 1, borderTopColor: colors.borderSoft, marginTop: 6, paddingTop: 6 },
+  summaryGrandLabel: { fontSize: 13, color: colors.ink, fontWeight: '800' },
+  summaryGrandValue: { fontSize: 14, color: colors.gold, fontWeight: '800' },
   paymentForm: { padding: 12, backgroundColor: colors.card, margin: 12, borderRadius: 12, borderWidth: 1, borderColor: colors.borderSoft },
   detailBox: { backgroundColor: colors.page, borderRadius: 10, padding: 12 },
   detailRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: colors.borderSoft },

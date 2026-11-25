@@ -254,6 +254,7 @@ export function InvoiceManagementScreen() {
   const canManageGst = usePermission('pos.manage_gst_filing');
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all'); // all | paid | unpaid | partial | cancelled
   const [thermalInvoice, setThermalInvoice] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const [gstInvoiceId, setGstInvoiceId] = useState(null);
@@ -261,16 +262,34 @@ export function InvoiceManagementScreen() {
   const listQuery = useQuery({ queryKey: ['invoices'], queryFn: () => invoicesApi.list() });
   const cancelMutation = useMutation({
     mutationFn: ({ id, reason }) => invoicesApi.cancel(id, reason),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['invoices'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      listQuery.refetch();
+    },
     onError: (e) => Alert.alert('Error', friendlyErrorMessage(e)),
   });
 
   const rows = listQuery.data || [];
   const filtered = useMemo(() => {
+    let res = rows;
+    if (statusFilter === 'paid') {
+      res = res.filter((r) => r.payment_status === 'paid');
+    } else if (statusFilter === 'unpaid') {
+      res = res.filter((r) => r.payment_status === 'credit' || r.payment_status === 'unpaid');
+    } else if (statusFilter === 'partial') {
+      res = res.filter((r) => r.payment_status === 'partial');
+    } else if (statusFilter === 'cancelled') {
+      res = res.filter((r) => r.status === 'cancelled' || r.payment_status === 'cancelled');
+    }
     const q = search.trim().toLowerCase();
-    if (!q) return rows;
-    return rows.filter((r) => (r.invoice_no || '').toLowerCase().includes(q) || (r.customer_name || '').toLowerCase().includes(q));
-  }, [rows, search]);
+    if (!q) return res;
+    return res.filter(
+      (r) =>
+        (r.invoice_no || '').toLowerCase().includes(q) ||
+        (r.customer_name || '').toLowerCase().includes(q) ||
+        String(r.grand_total || '').includes(q)
+    );
+  }, [rows, search, statusFilter]);
 
   const openViewThermal = async (inv) => {
     try {
@@ -282,55 +301,137 @@ export function InvoiceManagementScreen() {
   };
 
   const confirmCancel = (inv) => {
-    Alert.prompt
-      ? Alert.prompt('Cancel invoice?', `Reverses stock/credit for ${inv.invoice_no}. Reason (optional):`, (reason) => cancelMutation.mutate({ id: inv.id, reason }))
-      : Alert.alert('Cancel invoice?', inv.invoice_no, [{ text: 'No' }, { text: 'Yes', style: 'destructive', onPress: () => cancelMutation.mutate({ id: inv.id, reason: null }) }]);
+    Alert.alert(
+      'Cancel Invoice?',
+      `Are you sure you want to cancel invoice ${inv.invoice_no}? This will reverse stock changes and customer balance.`,
+      [
+        { text: 'Keep Invoice', style: 'cancel' },
+        {
+          text: 'Cancel Invoice',
+          style: 'destructive',
+          onPress: () => cancelMutation.mutate({ id: inv.id, reason: 'Cancelled from mobile app' }),
+        },
+      ]
+    );
   };
+
+  const statusFilters = [
+    { key: 'all', label: 'All' },
+    { key: 'paid', label: 'Paid' },
+    { key: 'unpaid', label: 'Unpaid' },
+    { key: 'partial', label: 'Partial' },
+    { key: 'cancelled', label: 'Cancelled' },
+  ];
 
   return (
     <View style={styles.screen}>
-      <TextInput value={search} onChangeText={setSearch} placeholder="Search invoice # or customer" style={styles.search} />
+      {/* Header Bar */}
+      <View style={styles.headerBar}>
+        <Text style={styles.headerTitle}>Invoices</Text>
+        <Text style={styles.headerCount}>{filtered.length} invoice(s)</Text>
+      </View>
+
+      {/* Search Input Bar with Icon and Clear Button */}
+      <View style={styles.searchBar}>
+        <Icon name="search" size={16} color={colors.inkMuted} style={{ marginRight: 8 }} />
+        <TextInput
+          value={search}
+          onChangeText={setSearch}
+          placeholder="Search by invoice # or customer..."
+          placeholderTextColor={colors.inkMuted}
+          style={styles.searchInput}
+          autoCapitalize="none"
+        />
+        {search.length > 0 && (
+          <TouchableOpacity onPress={() => setSearch('')} style={styles.clearSearchBtn}>
+            <Text style={styles.clearSearchText}>✕</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {/* Status Filters Pill Row */}
+      <View style={styles.filterRow}>
+        {statusFilters.map((sf) => (
+          <TouchableOpacity
+            key={sf.key}
+            onPress={() => setStatusFilter(sf.key)}
+            style={[styles.filterPill, statusFilter === sf.key && styles.filterPillActive]}
+          >
+            <Text style={[styles.filterPillText, statusFilter === sf.key && styles.filterPillTextActive]}>
+              {sf.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
       <FlatList
         data={filtered}
         keyExtractor={(r) => String(r.id)}
         refreshing={listQuery.isFetching}
         onRefresh={listQuery.refetch}
-        contentContainerStyle={{ padding: 12 }}
-        ListEmptyComponent={<Text style={styles.empty}>No invoices found.</Text>}
+        contentContainerStyle={{ padding: 12, paddingBottom: 120 }}
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Text style={styles.empty}>
+              {search || statusFilter !== 'all'
+                ? `No invoices match "${search || statusFilter}".`
+                : 'No invoices found.'}
+            </Text>
+            {(search !== '' || statusFilter !== 'all') && (
+              <TouchableOpacity onPress={() => { setSearch(''); setStatusFilter('all'); }} style={styles.resetBtn}>
+                <Text style={styles.resetBtnText}>Clear Filters</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        }
         renderItem={({ item: r }) => (
           <View style={styles.card}>
             <View style={styles.cardHeader}>
               <Text style={styles.cardTitle}>{r.invoice_no || `Held #${r.id}`}</Text>
-              <Text style={[styles.status, { color: STATUS_COLOR[r.payment_status] || colors.inkMuted }]}>{r.payment_status || r.status}</Text>
+              <View style={[styles.badge, { backgroundColor: (STATUS_COLOR[r.payment_status] || colors.inkMuted) + '20' }]}>
+                <Text style={[styles.status, { color: STATUS_COLOR[r.payment_status] || colors.inkMuted }]}>
+                  {r.payment_status || r.status}
+                </Text>
+              </View>
             </View>
-            <Text style={styles.cardMeta}>{r.customer_name || 'Walk-in'} · {r.invoice_date}</Text>
-            <Text style={styles.cardTotal}>Rs. {r.grand_total}</Text>
 
-            {/* Explicit CRUD Action Buttons: View, Edit, Cancel */}
+            <Text style={styles.cardMeta}>
+              {r.customer_name || 'Walk-in'} · {r.invoice_date || r.created_at || 'Date N/A'}
+              {r.bill_type ? ` · ${String(r.bill_type).toUpperCase()}` : ''}
+            </Text>
+
+            <View style={styles.amountRow}>
+              <Text style={styles.cardTotal}>Total: Rs. {Number(r.grand_total || 0).toFixed(2)}</Text>
+              {Number(r.paid_amount || 0) > 0 && r.payment_status !== 'paid' && (
+                <Text style={styles.paidMeta}>Paid: Rs. {Number(r.paid_amount).toFixed(2)}</Text>
+              )}
+            </View>
+
+            {/* Responsive Action Buttons: Wraps cleanly into rows, no horizontal overflow */}
             <View style={styles.actionsRow}>
               <TouchableOpacity onPress={() => openViewThermal(r)} style={styles.actionBtnView}>
-                <Icon name="view" size={14} color={colors.ink} style={{ marginRight: 4 }} />
+                <Icon name="view" size={13} color={colors.ink} style={{ marginRight: 5 }} />
                 <Text style={styles.actionBtnViewText}>View / Print</Text>
               </TouchableOpacity>
 
               {r.status === 'completed' && canEdit && (
                 <TouchableOpacity onPress={() => setEditingId(r.id)} style={styles.actionBtnEdit}>
-                  <Icon name="edit" size={14} color={colors.gold} style={{ marginRight: 4 }} />
+                  <Icon name="edit" size={13} color={colors.gold} style={{ marginRight: 5 }} />
                   <Text style={styles.actionBtnEditText}>Edit</Text>
                 </TouchableOpacity>
               )}
 
               {r.status === 'completed' && canCancel && (
                 <TouchableOpacity onPress={() => confirmCancel(r)} style={styles.actionBtnDanger}>
-                  <Icon name="delete" size={14} color={colors.danger} style={{ marginRight: 4 }} />
+                  <Icon name="delete" size={13} color={colors.danger} style={{ marginRight: 5 }} />
                   <Text style={styles.actionBtnDangerText}>Cancel</Text>
                 </TouchableOpacity>
               )}
 
               {r.status === 'completed' && r.bill_type === 'gst' && (
-                <TouchableOpacity onPress={() => setGstInvoiceId(r.id)} style={styles.actionBtnEdit}>
-                  <Icon name="reports" size={14} color={colors.gold} style={{ marginRight: 4 }} />
-                  <Text style={styles.actionBtnEditText}>GST</Text>
+                <TouchableOpacity onPress={() => setGstInvoiceId(r.id)} style={styles.actionBtnGst}>
+                  <Icon name="reports" size={13} color={colors.primary || '#2449C6'} style={{ marginRight: 5 }} />
+                  <Text style={styles.actionBtnGstText}>GST</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -353,21 +454,146 @@ export function InvoiceManagementScreen() {
 const styles = StyleSheet.create({
   gstBtn: { marginTop: 8 },
   screen: { flex: 1, backgroundColor: colors.page },
-  search: { margin: 12, backgroundColor: colors.card, borderRadius: 10, borderWidth: 1, borderColor: colors.borderSoft, padding: 10 },
-  empty: { textAlign: 'center', color: colors.inkMuted, marginTop: 40 },
-  card: { backgroundColor: colors.card, borderRadius: 12, padding: 14, marginBottom: 10, borderWidth: 1, borderColor: colors.borderSoft },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between' },
-  cardTitle: { fontWeight: '700', color: colors.ink },
-  status: { fontWeight: '700', fontSize: 11, textTransform: 'uppercase' },
+  headerBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: colors.card,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderSoft,
+  },
+  headerTitle: { fontSize: 18, fontWeight: '800', color: colors.ink },
+  headerCount: { fontSize: 12, fontWeight: '600', color: colors.inkMuted },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.borderSoft,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    marginHorizontal: 12,
+    marginTop: 10,
+    marginBottom: 6,
+    height: 42,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 13,
+    color: colors.ink,
+    paddingVertical: 6,
+  },
+  clearSearchBtn: { padding: 6 },
+  clearSearchText: { color: colors.inkMuted, fontSize: 14, fontWeight: '700' },
+  filterRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: 12,
+    gap: 6,
+    marginBottom: 6,
+  },
+  filterPill: {
+    paddingHorizontal: 11,
+    paddingVertical: 5,
+    borderRadius: 16,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.borderSoft,
+  },
+  filterPillActive: {
+    backgroundColor: colors.navbar,
+    borderColor: colors.navbar,
+  },
+  filterPillText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: colors.inkMuted,
+  },
+  filterPillTextActive: {
+    color: colors.gold,
+    fontWeight: '700',
+  },
+  emptyContainer: { alignItems: 'center', marginTop: 40 },
+  empty: { textAlign: 'center', color: colors.inkMuted, fontSize: 13 },
+  resetBtn: {
+    marginTop: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: colors.navbar,
+  },
+  resetBtnText: { color: colors.gold, fontWeight: '700', fontSize: 12 },
+  card: {
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: colors.borderSoft,
+  },
+  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  cardTitle: { fontWeight: '700', color: colors.ink, fontSize: 14 },
+  badge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+  status: { fontWeight: '700', fontSize: 10, textTransform: 'uppercase' },
   cardMeta: { color: colors.inkMuted, fontSize: 12, marginTop: 4 },
-  cardTotal: { fontWeight: '700', color: colors.ink, marginTop: 6 },
-  actionsRow: { flexDirection: 'row', gap: 8, marginTop: 12, borderTopWidth: 1, borderTopColor: colors.borderSoft, paddingTop: 10 },
-  actionBtnView: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, backgroundColor: colors.page, borderWidth: 1, borderColor: colors.borderSoft },
+  amountRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 6 },
+  cardTotal: { fontWeight: '800', color: colors.ink, fontSize: 13 },
+  paidMeta: { fontSize: 12, color: colors.success, fontWeight: '700' },
+  actionsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: colors.borderSoft,
+    paddingTop: 10,
+  },
+  actionBtnView: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+    backgroundColor: colors.page,
+    borderWidth: 1,
+    borderColor: colors.borderSoft,
+  },
   actionBtnViewText: { color: colors.ink, fontWeight: '600', fontSize: 12 },
-  actionBtnEdit: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, backgroundColor: '#FDF8EC', borderWidth: 1, borderColor: colors.gold },
+  actionBtnEdit: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+    backgroundColor: '#FDF8EC',
+    borderWidth: 1,
+    borderColor: colors.gold,
+  },
   actionBtnEditText: { color: colors.gold, fontWeight: '700', fontSize: 12 },
-  actionBtnDanger: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: colors.danger },
+  actionBtnDanger: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: colors.danger,
+  },
   actionBtnDangerText: { color: colors.danger, fontWeight: '700', fontSize: 12 },
+  actionBtnGst: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+    backgroundColor: '#EDF5FF',
+    borderWidth: 1,
+    borderColor: '#D5E3F7',
+  },
+  actionBtnGstText: { color: colors.primary || '#2449C6', fontWeight: '700', fontSize: 12 },
   warnText: { fontSize: 12, color: colors.inkMuted, marginBottom: 8 },
   editLine: { borderWidth: 1, borderColor: colors.borderSoft, borderRadius: 10, padding: 10, marginTop: 10, backgroundColor: colors.card },
   editLineName: { fontWeight: '700', color: colors.ink, marginBottom: 6 },

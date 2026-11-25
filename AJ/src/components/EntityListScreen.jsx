@@ -23,6 +23,8 @@ export function EntityListScreen({ queryKey, api, title, fields, renderTitle, re
   const [modal, setModal] = useState(null); // null closed, {} create, {...row} edit
   const [viewItem, setViewItem] = useState(null);
   const [form, setForm] = useState({});
+  const [touched, setTouched] = useState({});
+  const [fieldErrors, setFieldErrors] = useState({});
   const [error, setError] = useState('');
   const [importOpen, setImportOpen] = useState(false);
   const [excelBusy, setExcelBusy] = useState(false);
@@ -32,60 +34,117 @@ export function EntityListScreen({ queryKey, api, title, fields, renderTitle, re
 
   const createMutation = useMutation({ mutationFn: api.create, onSuccess: () => { invalidate(); closeModal(); }, onError: (e) => setError(friendlyErrorMessage(e)) });
   const updateMutation = useMutation({ mutationFn: ({ id, data }) => api.update(id, data), onSuccess: () => { invalidate(); closeModal(); }, onError: (e) => setError(friendlyErrorMessage(e)) });
-  const removeMutation = useMutation({ mutationFn: api.remove, onSuccess: invalidate, onError: (e) => Alert.alert('Error', friendlyErrorMessage(e)) });
+  const removeMutation = useMutation({
+    mutationFn: api.remove,
+    onSuccess: () => {
+      invalidate();
+      listQuery.refetch();
+    },
+    onError: (e) => Alert.alert('Delete Failed', friendlyErrorMessage(e)),
+  });
 
-  const openCreate = () => { setForm(Object.fromEntries(fields.map((f) => [f.name, f.default ?? (f.type === 'switch' ? 1 : '')]))); setError(''); setModal({}); };
-  const openEdit = (row) => { setForm(Object.fromEntries(fields.map((f) => [f.name, f.type === 'switch' ? Number(row[f.name] ?? 1) : (row[f.name] ?? '')]))); setError(''); setModal(row); };
+  const openCreate = () => {
+    setForm(Object.fromEntries(fields.map((f) => [f.name, f.default ?? (f.type === 'switch' ? 1 : '')])));
+    setTouched({});
+    setFieldErrors({});
+    setError('');
+    setModal({});
+  };
+
+  const openEdit = (row) => {
+    setForm(Object.fromEntries(fields.map((f) => [f.name, f.type === 'switch' ? Number(row[f.name] ?? 1) : (row[f.name] ?? '')])));
+    setTouched({});
+    setFieldErrors({});
+    setError('');
+    setModal(row);
+  };
+
   const openView = (row) => setViewItem(row);
-  const closeModal = () => setModal(null);
+  const closeModal = () => { setModal(null); setTouched({}); setFieldErrors({}); };
 
-  const validateForm = () => {
-    for (const f of fields) {
-      const val = form[f.name];
-      const strVal = String(val ?? '').trim();
+  const validateSingleField = (f, val) => {
+    const strVal = String(val ?? '').trim();
 
-      // Required field check
-      if (f.required && !strVal) {
-        return `${f.label.replace(/\*$/, '').trim()} is required.`;
+    // Required field check
+    if (f.required && !strVal) {
+      return `${f.label.replace(/\*$/, '').trim()} is required.`;
+    }
+
+    // Phone / Mobile number validation
+    if ((f.name === 'phone' || f.type === 'phone') && strVal) {
+      if (!/^\d+$/.test(strVal)) {
+        return 'Phone number must contain numeric digits only.';
       }
-
-      // Phone / Mobile number validation
-      if ((f.name === 'phone' || f.type === 'phone') && strVal) {
-        if (!/^\d+$/.test(strVal)) {
-          return `${f.label}: Phone number must contain numeric digits only.`;
-        }
-        if (strVal.length !== 10) {
-          return `${f.label}: Mobile number must be exactly 10 digits (currently ${strVal.length}).`;
-        }
-        if (!/^[6-9]/.test(strVal)) {
-          return `${f.label}: Mobile number must start with 6, 7, 8 or 9.`;
-        }
+      if (strVal.length !== 10) {
+        return `Mobile number must be exactly 10 digits (${strVal.length}/10).`;
       }
-
-      // Email validation
-      if ((f.name === 'email' || f.type === 'email') && strVal) {
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(strVal)) {
-          return `Please enter a valid email address.`;
-        }
-      }
-
-      // Numeric check
-      if (f.keyboardType === 'numeric' && strVal) {
-        const num = Number(strVal);
-        if (isNaN(num)) {
-          return `${f.label} must be a valid numeric value.`;
-        }
-        if (f.noNegative && num < 0) {
-          return `${f.label} cannot be negative.`;
-        }
+      if (!/^[6-9]/.test(strVal)) {
+        return 'Mobile number must start with 6, 7, 8 or 9.';
       }
     }
-    return null;
+
+    // Email validation
+    if ((f.name === 'email' || f.type === 'email') && strVal) {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(strVal)) {
+        return 'Please enter a valid email address.';
+      }
+    }
+
+    // Numeric check
+    if (f.keyboardType === 'numeric' && strVal) {
+      const num = Number(strVal);
+      if (isNaN(num)) {
+        return `${f.label.replace(/\*$/, '').trim()} must be a valid number.`;
+      }
+      if (f.noNegative && num < 0) {
+        return `${f.label.replace(/\*$/, '').trim()} cannot be negative.`;
+      }
+    }
+    return '';
+  };
+
+  const handleFieldBlur = (fieldName) => {
+    setTouched((prev) => ({ ...prev, [fieldName]: true }));
+    const f = fields.find((item) => item.name === fieldName);
+    if (f) {
+      const err = validateSingleField(f, form[fieldName]);
+      setFieldErrors((prev) => ({ ...prev, [fieldName]: err }));
+    }
+  };
+
+  const handleFieldChange = (fieldName, value) => {
+    setForm((prev) => ({ ...prev, [fieldName]: value }));
+    setError('');
+    if (touched[fieldName]) {
+      const f = fields.find((item) => item.name === fieldName);
+      if (f) {
+        const err = validateSingleField(f, value);
+        setFieldErrors((prev) => ({ ...prev, [fieldName]: err }));
+      }
+    }
+  };
+
+  const validateAll = () => {
+    const nextTouched = {};
+    const nextErrors = {};
+    let firstErrorMsg = '';
+
+    for (const f of fields) {
+      nextTouched[f.name] = true;
+      const err = validateSingleField(f, form[f.name]);
+      if (err) {
+        nextErrors[f.name] = err;
+        if (!firstErrorMsg) firstErrorMsg = err;
+      }
+    }
+    setTouched(nextTouched);
+    setFieldErrors(nextErrors);
+    return firstErrorMsg;
   };
 
   const submit = () => {
     setError('');
-    const validationError = validateForm();
+    const validationError = validateAll();
     if (validationError) {
       setError(validationError);
       return;
@@ -99,10 +158,14 @@ export function EntityListScreen({ queryKey, api, title, fields, renderTitle, re
   };
 
   const confirmDelete = (row) => {
-    Alert.alert('Delete?', renderTitle(row), [
-      { text: 'Cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => removeMutation.mutate(row.id) },
-    ]);
+    Alert.alert(
+      `Delete ${title}?`,
+      `Are you sure you want to delete "${renderTitle(row)}"? This action cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: () => removeMutation.mutate(row.id) },
+      ]
+    );
   };
 
   const rows = listQuery.data || [];
@@ -226,57 +289,67 @@ export function EntityListScreen({ queryKey, api, title, fields, renderTitle, re
           </>
         }
       >
-        {fields.map((f) => (
-          <View key={f.name}>
-            <Text style={formStyles.label}>
-              {f.label} {f.required ? <Text style={{ color: colors.danger }}>*</Text> : null}
-            </Text>
-            {f.type === 'switch' ? (
-              <View style={styles.switchRow}>
-                <Text style={styles.switchLabel}>{form[f.name] ? 'Active' : 'Inactive'}</Text>
-                <Switch
-                  value={!!form[f.name]}
-                  onValueChange={(v) => {
-                    setError('');
-                    setForm((p) => ({ ...p, [f.name]: v ? 1 : 0 }));
-                  }}
-                />
-              </View>
-            ) : f.type === 'select' ? (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.selectRow}>
-                {(f.options || []).map((opt) => {
-                  const optVal = opt.value !== undefined ? opt.value : opt.id;
-                  const optLabel = opt.label !== undefined ? opt.label : (opt.name || opt.short_code);
-                  const isSelected = String(form[f.name]) === String(optVal);
-                  return (
-                    <TouchableOpacity
-                      key={String(optVal)}
-                      onPress={() => {
-                        setError('');
-                        setForm((p) => ({ ...p, [f.name]: optVal }));
-                      }}
-                      style={[styles.selectChip, isSelected && styles.selectChipActive]}
-                    >
-                      <Text style={[styles.selectChipText, isSelected && styles.selectChipTextActive]}>{optLabel}</Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-            ) : (
-              <TextInput
-                value={String(form[f.name] ?? '')}
-                onChangeText={(v) => {
-                  setError('');
-                  setForm((p) => ({ ...p, [f.name]: v }));
-                }}
-                keyboardType={f.keyboardType || 'default'}
-                placeholder={f.placeholder || `Enter ${f.label.replace(/\*$/, '').trim()}`}
-                placeholderTextColor={colors.inkMuted}
-                style={[formStyles.input, { color: colors.ink }]}
-              />
-            )}
-          </View>
-        ))}
+        {fields.map((f) => {
+          const hasFieldError = touched[f.name] && !!fieldErrors[f.name];
+          return (
+            <View key={f.name} style={{ marginBottom: 12 }}>
+              <Text style={formStyles.label}>
+                {f.label} {f.required ? <Text style={{ color: colors.danger }}>*</Text> : null}
+              </Text>
+              {f.type === 'switch' ? (
+                <View style={styles.switchRow}>
+                  <Text style={styles.switchLabel}>{form[f.name] ? 'Active' : 'Inactive'}</Text>
+                  <Switch
+                    value={!!form[f.name]}
+                    onValueChange={(v) => {
+                      handleFieldChange(f.name, v ? 1 : 0);
+                    }}
+                  />
+                </View>
+              ) : f.type === 'select' ? (
+                <>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.selectRow}>
+                    {(f.options || []).map((opt) => {
+                      const optVal = opt.value !== undefined ? opt.value : opt.id;
+                      const optLabel = opt.label !== undefined ? opt.label : (opt.name || opt.short_code);
+                      const isSelected = String(form[f.name]) === String(optVal);
+                      return (
+                        <TouchableOpacity
+                          key={String(optVal)}
+                          onPress={() => {
+                            handleFieldChange(f.name, optVal);
+                            handleFieldBlur(f.name);
+                          }}
+                          style={[styles.selectChip, isSelected && styles.selectChipActive]}
+                        >
+                          <Text style={[styles.selectChipText, isSelected && styles.selectChipTextActive]}>{optLabel}</Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </ScrollView>
+                  {hasFieldError && <Text style={styles.fieldErrorText}>{fieldErrors[f.name]}</Text>}
+                </>
+              ) : (
+                <>
+                  <TextInput
+                    value={String(form[f.name] ?? '')}
+                    onChangeText={(v) => handleFieldChange(f.name, v)}
+                    onBlur={() => handleFieldBlur(f.name)}
+                    keyboardType={f.keyboardType || 'default'}
+                    placeholder={f.placeholder || `Enter ${f.label.replace(/\*$/, '').trim()}`}
+                    placeholderTextColor={colors.inkMuted}
+                    style={[
+                      formStyles.input,
+                      { color: colors.ink },
+                      hasFieldError && styles.inputErrorBorder,
+                    ]}
+                  />
+                  {hasFieldError && <Text style={styles.fieldErrorText}>{fieldErrors[f.name]}</Text>}
+                </>
+              )}
+            </View>
+          );
+        })}
         {error ? <Text style={formStyles.error}>{error}</Text> : null}
       </FormModal>
 
@@ -400,6 +473,8 @@ const styles = StyleSheet.create({
   detailLabel: { fontWeight: '600', color: colors.inkMuted, fontSize: 13 },
   detailVal: { fontWeight: '700', color: colors.ink, fontSize: 13 },
   switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 4 },
+  fieldErrorText: { color: colors.danger, fontSize: 11, marginTop: 3, fontWeight: '600' },
+  inputErrorBorder: { borderColor: colors.danger, borderWidth: 1.5 },
   switchLabel: { color: colors.ink, fontWeight: '600', fontSize: 13 },
   selectRow: { flexDirection: 'row', gap: 6, paddingVertical: 4 },
   selectChip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: colors.borderSoft, backgroundColor: colors.card },

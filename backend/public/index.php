@@ -117,7 +117,7 @@ $router->post('/api/tax-codes', fn () => $taxCodes->store());
 $router->put('/api/tax-codes/{id}', fn ($id) => $taxCodes->update($id));
 $router->delete('/api/tax-codes/{id}', fn ($id) => $taxCodes->destroy($id));
 
-$stockUnits = new CrudController($pdo, 'stock_units', ['name', 'short_code', 'is_decimal'], 'catalog.manage_items');
+$stockUnits = new CrudController($pdo, 'stock_units', ['name', 'short_code', 'is_decimal', 'is_active'], 'catalog.manage_items');
 $router->get('/api/stock-units', fn () => $stockUnits->index());
 $router->post('/api/stock-units', fn () => $stockUnits->store());
 $router->put('/api/stock-units/{id}', fn ($id) => $stockUnits->update($id));

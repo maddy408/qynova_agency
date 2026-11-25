@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, Switch, PermissionsAndroid, Platform, Alert } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
-import { itemsApi, categoriesApi, brandsApi, productLinesApi, stockUnitsApi, taxCodesApi } from '../../api/catalog';
+import { itemsApi, categoriesApi, brandsApi, productLinesApi, stockUnitsApi, taxCodesApi, categoryBrandsApi } from '../../api/catalog';
 import { suppliersApi } from '../../api/parties';
 import { branchesApi } from '../../api/branches';
 import { friendlyErrorMessage } from '../../api/client';
@@ -49,12 +49,67 @@ export function ItemFormModal({ item, onClose }) {
     is_active: item ? !!Number(item.is_active) : true,
   });
   const [selectedBranches, setSelectedBranches] = useState(item?.branch_ids || []);
+  const [allowedBrandIds, setAllowedBrandIds] = useState(null);
+  const [touched, setTouched] = useState({});
+  const [fieldErrors, setFieldErrors] = useState({});
   const [imageAsset, setImageAsset] = useState(null);
   const [imagePreview, setImagePreview] = useState(item?.image ? resolveImageUrl(item.image) : null);
   const [imageRemoved, setImageRemoved] = useState(false);
   const [error, setError] = useState('');
 
-  const set = (k, v) => setForm((p) => ({ ...p, [k]: v }));
+  // Category -> Brand dependent mapping
+  useEffect(() => {
+    if (!form.category_id) {
+      setAllowedBrandIds(null);
+      return;
+    }
+    categoryBrandsApi
+      .get(form.category_id)
+      .then((res) => {
+        const ids = res?.brand_ids && res.brand_ids.length > 0 ? res.brand_ids : null;
+        setAllowedBrandIds(ids);
+        if (form.brand_id && ids && !ids.includes(form.brand_id)) {
+          setForm((p) => ({ ...p, brand_id: null }));
+        }
+      })
+      .catch(() => {
+        setAllowedBrandIds(null);
+      });
+  }, [form.category_id]);
+
+  const filteredBrands = allowedBrandIds
+    ? (brandsQuery.data || []).filter((b) => allowedBrandIds.includes(b.id))
+    : (brandsQuery.data || []);
+
+  const validateField = (k, v) => {
+    if (k === 'item_name') {
+      if (!String(v ?? '').trim()) return 'Item name is required.';
+    }
+    if (k === 'base_unit_id') {
+      if (!v) return 'Base unit is required.';
+    }
+    const numericKeys = ['mrp', 'purchase_price', 'cost_price', 'wholesale_price', 'retail_price', 'min_stock_threshold', 'opening_stock'];
+    if (numericKeys.includes(k) && v !== '' && v !== null && v !== undefined) {
+      const num = Number(v);
+      if (isNaN(num)) return 'Must be a valid number.';
+      if (num < 0) return 'Cannot be negative.';
+    }
+    return '';
+  };
+
+  const set = (k, v) => {
+    setForm((p) => ({ ...p, [k]: v }));
+    setError('');
+    if (touched[k]) {
+      setFieldErrors((prev) => ({ ...prev, [k]: validateField(k, v) }));
+    }
+  };
+
+  const handleBlur = (k) => {
+    setTouched((prev) => ({ ...prev, [k]: true }));
+    setFieldErrors((prev) => ({ ...prev, [k]: validateField(k, form[k]) }));
+  };
+
   const toggleBranch = (id) => setSelectedBranches((prev) => (prev.includes(id) ? prev.filter((b) => b !== id) : [...prev, id]));
 
   const createMutation = useMutation({ mutationFn: itemsApi.create });
@@ -122,14 +177,10 @@ export function ItemFormModal({ item, onClose }) {
 
   const submit = async () => {
     setError('');
-    if (!form.item_name?.trim()) {
-      setError('Item name is required.');
-      return;
-    }
-    if (!form.base_unit_id) {
-      setError('Base unit is required.');
-      return;
-    }
+    const nameErr = validateField('item_name', form.item_name);
+    const unitErr = validateField('base_unit_id', form.base_unit_id);
+    const nextTouched = { item_name: true, base_unit_id: true };
+    const nextErrors = { item_name: nameErr, base_unit_id: unitErr };
 
     // Number validations
     const priceFields = [
@@ -141,19 +192,22 @@ export function ItemFormModal({ item, onClose }) {
       { key: 'min_stock_threshold', label: 'Minimum Stock Threshold' },
       { key: 'opening_stock', label: 'Opening Stock' },
     ];
+    let numErr = '';
     for (const f of priceFields) {
-      const val = form[f.key];
-      if (val !== '' && val !== null && val !== undefined) {
-        const num = Number(val);
-        if (isNaN(num)) {
-          setError(`${f.label} must be a valid number.`);
-          return;
-        }
-        if (num < 0) {
-          setError(`${f.label} cannot be negative.`);
-          return;
-        }
+      const err = validateField(f.key, form[f.key]);
+      if (err) {
+        nextTouched[f.key] = true;
+        nextErrors[f.key] = `${f.label}: ${err}`;
+        if (!numErr) numErr = `${f.label}: ${err}`;
       }
+    }
+
+    setTouched((prev) => ({ ...prev, ...nextTouched }));
+    setFieldErrors((prev) => ({ ...prev, ...nextErrors }));
+
+    if (nameErr || unitErr || numErr) {
+      setError(nameErr || unitErr || numErr);
+      return;
     }
 
     const payload = {
@@ -238,11 +292,21 @@ export function ItemFormModal({ item, onClose }) {
         </View>
       </View>
 
-      <Text style={formStyles.label}>Item Name *</Text>
-      <TextInput value={form.item_name} onChangeText={(v) => set('item_name', v)} style={formStyles.input} />
+      <Text style={formStyles.label}>
+        Item Name <Text style={{ color: colors.danger }}>*</Text>
+      </Text>
+      <TextInput
+        value={form.item_name}
+        onChangeText={(v) => set('item_name', v)}
+        onBlur={() => handleBlur('item_name')}
+        style={[formStyles.input, touched.item_name && fieldErrors.item_name ? styles.inputError : null]}
+      />
+      {touched.item_name && fieldErrors.item_name ? (
+        <Text style={styles.fieldError}>{fieldErrors.item_name}</Text>
+      ) : null}
 
       <SelectField label="Category" value={form.category_id} options={categoriesQuery.data || []} onChange={(v) => set('category_id', v)} />
-      <SelectField label="Brand" value={form.brand_id} options={brandsQuery.data || []} onChange={(v) => set('brand_id', v)} />
+      <SelectField label="Brand" value={form.brand_id} options={filteredBrands} onChange={(v) => set('brand_id', v)} />
       <SelectField label="Product Line" value={form.product_line_id} options={productLinesQuery.data || []} onChange={(v) => set('product_line_id', v)} />
       <SelectField label="Supplier" value={form.supplier_id} options={suppliersQuery.data || []} onChange={(v) => set('supplier_id', v)} />
       <SelectField label="Tax Code / GST %" value={form.tax_code_id} options={taxQuery.data || []} labelKey="code" onChange={(v) => set('tax_code_id', v)} />
@@ -259,7 +323,19 @@ export function ItemFormModal({ item, onClose }) {
       </View>
 
       <Text style={styles.sectionTitle}>Units</Text>
-      <SelectField label="Base Unit *" value={form.base_unit_id} options={units} labelKey="short_code" onChange={(v) => set('base_unit_id', v)} />
+      <SelectField
+        label="Base Unit *"
+        value={form.base_unit_id}
+        options={units}
+        labelKey="short_code"
+        onChange={(v) => {
+          set('base_unit_id', v);
+          handleBlur('base_unit_id');
+        }}
+      />
+      {touched.base_unit_id && fieldErrors.base_unit_id ? (
+        <Text style={styles.fieldError}>{fieldErrors.base_unit_id}</Text>
+      ) : null}
       <SelectField label="Secondary Unit (optional)" value={form.secondary_unit_id} options={secondaryUnitOptions} labelKey="short_code" onChange={(v) => set('secondary_unit_id', v)} />
 
       <Text style={styles.sectionTitle}>Primary Unit Pricing</Text>
@@ -360,4 +436,6 @@ const styles = StyleSheet.create({
   checkboxChecked: { backgroundColor: colors.gold, borderColor: colors.gold },
   checkboxTick: { color: '#fff', fontSize: 11, fontWeight: '700' },
   branchLabel: { fontSize: 13, color: colors.ink },
+  fieldError: { color: colors.danger, fontSize: 11, marginTop: 3, fontWeight: '600' },
+  inputError: { borderColor: colors.danger, borderWidth: 1.5 },
 });

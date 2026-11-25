@@ -343,8 +343,65 @@ class ItemModel
      */
     public function delete(int $id): array
     {
-        $this->pdo->prepare('UPDATE items SET is_active = 0 WHERE id = :id')->execute(['id' => $id]);
-        return ['deleted' => true, 'deactivated' => true, 'message' => 'Item deactivated. It will no longer appear in Billing or the active Items list, and remains available for existing invoices/reports.'];
+        // Check for historical transactions across sales, purchases, stock ledger and prebookings
+        $invoiceCount = 0;
+        try {
+            $stmt = $this->pdo->prepare('SELECT COUNT(*) FROM invoice_items WHERE item_id = :id');
+            $stmt->execute(['id' => $id]);
+            $invoiceCount = (int) $stmt->fetchColumn();
+        } catch (\Throwable $e) {}
+
+        $purchaseCount = 0;
+        try {
+            $stmt = $this->pdo->prepare('SELECT COUNT(*) FROM purchase_items WHERE item_id = :id');
+            $stmt->execute(['id' => $id]);
+            $purchaseCount = (int) $stmt->fetchColumn();
+        } catch (\Throwable $e) {}
+
+        $movementCount = 0;
+        try {
+            $stmt = $this->pdo->prepare('SELECT COUNT(*) FROM stock_movements WHERE item_id = :id');
+            $stmt->execute(['id' => $id]);
+            $movementCount = (int) $stmt->fetchColumn();
+        } catch (\Throwable $e) {}
+
+        $prebookingCount = 0;
+        try {
+            $stmt = $this->pdo->prepare('SELECT COUNT(*) FROM customer_prebooking_items WHERE item_id = :id');
+            $stmt->execute(['id' => $id]);
+            $prebookingCount = (int) $stmt->fetchColumn();
+        } catch (\Throwable $e) {}
+
+        $totalReferences = $invoiceCount + $purchaseCount + $movementCount + $prebookingCount;
+        if ($totalReferences > 0) {
+            http_response_code(422);
+            header('Content-Type: application/json');
+            echo json_encode([
+                'error' => "Cannot permanently delete this item because it is referenced by {$totalReferences} existing transaction(s) (sales, purchases, or stock ledger). Please deactivate it instead.",
+                'can_deactivate' => true,
+                'reference_count' => $totalReferences
+            ]);
+            exit;
+        }
+
+        // Clean delete: remove relational records first, then delete item
+        $this->pdo->beginTransaction();
+        try {
+            $this->pdo->prepare('DELETE FROM item_branches WHERE item_id = :id')->execute(['id' => $id]);
+            $this->pdo->prepare('DELETE FROM item_unit_conversions WHERE item_id = :id')->execute(['id' => $id]);
+            $this->pdo->prepare('DELETE FROM items WHERE id = :id')->execute(['id' => $id]);
+            $this->pdo->commit();
+            return [
+                'deleted' => true,
+                'message' => 'Item deleted permanently.'
+            ];
+        } catch (\Throwable $e) {
+            $this->pdo->rollBack();
+            http_response_code(422);
+            header('Content-Type: application/json');
+            echo json_encode(['error' => 'Failed to delete item: ' . $e->getMessage()]);
+            exit;
+        }
     }
 
     private function saveUnitConversions(int $itemId, array $unitConversions): void

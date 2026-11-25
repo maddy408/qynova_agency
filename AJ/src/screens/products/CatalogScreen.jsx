@@ -47,8 +47,16 @@ export function CatalogScreen() {
             fields={[
               { name: 'name', label: 'Unit name', required: true },
               { name: 'short_code', label: 'Short code', required: true },
+              { name: 'is_decimal', label: 'Allow Decimal Quantity', type: 'switch', default: 0 },
+              { name: 'is_active', label: 'Active Status', type: 'switch', default: 1 },
             ]}
             renderTitle={(r) => `${r.name} (${r.short_code})`}
+            renderSubtitle={(r) => `Decimals: ${Number(r.is_decimal) ? 'Allowed' : 'No'} · ${Number(r.is_active ?? 1) ? 'Active' : 'Inactive'}`}
+            transformSubmit={(form) => ({
+              ...form,
+              is_decimal: Number(form.is_decimal ? 1 : 0),
+              is_active: Number(form.is_active !== undefined ? (form.is_active ? 1 : 0) : 1),
+            })}
           />
         )}
         {tab === 'product-lines' && (

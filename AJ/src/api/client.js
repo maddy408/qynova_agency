@@ -43,8 +43,20 @@ export function friendlyErrorMessage(error) {
   if (status === 401) return 'Your session has expired. Please sign in again.';
   if (status === 403) return data?.error || "You don't have permission to do that.";
   if (status === 404) return 'That record could not be found.';
-  if (status === 422) return data?.error || (data?.errors ? data.errors.join(', ') : 'Please check the entered details.');
-  if (status >= 500) return 'The server ran into a problem. Please try again shortly.';
+  if (status === 422) {
+    const raw = data?.error || (data?.errors ? data.errors.join(', ') : '');
+    if (typeof raw === 'string' && (raw.includes('1451') || raw.includes('foreign key constraint fails') || raw.includes('Integrity constraint violation'))) {
+      return 'Cannot delete this record because it is referenced by other existing transactions or items.';
+    }
+    return raw || 'Please check the entered details.';
+  }
+  if (status >= 500) {
+    const raw = data?.error || '';
+    if (typeof raw === 'string' && (raw.includes('1451') || raw.includes('foreign key constraint fails') || raw.includes('Integrity constraint violation'))) {
+      return 'Cannot delete this record because it is referenced by other existing transactions or items.';
+    }
+    return 'The server ran into a problem. Please try again shortly.';
+  }
   return data?.error || 'Something went wrong. Please try again.';
 }
 

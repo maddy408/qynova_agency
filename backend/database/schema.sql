@@ -194,6 +194,7 @@ CREATE TABLE IF NOT EXISTS stock_units (
   name VARCHAR(50) NOT NULL,
   short_code VARCHAR(10) NOT NULL,
   is_decimal TINYINT(1) NOT NULL DEFAULT 0,
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
   UNIQUE KEY uq_stock_units_short_code (short_code)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
