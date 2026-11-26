@@ -499,11 +499,19 @@ function GrnTab({ modalVisible, setModalVisible }) {
     onError: (e) => setEditError(friendlyErrorMessage(e)),
   });
 
-  const openEdit = (grn) => {
-    setEditingGrn(grn);
-    setEditPaid(String(grn.paid_amount ?? '0'));
-    setEditNotes(grn.notes || '');
-    setEditError('');
+  const openEdit = async (grn) => {
+    try {
+      const full = await purchasesApi.get(grn.id);
+      setEditingGrn(full);
+      setEditPaid(String(full.paid_amount ?? '0'));
+      setEditNotes(full.notes || full.supplier_invoice_no || '');
+      setEditError('');
+    } catch (e) {
+      setEditingGrn(grn);
+      setEditPaid(String(grn.paid_amount ?? '0'));
+      setEditNotes(grn.notes || grn.supplier_invoice_no || '');
+      setEditError('');
+    }
   };
 
   const saveEdit = () => {
@@ -514,11 +522,33 @@ function GrnTab({ modalVisible, setModalVisible }) {
       setEditError(`Paid amount cannot exceed grand total (Rs. ${grand.toFixed(2)})`);
       return;
     }
+
+    // Backend PUT /api/purchases/{id} requires { items: [...] } with valid item_id and qty
+    const items = (editingGrn.items || []).map((it) => ({
+      item_id: it.item_id,
+      unit_id: it.unit_id ? Number(it.unit_id) : undefined,
+      qty: Number(it.qty),
+      free_qty: Number(it.free_qty || 0),
+      mrp: it.mrp !== null && it.mrp !== undefined && it.mrp !== '' ? Number(it.mrp) : undefined,
+      rate: Number(it.rate),
+      discount_percent: Number(it.discount_percent || 0),
+      discount_amount: Number(it.discount_amount || 0),
+      tax_percent: Number(it.tax_percent || 0),
+    }));
+
+    if (items.length === 0) {
+      setEditError('Cannot edit GRN: No line items found.');
+      return;
+    }
+
     updateMutation.mutate({
       id: editingGrn.id,
       data: {
+        supplier_id: editingGrn.supplier_id,
+        supplier_invoice_no: editNotes.trim() || editingGrn.supplier_invoice_no || null,
+        payment_mode: editingGrn.payment_mode || 'credit',
         paid_amount: paid,
-        notes: editNotes.trim() || null,
+        items,
       },
     });
   };
