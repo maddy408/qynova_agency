@@ -494,12 +494,14 @@ export function POS() {
       setCustomerSearch('');
       setIsQuickSale(false);
       setShowCustomerDropdown(false);
+      setShowPaymentModal(false);
       return;
     }
     setCustomerId(String(customer.id));
     setCustomerSearch(customer.ledger_name || customer.name || '');
     setIsQuickSale(false);
     setShowCustomerDropdown(false);
+    setShowPaymentModal(false);
     // Shift focus to product search field and automatically show product list
     setTimeout(() => {
       productSearchInputRef.current?.focus();
@@ -1004,6 +1006,7 @@ export function POS() {
     setBillDiscountMode('amount');
     setPayments([{ payment_method: 'credit', amount: 0, reference_no: '' }]);
     setSplitMode(false);
+    setShowPaymentModal(false);
     if (linkedPrebooking) {
       setLinkedPrebooking(null);
       searchParams.delete('prebooking_id');
@@ -2060,7 +2063,7 @@ export function POS() {
       </div>
 
       {/* Payment Modal */}
-      {showPaymentModal && (
+      {showPaymentModal && cart.length > 0 && (
         <PaymentModal
           totals={totals}
           customerName={customers.find((c) => String(c.id) === String(customerId))?.ledger_name}

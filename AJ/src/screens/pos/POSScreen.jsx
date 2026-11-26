@@ -240,6 +240,8 @@ export function POSScreen() {
     setHeldId(null);
     setCustomerSearch('');
     setCustomerDropdownOpen(false);
+    setCartVisible(false);
+    setErrorMessage('');
   };
 
   const holdBill = async () => {
@@ -395,6 +397,7 @@ export function POSScreen() {
               setCustomerId(null);
               setCustomerSearch('');
               setCustomerDropdownOpen(false);
+              setCartVisible(false);
             }}
           >
             <Text style={!customerId ? styles.customerChipTextActive : styles.customerChipText}>Walk-in</Text>
@@ -421,6 +424,7 @@ export function POSScreen() {
                     setCustomerId(null);
                     setCustomerSearch('');
                     setCustomerDropdownOpen(false);
+                    setCartVisible(false);
                   }}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                   style={styles.customerClearBtn}
@@ -452,6 +456,7 @@ export function POSScreen() {
                     setCustomerId(c.id);
                     setCustomerSearch('');
                     setCustomerDropdownOpen(false);
+                    setCartVisible(false);
                   }}
                 >
                   <View style={{ flex: 1 }}>
@@ -523,7 +528,7 @@ export function POSScreen() {
       <BarcodeScannerModal visible={barcodeVisible} onScan={handleBarcodeRead} onClose={() => setBarcodeVisible(false)} />
 
       <CartSheet
-        visible={cartVisible}
+        visible={cartVisible && cart.length > 0}
         cart={cart}
         setCart={setCart}
         billType={billType}

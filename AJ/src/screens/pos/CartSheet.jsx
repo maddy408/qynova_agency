@@ -22,6 +22,27 @@ export function CartSheet({
   const [payments, setPayments] = useState([{ payment_method: defaultMethod, amount: 0 }]);
   const [discountError, setDiscountError] = useState('');
 
+  const isSheetOpen = Boolean(visible && cart && cart.length > 0);
+
+  // Whenever sheet closes or cart becomes empty, immediately reset stage back to 'cart'
+  // so any future opening never accidentally jumps directly to the Payment view.
+  useEffect(() => {
+    if (!isSheetOpen) {
+      setStage('cart');
+      setSplitMode(false);
+      setDiscountError('');
+      setSelectingUnitLineKey(null);
+    }
+  }, [isSheetOpen]);
+
+  const handleClose = () => {
+    setStage('cart');
+    setSplitMode(false);
+    setDiscountError('');
+    setSelectingUnitLineKey(null);
+    onClose?.();
+  };
+
   const pricedLines = cart.map((line) => ({
     ...line,
     priced: priceLine(line.item, line.discount_mode === 'amount' ? { ...line, discount_percent: 0 } : { ...line, discount_amount: '' }, billType, priceType),
@@ -121,13 +142,13 @@ export function CartSheet({
   };
 
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
+    <Modal visible={isSheetOpen} animationType="slide" onRequestClose={handleClose}>
       <View style={styles.screen}>
         {stage === 'cart' ? (
           <>
             <View style={styles.headerRow}>
               <Text style={styles.title}>Current Bill</Text>
-              <TouchableOpacity onPress={onClose} style={{ padding: 4 }}>
+              <TouchableOpacity onPress={handleClose} style={{ padding: 4 }}>
                 <Icon name="close" size={20} color={colors.inkMuted} />
               </TouchableOpacity>
             </View>
@@ -250,7 +271,7 @@ export function CartSheet({
             )}
             {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
             <View style={styles.footerRow}>
-              <TouchableOpacity style={styles.secondaryBtn} onPress={onClose}><Text style={styles.secondaryBtnText}>Close</Text></TouchableOpacity>
+              <TouchableOpacity style={styles.secondaryBtn} onPress={handleClose}><Text style={styles.secondaryBtnText}>Close</Text></TouchableOpacity>
               <TouchableOpacity
                 style={[styles.secondaryBtn, (cart.length === 0 || holding || hasLineDiscountError) && styles.disabled]}
                 disabled={cart.length === 0 || holding || hasLineDiscountError}
@@ -271,7 +292,7 @@ export function CartSheet({
           <>
             <View style={styles.headerRow}>
               <Text style={styles.title}>Payment</Text>
-              <TouchableOpacity onPress={() => setStage('cart')} style={{ padding: 4 }}>
+              <TouchableOpacity onPress={handleClose} style={{ padding: 4 }}>
                 <Icon name="close" size={20} color={colors.inkMuted} />
               </TouchableOpacity>
             </View>
