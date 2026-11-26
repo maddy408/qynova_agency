@@ -63,10 +63,46 @@ function ProfilePanel() {
     mutationFn: settingsApi.updateBranch,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['settings-branch'] });
+      queryClient.invalidateQueries({ queryKey: ['branches'] });
       Alert.alert('Saved', 'Branch details updated successfully.');
     },
     onError: (e) => Alert.alert('Error', friendlyErrorMessage(e)),
   });
+
+  const handleSave = () => {
+    if (!branch.branch_name || !branch.branch_name.trim()) {
+      Alert.alert('Validation Error', 'Branch Name is required.');
+      return;
+    }
+    if (!branch.print_name || !branch.print_name.trim()) {
+      Alert.alert('Validation Error', 'Print Name is required.');
+      return;
+    }
+    const cleanPhone = (branch.phone || '').trim();
+    if (cleanPhone) {
+      if (!/^\d{10}$/.test(cleanPhone)) {
+        Alert.alert('Validation Error', 'Phone number must be exactly 10 digits.');
+        return;
+      }
+    }
+    const cleanEmail = (branch.support_email || '').trim();
+    if (cleanEmail) {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+        Alert.alert('Validation Error', 'Please enter a valid email address.');
+        return;
+      }
+    }
+    updateMutation.mutate({
+      ...branch,
+      branch_name: branch.branch_name.trim(),
+      print_name: branch.print_name.trim(),
+      phone: cleanPhone || null,
+      support_email: cleanEmail || null,
+      address_line1: branch.address_line1 ? branch.address_line1.trim() : null,
+      gstin: branch.gstin ? branch.gstin.trim() : null,
+      pan_number: branch.pan_number ? branch.pan_number.trim() : null,
+    });
+  };
 
   return (
     <ScrollView style={styles.tabContent} contentContainerStyle={{ padding: 16, paddingBottom: 140 }}>
@@ -130,7 +166,7 @@ function ProfilePanel() {
         />
         <TouchableOpacity
           style={[formStyles.primaryBtn, { marginTop: 14 }]}
-          onPress={() => updateMutation.mutate(branch)}
+          onPress={handleSave}
           disabled={updateMutation.isPending}
         >
           <Text style={formStyles.primaryBtnText}>{updateMutation.isPending ? 'Saving…' : 'Save Changes'}</Text>
@@ -591,7 +627,7 @@ function PriceAdjustmentPanel({ type, label }) {
           onPress={handleSave}
           disabled={changedIds.length === 0 || saveMutation.isPending}
         >
-          <Text style={styles.saveBatchBtnText}>
+          <Text style={changedIds.length === 0 ? styles.saveBatchBtnTextDisabled : styles.saveBatchBtnText}>
             {saveMutation.isPending ? 'Saving…' : `Save${changedIds.length ? ` (${changedIds.length})` : ''}`}
           </Text>
         </TouchableOpacity>
@@ -732,13 +768,20 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   saveBatchBtn: {
-    backgroundColor: colors.navbar,
-    paddingHorizontal: 14,
-    paddingVertical: 9,
+    backgroundColor: '#10B981',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  saveBatchBtnDisabled: { opacity: 0.5 },
-  saveBatchBtnText: { color: colors.gold, fontWeight: '700', fontSize: 12 },
+  saveBatchBtnDisabled: {
+    backgroundColor: '#E2E8F0',
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+  },
+  saveBatchBtnText: { color: '#FFFFFF', fontWeight: '700', fontSize: 12 },
+  saveBatchBtnTextDisabled: { color: '#64748B', fontWeight: '700', fontSize: 12 },
   resetBatchBtn: { paddingHorizontal: 8, paddingVertical: 9 },
   resetBatchBtnText: { color: colors.inkMuted, fontWeight: '600', fontSize: 12 },
   empty: { textAlign: 'center', color: colors.inkMuted, marginTop: 40, fontSize: 13 },

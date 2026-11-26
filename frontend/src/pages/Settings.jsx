@@ -16,6 +16,8 @@ function CompanyProfilePanel({ canManage }) {
   const [form, setForm] = useState(null);
   const [message, setMessage] = useState('');
 
+  const [error, setError] = useState('');
+
   useEffect(() => {
     if (branchQuery.data && !form) setForm(branchQuery.data);
   }, [branchQuery.data]);
@@ -25,19 +27,55 @@ function CompanyProfilePanel({ canManage }) {
     onSuccess: (data) => {
       setForm(data);
       queryClient.invalidateQueries({ queryKey: ['settings-branch'] });
+      queryClient.invalidateQueries({ queryKey: ['branches'] });
+      setError('');
       setMessage('Saved.');
       setTimeout(() => setMessage(''), 2500);
+    },
+    onError: (err) => {
+      setError(err?.response?.data?.error || 'Failed to update company profile');
     },
   });
 
   if (!form) return <div className="py-8 text-center text-xs font-semibold text-slate-400">Loading company profile…</div>;
+
+  const handleSave = () => {
+    setError('');
+    if (!form.branch_name?.trim()) {
+      setError('Branch name is required.');
+      return;
+    }
+    if (!form.print_name?.trim()) {
+      setError('Print name is required.');
+      return;
+    }
+    const cleanPhone = (form.phone || '').trim();
+    if (cleanPhone && !/^\d{10}$/.test(cleanPhone)) {
+      setError('Phone number must be exactly 10 digits.');
+      return;
+    }
+    const cleanEmail = (form.support_email || '').trim();
+    if (cleanEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      setError('Please enter a valid email address.');
+      return;
+    }
+    saveMutation.mutate({
+      ...form,
+      phone: cleanPhone,
+      support_email: cleanEmail,
+    });
+  };
 
   const field = (name, label, span = '') => (
     <label className={`flex flex-col gap-1.5 ${span}`}>
       <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">{label}</span>
       <input
         value={form[name] ?? ''}
-        onChange={(e) => setForm({ ...form, [name]: e.target.value })}
+        maxLength={name === 'phone' ? 10 : undefined}
+        onChange={(e) => {
+          const val = name === 'phone' ? e.target.value.replace(/\D/g, '').slice(0, 10) : e.target.value;
+          setForm({ ...form, [name]: val });
+        }}
         disabled={!canManage}
         className="w-full rounded-xl border border-[#D5E3F7] bg-white px-3.5 py-2 text-xs font-semibold text-[#0B1B45] shadow-xs outline-none transition focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15 disabled:bg-[#F8FAFD] disabled:text-slate-400"
       />
@@ -65,15 +103,16 @@ function CompanyProfilePanel({ canManage }) {
         {field('pincode', 'Pincode')}
       </div>
       {canManage && (
-        <div className="mt-6 flex items-center gap-3 pt-3 border-t border-[#EAF1FA]">
+        <div className="mt-6 flex flex-wrap items-center gap-3 pt-3 border-t border-[#EAF1FA]">
           <Button
-            onClick={() => saveMutation.mutate(form)}
+            onClick={handleSave}
             disabled={saveMutation.isPending}
             icon={<Save size={15} />}
           >
             {saveMutation.isPending ? 'Saving…' : 'Save Changes'}
           </Button>
           {message && <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">{message}</span>}
+          {error && <span className="text-xs font-bold text-rose-600 bg-rose-50 px-3 py-1 rounded-full border border-rose-200">{error}</span>}
         </div>
       )}
     </div>

@@ -37,6 +37,7 @@ export function EntityListScreen({ queryKey, api, title, fields, renderTitle, re
     mutationFn: api.create,
     onSuccess: () => {
       invalidate();
+      listQuery.refetch();
       closeModal();
       Alert.alert('Success', `${title} created successfully.`);
     },
@@ -50,6 +51,7 @@ export function EntityListScreen({ queryKey, api, title, fields, renderTitle, re
     mutationFn: ({ id, data }) => api.update(id, data),
     onSuccess: () => {
       invalidate();
+      listQuery.refetch();
       closeModal();
       Alert.alert('Success', `${title} updated successfully.`);
     },
@@ -81,8 +83,15 @@ export function EntityListScreen({ queryKey, api, title, fields, renderTitle, re
       Object.fromEntries(
         fields.map((f) => {
           if (f.type === 'switch') {
-            const raw = row[f.name];
-            return [f.name, raw !== undefined && raw !== null ? (Number(raw) === 1 ? 1 : 0) : (f.default ?? 1)];
+            let raw = row[f.name];
+            if (raw === undefined) {
+              if (row.status !== undefined) {
+                raw = (row.status === 'active' || row.status === 1 || row.status === '1') ? 1 : 0;
+              } else if (row.is_active !== undefined) {
+                raw = Number(row.is_active) === 1 ? 1 : 0;
+              }
+            }
+            return [f.name, raw !== undefined && raw !== null ? (raw === 'active' || Number(raw) === 1 ? 1 : 0) : (f.default ?? 1)];
           }
           return [f.name, row[f.name] ?? ''];
         })

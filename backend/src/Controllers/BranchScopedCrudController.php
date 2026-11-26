@@ -305,7 +305,12 @@ class BranchScopedCrudController
         $branchId = $this->resolveBranchId($claims);
         $row = $this->model()->find($id);
 
-        if (!$row || (int) $row['branch_id'] !== $branchId) {
+        if (!$row) {
+            Response::error('Not found', 404);
+        }
+
+        $canSwitch = in_array('branches.switch_context', (array) ($claims['permissions'] ?? []), true);
+        if (!$canSwitch && isset($row['branch_id']) && (int) $row['branch_id'] !== $branchId) {
             Response::error('Not found', 404);
         }
 

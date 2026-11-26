@@ -7,7 +7,8 @@ import { colors } from '../theme/colors';
  * Uses strict maxHeight and flex-none controls to prevent horizontal ScrollView from stretching vertically.
  */
 export function SegmentedTabs({ tabs, active, onChange, style }) {
-  const scrollable = tabs.length > 3;
+  const hasLongLabels = tabs.some((t) => (t.label || '').length > 11);
+  const scrollable = tabs.length > 3 || (tabs.length >= 3 && hasLongLabels);
 
   const renderTab = (t) => {
     const isActive = active === t.key;
@@ -15,8 +16,8 @@ export function SegmentedTabs({ tabs, active, onChange, style }) {
       <TouchableOpacity
         key={t.key}
         style={[
-          styles.tab,
-          scrollable && styles.tabScrollable,
+          styles.tabBase,
+          scrollable ? styles.tabScrollable : styles.tabEqual,
           isActive && styles.tabActive,
         ]}
         onPress={() => onChange(t.key)}
@@ -49,7 +50,7 @@ export function SegmentedTabs({ tabs, active, onChange, style }) {
 
 const styles = StyleSheet.create({
   scrollOuter: {
-    height: 44,
+    height: 46,
     marginHorizontal: 12,
     marginTop: 8,
     marginBottom: 6,
@@ -63,6 +64,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: 4,
     gap: 6,
   },
   wrap: {
@@ -76,17 +78,19 @@ const styles = StyleSheet.create({
     height: 44,
     alignItems: 'center',
   },
-  tab: {
-    flex: 1,
+  tabBase: {
     height: 38,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  tabEqual: {
+    flex: 1,
+  },
   tabScrollable: {
-    flex: 0,
+    flexGrow: 0,
+    flexShrink: 0,
     paddingHorizontal: 16,
-    height: 38,
   },
   tabActive: {
     backgroundColor: colors.card,

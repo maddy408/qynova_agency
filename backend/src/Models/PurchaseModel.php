@@ -383,12 +383,8 @@ class PurchaseModel
      * balance — paid_amount (real money already paid) is never rewritten.
      * Mirrors InvoiceModel::editCompleted().
      */
-    public function editPurchase(int $id, array $header, array $lines, int $actorId): array
+    public function editPurchase(int $id, array $header, ?array $lines, int $actorId): array
     {
-        if (empty($lines)) {
-            throw new \RuntimeException('At least one item is required');
-        }
-
         $this->pdo->beginTransaction();
         try {
             $stmt = $this->pdo->prepare('SELECT * FROM purchases WHERE id = :id FOR UPDATE');
@@ -402,35 +398,46 @@ class PurchaseModel
                 throw new \RuntimeException('Only an active GRN can be edited');
             }
 
-            $stmt = $this->pdo->prepare('SELECT * FROM purchase_items WHERE purchase_id = :id');
-            $stmt->execute(['id' => $id]);
-            $oldItems = $stmt->fetchAll();
+            $newGrandTotal = (float) $purchase['grand_total'];
+            $newSubtotal = (float) $purchase['subtotal'];
+            $newTaxTotal = (float) $purchase['tax_total'];
 
-            $stockService = new StockLedgerService($this->pdo);
-            foreach ($oldItems as $item) {
-                $stockService->applyMovement(
-                    (int) $item['item_id'], 'branch', (int) $purchase['branch_id'],
-                    -((float) $item['qty'] + (float) $item['free_qty']),
-                    'purchase_return', 'purchases', $id, 'grn_edited', null, $actorId
-                );
+            if ($lines !== null && !empty($lines)) {
+                $stmt = $this->pdo->prepare('SELECT * FROM purchase_items WHERE purchase_id = :id');
+                $stmt->execute(['id' => $id]);
+                $oldItems = $stmt->fetchAll();
+
+                $stockService = new StockLedgerService($this->pdo);
+                foreach ($oldItems as $item) {
+                    $stockService->applyMovement(
+                        (int) $item['item_id'], 'branch', (int) $purchase['branch_id'],
+                        -((float) $item['qty'] + (float) $item['free_qty']),
+                        'purchase_return', 'purchases', $id, 'grn_edited', null, $actorId
+                    );
+                }
+
+                $this->pdo->prepare('DELETE FROM purchase_items WHERE purchase_id = :id')->execute(['id' => $id]);
+
+                $totals = $this->aggregateTotals($lines);
+                $this->insertLines($id, $lines);
+
+                foreach ($lines as $line) {
+                    $stockService->applyMovement(
+                        $line['item_id'], 'branch', (int) $purchase['branch_id'],
+                        $line['qty'] + $line['free_qty'],
+                        'purchase', 'purchases', $id, null, null, $actorId
+                    );
+                }
+
+                $newGrandTotal = $totals['grand_total'];
+                $newSubtotal = $totals['subtotal'];
+                $newTaxTotal = $totals['tax_total'];
             }
 
-            $this->pdo->prepare('DELETE FROM purchase_items WHERE purchase_id = :id')->execute(['id' => $id]);
-
-            $totals = $this->aggregateTotals($lines);
-            $this->insertLines($id, $lines);
-
-            foreach ($lines as $line) {
-                $stockService->applyMovement(
-                    $line['item_id'], 'branch', (int) $purchase['branch_id'],
-                    $line['qty'] + $line['free_qty'],
-                    'purchase', 'purchases', $id, null, null, $actorId
-                );
-            }
-
-            $paidAmount = (float) $purchase['paid_amount'];
-            $oldPending = round((float) $purchase['grand_total'] - $paidAmount, 2);
-            $newPending = round($totals['grand_total'] - $paidAmount, 2);
+            $oldPaid = (float) $purchase['paid_amount'];
+            $newPaid = isset($header['paid_amount']) ? (float) $header['paid_amount'] : $oldPaid;
+            $oldPending = round((float) $purchase['grand_total'] - $oldPaid, 2);
+            $newPending = round($newGrandTotal - $newPaid, 2);
             $delta = round($newPending - $oldPending, 2);
 
             if (abs($delta) > 0.009) {
@@ -448,15 +455,19 @@ class PurchaseModel
             $stmt = $this->pdo->prepare(
                 'UPDATE purchases SET
                     supplier_invoice_no = :supplier_invoice_no,
+                    paid_amount = :paid_amount,
+                    payment_mode = :payment_mode,
                     subtotal = :subtotal, tax_total = :tax_total, grand_total = :grand_total
                  WHERE id = :id'
             );
             $stmt->execute([
                 'id' => $id,
                 'supplier_invoice_no' => $header['supplier_invoice_no'] ?? $purchase['supplier_invoice_no'],
-                'subtotal' => $totals['subtotal'],
-                'tax_total' => $totals['tax_total'],
-                'grand_total' => $totals['grand_total'],
+                'paid_amount' => $newPaid,
+                'payment_mode' => $header['payment_mode'] ?? $purchase['payment_mode'],
+                'subtotal' => $newSubtotal,
+                'tax_total' => $newTaxTotal,
+                'grand_total' => $newGrandTotal,
             ]);
 
             $this->pdo->commit();

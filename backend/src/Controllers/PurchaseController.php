@@ -334,15 +334,28 @@ class PurchaseController
         }
 
         $body = json_decode(file_get_contents('php://input'), true) ?? [];
-        [$lines, $error] = $this->priceLines($body['items'] ?? [], (int) $existing['branch_id']);
-        if ($error) {
-            Response::error($error, 422);
+        $header = [
+            'supplier_invoice_no' => $body['supplier_invoice_no'] ?? null,
+        ];
+        if (array_key_exists('paid_amount', $body)) {
+            $header['paid_amount'] = (float) $body['paid_amount'];
+        }
+        if (!empty($body['payment_mode'])) {
+            $header['payment_mode'] = $body['payment_mode'];
+        }
+
+        $lines = null;
+        if (!empty($body['items'])) {
+            [$lines, $error] = $this->priceLines($body['items'], (int) $existing['branch_id']);
+            if ($error) {
+                Response::error($error, 422);
+            }
         }
 
         try {
             $result = $this->model->editPurchase(
                 (int) $id,
-                ['supplier_invoice_no' => $body['supplier_invoice_no'] ?? null],
+                $header,
                 $lines,
                 (int) $claims['sub']
             );

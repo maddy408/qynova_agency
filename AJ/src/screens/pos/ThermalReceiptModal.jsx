@@ -1,17 +1,30 @@
 import React, { useState } from 'react';
 import { Modal, View, Text, ScrollView, TouchableOpacity, StyleSheet, Share, Alert, ActivityIndicator } from 'react-native';
+import { useQuery } from '@tanstack/react-query';
 import { Icon } from '../../components/Icon';
 import { colors } from '../../theme/colors';
 import { printInvoiceReceipt, getConfiguredPrinter } from '../../utils/printerService';
 import { downloadInvoicePdf } from '../../utils/pdfService';
 import { invoicesApi } from '../../api/invoices';
+import { settingsApi } from '../../api/admin';
 import { friendlyErrorMessage } from '../../api/client';
 
 export function ThermalReceiptModal({ visible, invoice, onClose }) {
   const [printing, setPrinting] = useState(false);
   const [downloading, setDownloading] = useState(false);
 
+  const branchQuery = useQuery({
+    queryKey: ['settings-branch'],
+    queryFn: settingsApi.getBranch,
+    enabled: visible,
+  });
+
   if (!visible || !invoice) return null;
+
+  const branch = invoice.branch || branchQuery.data || {};
+  const shopTitle = branch.print_name || branch.branch_name || 'AJ AGENCY';
+  const shopAddress = branch.address_line1 ? (branch.address_line1 + (branch.city ? `, ${branch.city}` : '')) : '';
+  const shopContact = [branch.gstin ? `GSTIN: ${branch.gstin}` : '', branch.phone ? `Ph: ${branch.phone}` : ''].filter(Boolean).join(' · ');
 
   const items = invoice.items || [];
   const grandTotal = Number(invoice.grand_total || 0).toFixed(2);
@@ -26,7 +39,7 @@ export function ThermalReceiptModal({ visible, invoice, onClose }) {
       const lineItemsStr = items
         .map((l) => `${l.item_name_snapshot || l.item_name || 'Item'} x${l.qty} @ Rs.${l.rate} = Rs.${l.line_total}`)
         .join('\n');
-      const shareMsg = `AJ AGENCY\nDistributor Billing & Inventory\n--------------------------------\nInvoice #: ${invoiceNo}\nDate: ${dateStr}\nCustomer: ${customerName}\nStatus: ${paymentStatus}\n--------------------------------\n${lineItemsStr}\n--------------------------------\nGrand Total: Rs. ${grandTotal}\n--------------------------------\nThank you for shopping with us!`;
+      const shareMsg = `${shopTitle}\nDistributor Billing & Inventory\n${shopAddress ? shopAddress + '\n' : ''}${shopContact ? shopContact + '\n' : ''}--------------------------------\nInvoice #: ${invoiceNo}\nDate: ${dateStr}\nCustomer: ${customerName}\nStatus: ${paymentStatus}\n--------------------------------\n${lineItemsStr}\n--------------------------------\nGrand Total: Rs. ${grandTotal}\n--------------------------------\nThank you for shopping with us!`;
       await Share.share({ message: shareMsg });
     } catch (err) {
       Alert.alert('Share Error', err.message);
@@ -44,7 +57,7 @@ export function ThermalReceiptModal({ visible, invoice, onClose }) {
         Alert.alert('No printer configured', 'Go to Settings > Thermal Printer to pair a printer first.');
         return;
       }
-      await printInvoiceReceipt(invoice);
+      await printInvoiceReceipt(invoice, branch);
       Alert.alert('Printed', `Invoice ${invoiceNo} sent to ${configured.name || configured.address}.`);
     } catch (err) {
       Alert.alert('Print failed', err?.message || 'Could not print to the configured printer.');
@@ -84,11 +97,11 @@ export function ThermalReceiptModal({ visible, invoice, onClose }) {
             items: formattedItems,
           },
           branch: {
-            print_name: 'AJ AGENCY',
-            address_line1: 'Main Road',
-            city: 'Commercial Hub',
-            phone: '+91 9876543210',
-            gstin: '33AAAAA0000A1Z5',
+            print_name: shopTitle,
+            address_line1: branch.address_line1 || 'Main Road',
+            city: branch.city || 'Commercial Hub',
+            phone: branch.phone || '',
+            gstin: branch.gstin || '',
           },
           tax_slabs: [],
           amount_in_words: `Rupees ${Number(invoice.grand_total || 0).toFixed(2)} Only`,
@@ -123,10 +136,10 @@ export function ThermalReceiptModal({ visible, invoice, onClose }) {
             <View style={styles.paper}>
               {/* Paper Top Jagged Edge / Header */}
               <View style={styles.shopHeader}>
-                <Text style={styles.shopTitle}>AJ AGENCY</Text>
+                <Text style={styles.shopTitle}>{shopTitle}</Text>
                 <Text style={styles.shopSubtitle}>DISTRIBUTOR BILLING & INVENTORY</Text>
-                <Text style={styles.shopInfo}>Main Road, Commercial Hub</Text>
-                <Text style={styles.shopInfo}>GSTIN: 33AAAAA0000A1Z5 · Ph: +91 9876543210</Text>
+                {shopAddress ? <Text style={styles.shopInfo}>{shopAddress}</Text> : null}
+                {shopContact ? <Text style={styles.shopInfo}>{shopContact}</Text> : null}
               </View>
 
               <View style={styles.dividerDashed} />

@@ -20,6 +20,10 @@ apiClient.interceptors.request.use(async (config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  const user = await secureStorage.getUser();
+  if (user?.branch_id && !(config.params && 'branch_id' in config.params)) {
+    config.params = { ...config.params, branch_id: user.branch_id };
+  }
   return config;
 });
 

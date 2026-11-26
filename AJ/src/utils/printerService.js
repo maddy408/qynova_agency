@@ -95,10 +95,19 @@ async function ensureConnected() {
 }
 
 /** ESC/POS plain-text receipt — mirrors ThermalTemplate.jsx's field set. */
-function buildReceiptText(invoice) {
+function buildReceiptText(invoice, branch = {}) {
   const items = invoice.items || [];
   const line = (l, r) => `[L]${l}[R]${r}\n`;
-  let body = '[C]<b>AJ AGENCY</b>\n[C]DISTRIBUTOR BILLING & INVENTORY\n[C]--------------------------------\n';
+  const shopName = branch.print_name || branch.branch_name || 'AJ AGENCY';
+  let body = `[C]<b>${shopName}</b>\n[C]DISTRIBUTOR BILLING & INVENTORY\n`;
+  if (branch.address_line1) {
+    body += `[C]${branch.address_line1}${branch.city ? `, ${branch.city}` : ''}\n`;
+  }
+  const metaParts = [branch.gstin ? `GSTIN: ${branch.gstin}` : '', branch.phone ? `Ph: ${branch.phone}` : ''].filter(Boolean);
+  if (metaParts.length > 0) {
+    body += `[C]${metaParts.join(' | ')}\n`;
+  }
+  body += '[C]--------------------------------\n';
   body += line('Bill No:', invoice.invoice_no || 'HELD');
   body += line('Date:', invoice.invoice_date || '');
   body += `[L]Customer: ${invoice.customer_name || 'Walk-in'}\n[C]--------------------------------\n`;
@@ -133,10 +142,10 @@ function buildReceiptText(invoice) {
 }
 
 /** Throws on any real failure — callers must show the actual error, never a fake success. */
-export async function printInvoiceReceipt(invoice) {
+export async function printInvoiceReceipt(invoice, branch = {}) {
   await ensureConnected();
   await BluetoothEscposPrinter.printerAlign(1); // 0=left, 1=center, 2=right
-  await BluetoothEscposPrinter.printText(buildReceiptText(invoice), {});
+  await BluetoothEscposPrinter.printText(buildReceiptText(invoice, branch), {});
   await BluetoothEscposPrinter.printText('\n\n\n', {});
 }
 

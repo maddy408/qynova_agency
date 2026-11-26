@@ -183,7 +183,7 @@ function OperatingExpensesPanel({ canManage }) {
           <TextInput
             value={search}
             onChangeText={setSearch}
-            placeholder="Search expenses by category, note, amount..."
+            placeholder="Search category, note, amount..."
             placeholderTextColor={colors.inkMuted}
             style={styles.searchInput}
             autoCapitalize="none"
@@ -197,7 +197,7 @@ function OperatingExpensesPanel({ canManage }) {
         {canManage && (
           <TouchableOpacity style={styles.topRightBtn} onPress={openAdd}>
             <Icon name="plus" size={14} color={colors.gold} style={{ marginRight: 4 }} />
-            <Text style={styles.topRightBtnText}>+ Add</Text>
+            <Text style={styles.topRightBtnText}>Add</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -503,7 +503,7 @@ function OtherIncomePanel({ canManage }) {
         {canManage && (
           <TouchableOpacity style={styles.topRightBtn} onPress={openAdd}>
             <Icon name="plus" size={14} color={colors.gold} style={{ marginRight: 4 }} />
-            <Text style={styles.topRightBtnText}>+ Add Income</Text>
+            <Text style={styles.topRightBtnText}>Add Income</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -982,9 +982,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     marginTop: 10,
     marginBottom: 6,
+    gap: 8,
   },
   searchBar: {
     flex: 1,
+    minWidth: 0,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.card,
@@ -993,7 +995,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingHorizontal: 12,
     height: 42,
-    marginRight: 8,
   },
   searchInput: {
     flex: 1,

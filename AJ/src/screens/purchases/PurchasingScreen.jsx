@@ -523,7 +523,6 @@ function GrnTab({ modalVisible, setModalVisible }) {
       return;
     }
 
-    // Backend PUT /api/purchases/{id} requires { items: [...] } with valid item_id and qty
     const items = (editingGrn.items || []).map((it) => ({
       item_id: it.item_id,
       unit_id: it.unit_id ? Number(it.unit_id) : undefined,
@@ -536,11 +535,6 @@ function GrnTab({ modalVisible, setModalVisible }) {
       tax_percent: Number(it.tax_percent || 0),
     }));
 
-    if (items.length === 0) {
-      setEditError('Cannot edit GRN: No line items found.');
-      return;
-    }
-
     updateMutation.mutate({
       id: editingGrn.id,
       data: {
@@ -548,7 +542,7 @@ function GrnTab({ modalVisible, setModalVisible }) {
         supplier_invoice_no: editNotes.trim() || editingGrn.supplier_invoice_no || null,
         payment_mode: editingGrn.payment_mode || 'credit',
         paid_amount: paid,
-        items,
+        ...(items.length > 0 ? { items } : {}),
       },
     });
   };
