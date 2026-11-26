@@ -19,9 +19,16 @@ export function ThermalReceiptModal({ visible, invoice, onClose }) {
     enabled: visible,
   });
 
+  const printQuery = useQuery({
+    queryKey: ['settings-print'],
+    queryFn: settingsApi.getPrint,
+    enabled: visible,
+  });
+
   if (!visible || !invoice) return null;
 
   const branch = invoice.branch || branchQuery.data || {};
+  const printSettings = invoice.print_settings || printQuery.data || {};
   const shopTitle = branch.print_name || branch.branch_name || 'AJ AGENCY';
   const shopAddress = branch.address_line1 ? (branch.address_line1 + (branch.city ? `, ${branch.city}` : '')) : '';
   const shopContact = [branch.gstin ? `GSTIN: ${branch.gstin}` : '', branch.phone ? `Ph: ${branch.phone}` : ''].filter(Boolean).join(' · ');
@@ -39,7 +46,15 @@ export function ThermalReceiptModal({ visible, invoice, onClose }) {
       const lineItemsStr = items
         .map((l) => `${l.item_name_snapshot || l.item_name || 'Item'} x${l.qty} @ Rs.${l.rate} = Rs.${l.line_total}`)
         .join('\n');
-      const shareMsg = `${shopTitle}\nDistributor Billing & Inventory\n${shopAddress ? shopAddress + '\n' : ''}${shopContact ? shopContact + '\n' : ''}--------------------------------\nInvoice #: ${invoiceNo}\nDate: ${dateStr}\nCustomer: ${customerName}\nStatus: ${paymentStatus}\n--------------------------------\n${lineItemsStr}\n--------------------------------\nGrand Total: Rs. ${grandTotal}\n--------------------------------\nThank you for shopping with us!`;
+      const footerMsg = printSettings.invoice_footer_note || 'Thank you for shopping with us!';
+      const termsMsg = printSettings.terms_and_conditions ? `Terms: ${printSettings.terms_and_conditions}\n` : '';
+      const bankMsg = [
+        printSettings.bank_name ? `Bank: ${printSettings.bank_name}` : '',
+        printSettings.bank_account_no ? `A/C: ${printSettings.bank_account_no}` : '',
+        printSettings.upi_id ? `UPI: ${printSettings.upi_id}` : '',
+      ].filter(Boolean).join(' | ');
+
+      const shareMsg = `${shopTitle}\nDistributor Billing & Inventory\n${shopAddress ? shopAddress + '\n' : ''}${shopContact ? shopContact + '\n' : ''}--------------------------------\nInvoice #: ${invoiceNo}\nDate: ${dateStr}\nCustomer: ${customerName}\nStatus: ${paymentStatus}\n--------------------------------\n${lineItemsStr}\n--------------------------------\nGrand Total: Rs. ${grandTotal}\n--------------------------------\n${bankMsg ? bankMsg + '\n--------------------------------\n' : ''}${termsMsg}${footerMsg}`;
       await Share.share({ message: shareMsg });
     } catch (err) {
       Alert.alert('Share Error', err.message);
@@ -57,7 +72,7 @@ export function ThermalReceiptModal({ visible, invoice, onClose }) {
         Alert.alert('No printer configured', 'Go to Settings > Thermal Printer to pair a printer first.');
         return;
       }
-      await printInvoiceReceipt(invoice, branch);
+      await printInvoiceReceipt(invoice, branch, printSettings);
       Alert.alert('Printed', `Invoice ${invoiceNo} sent to ${configured.name || configured.address}.`);
     } catch (err) {
       Alert.alert('Print failed', err?.message || 'Could not print to the configured printer.');
@@ -275,9 +290,22 @@ export function ThermalReceiptModal({ visible, invoice, onClose }) {
                 <Text style={styles.barcodeText}>*{invoiceNo}*</Text>
               </View>
 
+              {/* Bank & UPI Info if configured */}
+              {(printSettings.bank_account_no || printSettings.bank_name || printSettings.upi_id) ? (
+                <View style={{ marginVertical: 6, alignItems: 'center' }}>
+                  {printSettings.bank_name ? <Text style={styles.receiptSubFooter}>Bank: {printSettings.bank_name}</Text> : null}
+                  {printSettings.bank_account_no ? <Text style={styles.receiptSubFooter}>A/C No: {printSettings.bank_account_no}</Text> : null}
+                  {printSettings.upi_id ? <Text style={styles.receiptSubFooter}>UPI ID: {printSettings.upi_id}</Text> : null}
+                </View>
+              ) : null}
+
               {/* Paper Footer */}
-              <Text style={styles.receiptFooter}>*** THANK YOU FOR YOUR BUSINESS ***</Text>
-              <Text style={styles.receiptSubFooter}>Goods once sold cannot be returned.</Text>
+              <Text style={styles.receiptFooter}>
+                {printSettings.invoice_footer_note || '*** THANK YOU FOR YOUR BUSINESS ***'}
+              </Text>
+              <Text style={styles.receiptSubFooter}>
+                {printSettings.terms_and_conditions || 'Goods once sold cannot be returned.'}
+              </Text>
             </View>
           </ScrollView>
 

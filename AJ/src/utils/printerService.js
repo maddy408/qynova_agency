@@ -95,7 +95,7 @@ async function ensureConnected() {
 }
 
 /** ESC/POS plain-text receipt — mirrors ThermalTemplate.jsx's field set. */
-function buildReceiptText(invoice, branch = {}) {
+function buildReceiptText(invoice, branch = {}, printSettings = {}) {
   const items = invoice.items || [];
   const line = (l, r) => `[L]${l}[R]${r}\n`;
   const shopName = branch.print_name || branch.branch_name || 'AJ AGENCY';
@@ -137,15 +137,26 @@ function buildReceiptText(invoice, branch = {}) {
   body += line('Round off:', Number(invoice.round_off || 0).toFixed(2));
   body += `[C]================================\n`;
   body += line('<b>NET TOTAL</b>', `<b>Rs. ${Number(invoice.grand_total || 0).toFixed(2)}</b>`);
-  body += '[C]================================\n[C]Thank you, visit again!\n\n\n';
+  body += '[C]================================\n';
+
+  if (printSettings.bank_name || printSettings.bank_account_no) {
+    body += `[C]Bank: ${printSettings.bank_name || ''} A/C: ${printSettings.bank_account_no || ''}\n`;
+  }
+  if (printSettings.upi_id) {
+    body += `[C]UPI ID: ${printSettings.upi_id}\n`;
+  }
+  if (printSettings.terms_and_conditions) {
+    body += `[C]${printSettings.terms_and_conditions}\n`;
+  }
+  body += `[C]${printSettings.invoice_footer_note || 'Thank you, visit again!'}\n\n\n`;
   return body;
 }
 
 /** Throws on any real failure — callers must show the actual error, never a fake success. */
-export async function printInvoiceReceipt(invoice, branch = {}) {
+export async function printInvoiceReceipt(invoice, branch = {}, printSettings = {}) {
   await ensureConnected();
   await BluetoothEscposPrinter.printerAlign(1); // 0=left, 1=center, 2=right
-  await BluetoothEscposPrinter.printText(buildReceiptText(invoice, branch), {});
+  await BluetoothEscposPrinter.printText(buildReceiptText(invoice, branch, printSettings), {});
   await BluetoothEscposPrinter.printText('\n\n\n', {});
 }
 

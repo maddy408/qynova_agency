@@ -99,7 +99,18 @@ export function ThermalTemplate({ data }) {
       {outstanding !== null && outstanding !== undefined && (
         <div>Outstanding balance: Rs. {outstanding}</div>
       )}
-      <div style={{ textAlign: 'center', marginTop: 6 }}>Thank you, visit again!</div>
+      {(data.print_settings?.bank_name || data.print_settings?.bank_account_no) && (
+        <div style={{ marginTop: 4 }}>
+          Bank: {data.print_settings.bank_name || ''} A/C: {data.print_settings.bank_account_no || ''}
+        </div>
+      )}
+      {data.print_settings?.upi_id && <div>UPI ID: {data.print_settings.upi_id}</div>}
+      {data.print_settings?.terms_and_conditions && (
+        <div style={{ marginTop: 4, fontSize: 11 }}>{data.print_settings.terms_and_conditions}</div>
+      )}
+      <div style={{ textAlign: 'center', marginTop: 6, fontWeight: 'bold' }}>
+        {data.print_settings?.invoice_footer_note || 'Thank you, visit again!'}
+      </div>
     </div>
   );
 }

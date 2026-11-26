@@ -418,6 +418,10 @@ class InvoiceController
         $stmt->execute(['id' => $invoice['branch_id']]);
         $branch = $stmt->fetch();
 
+        $printStmt = $this->pdo->prepare('SELECT * FROM branch_print_settings WHERE branch_id = :branch_id');
+        $printStmt->execute(['branch_id' => $invoice['branch_id']]);
+        $printSettings = $printStmt->fetch() ?: [];
+
         $taxSlabs = [];
         foreach ($invoice['items'] as $item) {
             $pct = (float) $item['tax_percent'];
@@ -435,6 +439,7 @@ class InvoiceController
         Response::json([
             'invoice' => $invoice,
             'branch' => $branch,
+            'print_settings' => $printSettings,
             'tax_slabs' => array_values($taxSlabs),
             'amount_in_words' => NumberToWords::convert((float) $invoice['grand_total']),
             'customer_outstanding' => $outstanding,

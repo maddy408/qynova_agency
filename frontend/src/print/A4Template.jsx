@@ -104,11 +104,25 @@ export function A4Template({ data }) {
           )}
           <div style={{ marginTop: 12, fontSize: 10 }}>
             <strong>Terms &amp; Conditions:</strong>
-            <ol>
-              <li>Goods once sold will not be taken back.</li>
-              <li>Subject to local jurisdiction.</li>
-            </ol>
+            {data.print_settings?.terms_and_conditions ? (
+              <div style={{ marginTop: 2, whiteSpace: 'pre-line' }}>{data.print_settings.terms_and_conditions}</div>
+            ) : (
+              <ol>
+                <li>Goods once sold will not be taken back.</li>
+                <li>Subject to local jurisdiction.</li>
+              </ol>
+            )}
           </div>
+          {(data.print_settings?.bank_name || data.print_settings?.bank_account_no || data.print_settings?.upi_id) && (
+            <div style={{ marginTop: 8, fontSize: 11 }}>
+              <strong>Bank Details:</strong> {data.print_settings.bank_name || ''} {data.print_settings.bank_account_no ? `| A/C: ${data.print_settings.bank_account_no}` : ''} {data.print_settings.upi_id ? `| UPI: ${data.print_settings.upi_id}` : ''}
+            </div>
+          )}
+          {data.print_settings?.invoice_footer_note && (
+            <div style={{ marginTop: 8, fontSize: 11, fontStyle: 'italic', fontWeight: 'bold' }}>
+              {data.print_settings.invoice_footer_note}
+            </div>
+          )}
         </div>
         <div className="totals-box" style={{ width: '35%' }}>
           <Row label="GROSS AMOUNT" value={invoice.subtotal} />

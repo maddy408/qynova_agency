@@ -697,9 +697,9 @@ export function SettingsScreen() {
       <View style={styles.topHeader}>
         <SegmentedTabs
           tabs={[
-            { key: 'general', label: 'General Settings' },
-            { key: 'price', label: 'Price Adjustment' },
-            { key: 'staff_price', label: 'Staff Price Adjustment' },
+            { key: 'general', label: 'General' },
+            { key: 'price', label: 'Wholesale' },
+            { key: 'staff_price', label: 'Staff Price' },
             { key: 'staff', label: 'Staff' },
           ]}
           active={tab}

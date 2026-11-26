@@ -7,7 +7,7 @@ import { colors } from '../theme/colors';
  * Uses strict maxHeight and flex-none controls to prevent horizontal ScrollView from stretching vertically.
  */
 export function SegmentedTabs({ tabs, active, onChange, style }) {
-  const hasLongLabels = tabs.some((t) => (t.label || '').length > 11);
+  const hasLongLabels = tabs.some((t) => (t.label || '').length > 8);
   const scrollable = tabs.length > 3 || (tabs.length >= 3 && hasLongLabels);
 
   const renderTab = (t) => {

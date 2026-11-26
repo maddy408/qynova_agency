@@ -10,10 +10,10 @@ import { usePermission } from '../../hooks/useAuth';
 import { colors } from '../../theme/colors';
 
 const DEFAULT_ROLES = [
-  { id: 'admin', name: 'Admin / Manager' },
-  { id: 'biller', name: 'Biller / Cashier' },
-  { id: 'salesman', name: 'Salesman' },
-  { id: 'staff', name: 'Staff' },
+  { id: 1, name: 'Admin / Manager' },
+  { id: 2, name: 'Biller / Cashier' },
+  { id: 3, name: 'Salesman' },
+  { id: 4, name: 'Staff' },
 ];
 
 export function StaffScreen() {
@@ -30,7 +30,7 @@ export function StaffScreen() {
     name: '',
     email: '',
     phone: '',
-    role: 'biller',
+    role_id: '',
     password: '',
   });
 
@@ -57,21 +57,28 @@ export function StaffScreen() {
   });
 
   const resetForm = () => {
-    setForm({ name: '', email: '', phone: '', role: 'biller', password: '' });
+    setForm({ name: '', email: '', phone: '', role_id: '', password: '' });
     setError('');
   };
 
   const openCreate = () => {
     resetForm();
+    const defaultRole = roles.find((r) => r.name?.toLowerCase().includes('biller') || String(r.id) === '2') || roles[0];
+    if (defaultRole) {
+      setForm((p) => ({ ...p, role_id: String(defaultRole.id) }));
+    }
     setModal(null);
   };
 
   const openEdit = (user) => {
+    const matchedRole = roles.find((r) => String(r.id) === String(user.role_id) || r.name === user.role_name);
+    const resolvedRoleId = matchedRole ? String(matchedRole.id) : (user.role_id ? String(user.role_id) : '');
+    const cleanPhone = (user.phone || '').replace(/\D/g, '').slice(0, 10);
     setForm({
       name: user.name || '',
       email: user.email || '',
-      phone: user.phone || '',
-      role: user.role || 'biller',
+      phone: cleanPhone,
+      role_id: resolvedRoleId,
       password: '',
     });
     setError('');
@@ -80,12 +87,23 @@ export function StaffScreen() {
 
   const submit = () => {
     setError('');
-    if (!form.name || !form.email) {
-      return setError('Name and email are required.');
+    const trimmedName = (form.name || '').trim();
+    if (!trimmedName) {
+      return setError('Full name is required.');
     }
-    if (!modal && !form.password) {
-      return setError('Password is required for new staff.');
+    if (trimmedName.length < 2) {
+      return setError('Full name must be at least 2 characters.');
     }
+
+    const trimmedEmail = (form.email || '').trim().toLowerCase();
+    if (!trimmedEmail) {
+      return setError('Email address is required.');
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmedEmail)) {
+      return setError('Please enter a valid email address (e.g. staff@example.com).');
+    }
+
     if (form.phone) {
       if (form.phone.length !== 10) {
         return setError(`Phone number must be exactly 10 digits (${form.phone.length}/10).`);
@@ -95,12 +113,23 @@ export function StaffScreen() {
       }
     }
 
+    if (!form.role_id) {
+      return setError('Please select a role.');
+    }
+
+    if (!modal && (!form.password || form.password.length < 6)) {
+      return setError('Password is required (minimum 6 characters).');
+    }
+    if (modal && form.password && form.password.length < 6) {
+      return setError('New password must be at least 6 characters.');
+    }
+
     const payload = {
-      name: form.name,
-      email: form.email,
-      phone: form.phone,
-      role: form.role,
-      password: form.password || undefined,
+      name: trimmedName,
+      email: trimmedEmail,
+      phone: form.phone || null,
+      role_id: Number(form.role_id),
+      password: form.password ? form.password : undefined,
     };
 
     if (modal?.id) {
@@ -203,9 +232,10 @@ export function StaffScreen() {
 
         <SelectField
           label="Role *"
-          value={form.role}
+          value={form.role_id}
           options={roles}
-          onChange={(v) => setForm((p) => ({ ...p, role: v }))}
+          required
+          onChange={(v) => setForm((p) => ({ ...p, role_id: String(v) }))}
         />
 
         <Text style={formStyles.label}>{modal?.id ? 'Password (leave blank to keep current)' : 'Password *'}</Text>
