@@ -31,6 +31,14 @@ export function BranchesScreen() {
   const openEdit = (b) => { setForm(b); setError(''); setModal(b); };
   const submit = () => {
     setError('');
+    if (form.phone) {
+      if (form.phone.length !== 10) {
+        return setError(`Phone number must be exactly 10 digits (${form.phone.length}/10).`);
+      }
+      if (!/^[6-9]/.test(form.phone)) {
+        return setError('Phone number must start with 6, 7, 8 or 9.');
+      }
+    }
     if (modal?.id) updateMutation.mutate({ id: modal.id, data: form });
     else createMutation.mutate(form);
   };
@@ -78,7 +86,17 @@ export function BranchesScreen() {
         <Text style={formStyles.label}>Print Name</Text>
         <TextInput value={form.print_name || ''} onChangeText={(v) => setForm((p) => ({ ...p, print_name: v }))} style={formStyles.input} />
         <Text style={formStyles.label}>Phone</Text>
-        <TextInput value={form.phone || ''} onChangeText={(v) => setForm((p) => ({ ...p, phone: v }))} style={formStyles.input} />
+        <TextInput
+          value={form.phone || ''}
+          onChangeText={(v) => {
+            const cleaned = v.replace(/\D/g, '').slice(0, 10);
+            setForm((p) => ({ ...p, phone: cleaned }));
+          }}
+          keyboardType="numeric"
+          maxLength={10}
+          placeholder="10-digit phone (e.g. 9876543210)"
+          style={formStyles.input}
+        />
         <Text style={formStyles.label}>Address</Text>
         <TextInput value={form.address_line1 || ''} onChangeText={(v) => setForm((p) => ({ ...p, address_line1: v }))} style={formStyles.input} />
         {error ? <Text style={formStyles.error}>{error}</Text> : null}

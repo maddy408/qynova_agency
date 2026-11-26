@@ -19,17 +19,16 @@ export function ExpensesScreen() {
   return (
     <View style={styles.screen}>
       <View style={styles.topHeader}>
-        <View style={{ flex: 1 }}>
-          <SegmentedTabs
-            tabs={[
-              { key: 'expenses', label: 'Operating Expenses' },
-              { key: 'income', label: 'Extra Income' },
-              { key: 'receipts', label: 'Receipts' },
-            ]}
-            active={tab}
-            onChange={setTab}
-          />
-        </View>
+        <SegmentedTabs
+          tabs={[
+            { key: 'expenses', label: 'Operating Expenses' },
+            { key: 'income', label: 'Extra Income' },
+            { key: 'receipts', label: 'Receipts' },
+          ]}
+          active={tab}
+          onChange={setTab}
+          style={{ marginHorizontal: 12, marginTop: 8, marginBottom: 8 }}
+        />
       </View>
 
       <View style={{ flex: 1, marginTop: 4 }}>
@@ -975,7 +974,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
     borderBottomWidth: 1,
     borderBottomColor: colors.borderSoft,
-    paddingHorizontal: 8,
+    paddingVertical: 2,
   },
   topActionRow: {
     flexDirection: 'row',
@@ -994,7 +993,7 @@ const styles = StyleSheet.create({
     borderColor: colors.borderSoft,
     borderRadius: 10,
     paddingHorizontal: 12,
-    height: 40,
+    height: 42,
   },
   searchInput: {
     flex: 1,
@@ -1008,9 +1007,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.navbar,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
     borderRadius: 8,
+    height: 42,
   },
   topRightBtnText: { color: colors.gold, fontWeight: '700', fontSize: 12 },
   empty: { textAlign: 'center', color: colors.inkMuted, marginTop: 40, fontSize: 13 },

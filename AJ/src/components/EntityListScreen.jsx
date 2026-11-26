@@ -17,9 +17,10 @@ import { colors } from '../theme/colors';
  * templatePath, templateFilename, rowLabel, successNoun }. Omit it (every
  * caller except customers today) and nothing Excel-related renders.
  */
-export function EntityListScreen({ queryKey, api, title, fields, renderTitle, renderSubtitle, canManage = true, transformSubmit, excelImport }) {
+export function EntityListScreen({ queryKey, api, title, fields, renderTitle, renderSubtitle, canManage = true, transformSubmit, excelImport, showStatusFilter = true }) {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'active' | 'inactive'
   const [modal, setModal] = useState(null); // null closed, {} create, {...row} edit
   const [viewItem, setViewItem] = useState(null);
   const [form, setForm] = useState({});
@@ -52,7 +53,17 @@ export function EntityListScreen({ queryKey, api, title, fields, renderTitle, re
   };
 
   const openEdit = (row) => {
-    setForm(Object.fromEntries(fields.map((f) => [f.name, f.type === 'switch' ? Number(row[f.name] ?? 1) : (row[f.name] ?? '')])));
+    setForm(
+      Object.fromEntries(
+        fields.map((f) => {
+          if (f.type === 'switch') {
+            const raw = row[f.name];
+            return [f.name, raw !== undefined && raw !== null ? (Number(raw) === 1 ? 1 : 0) : (f.default ?? 1)];
+          }
+          return [f.name, row[f.name] ?? ''];
+        })
+      )
+    );
     setTouched({});
     setFieldErrors({});
     setError('');
@@ -169,10 +180,25 @@ export function EntityListScreen({ queryKey, api, title, fields, renderTitle, re
   };
 
   const rows = listQuery.data || [];
+
+  // Check if rows or fields support active/inactive status
+  const hasStatusColumn = useMemo(() => {
+    return fields.some((f) => f.name === 'is_active' || f.name === 'status') ||
+      rows.some((r) => r.is_active !== undefined || r.status !== undefined);
+  }, [fields, rows]);
+
   const filteredRows = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return rows;
     return rows.filter((r) => {
+      // Status filter
+      if (showStatusFilter && hasStatusColumn && statusFilter !== 'all') {
+        const isActive = (r.status === 'active' || r.status === 1 || r.is_active === 1 || r.is_active === '1' || (r.status === undefined && r.is_active === undefined));
+        if (statusFilter === 'active' && !isActive) return false;
+        if (statusFilter === 'inactive' && isActive) return false;
+      }
+
+      if (!q) return true;
+
       const titleMatch = renderTitle ? String(renderTitle(r) || '').toLowerCase().includes(q) : false;
       const subtitleMatch = renderSubtitle ? String(renderSubtitle(r) || '').toLowerCase().includes(q) : false;
       const idMatch = String(r.id || '') === q;
@@ -182,7 +208,7 @@ export function EntityListScreen({ queryKey, api, title, fields, renderTitle, re
       });
       return titleMatch || subtitleMatch || idMatch || fieldMatch;
     });
-  }, [rows, search, renderTitle, renderSubtitle, fields]);
+  }, [rows, search, statusFilter, showStatusFilter, hasStatusColumn, renderTitle, renderSubtitle, fields]);
 
   const saving = createMutation.isPending || updateMutation.isPending;
 
@@ -216,6 +242,30 @@ export function EntityListScreen({ queryKey, api, title, fields, renderTitle, re
           </TouchableOpacity>
         )}
       </View>
+
+      {/* Active / Inactive / All Status Filter */}
+      {showStatusFilter && hasStatusColumn && (
+        <View style={styles.filterPillRow}>
+          {[
+            { key: 'active', label: 'Active' },
+            { key: 'inactive', label: 'Inactive' },
+            { key: 'all', label: 'All' },
+          ].map((pill) => {
+            const isSelected = statusFilter === pill.key;
+            return (
+              <TouchableOpacity
+                key={pill.key}
+                onPress={() => setStatusFilter(pill.key)}
+                style={[styles.filterPill, isSelected && styles.filterPillActive]}
+              >
+                <Text style={[styles.filterPillText, isSelected && styles.filterPillTextActive]}>
+                  {pill.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      )}
 
       {excelImport && (
         <ExcelToolbar
@@ -333,9 +383,14 @@ export function EntityListScreen({ queryKey, api, title, fields, renderTitle, re
                 <>
                   <TextInput
                     value={String(form[f.name] ?? '')}
-                    onChangeText={(v) => handleFieldChange(f.name, v)}
+                    onChangeText={(v) => {
+                      const isPhone = f.type === 'phone' || f.name === 'phone';
+                      const sanitized = isPhone ? v.replace(/\D/g, '').slice(0, 10) : v;
+                      handleFieldChange(f.name, sanitized);
+                    }}
                     onBlur={() => handleFieldBlur(f.name)}
-                    keyboardType={f.keyboardType || 'default'}
+                    keyboardType={f.type === 'phone' || f.name === 'phone' ? 'numeric' : (f.keyboardType || 'default')}
+                    maxLength={f.type === 'phone' || f.name === 'phone' ? 10 : f.maxLength}
                     placeholder={f.placeholder || `Enter ${f.label.replace(/\*$/, '').trim()}`}
                     placeholderTextColor={colors.inkMuted}
                     style={[
@@ -447,6 +502,34 @@ const styles = StyleSheet.create({
   clearSearchText: {
     color: colors.inkMuted,
     fontSize: 14,
+    fontWeight: '700',
+  },
+  filterPillRow: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingHorizontal: 12,
+    marginTop: 6,
+    marginBottom: 4,
+  },
+  filterPill: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.borderSoft,
+    backgroundColor: colors.card,
+  },
+  filterPillActive: {
+    backgroundColor: colors.navbar,
+    borderColor: colors.navbar,
+  },
+  filterPillText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.inkMuted,
+  },
+  filterPillTextActive: {
+    color: colors.gold,
     fontWeight: '700',
   },
   empty: { textAlign: 'center', color: colors.inkMuted, marginTop: 40 },

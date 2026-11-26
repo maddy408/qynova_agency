@@ -193,6 +193,24 @@ function RouteSupplierMappingPanel({ routes, suppliers, canManage }) {
   const [selectedRouteId, setSelectedRouteId] = useState(routes[0]?.id || null);
   const [selectedSupplierIds, setSelectedSupplierIds] = useState([]);
   const [loadingMapping, setLoadingMapping] = useState(false);
+  const [allMappings, setAllMappings] = useState({}); // { [routeId]: supplier_ids[] }
+
+  const supplierMap = useMemo(() => new Map(suppliers.map((s) => [s.id, s.name])), [suppliers]);
+
+  // Load all route mappings to display the overview list of mapped suppliers
+  const refreshAllMappings = () => {
+    routes.forEach((r) => {
+      routeSuppliersApi.get(r.id).then((data) => {
+        setAllMappings((prev) => ({ ...prev, [r.id]: data?.supplier_ids || [] }));
+      }).catch(() => {});
+    });
+  };
+
+  useEffect(() => {
+    if (routes.length > 0) {
+      refreshAllMappings();
+    }
+  }, [routes]);
 
   useEffect(() => {
     if (routes.length > 0 && !selectedRouteId) {
@@ -211,7 +229,9 @@ function RouteSupplierMappingPanel({ routes, suppliers, canManage }) {
       .get(selectedRouteId)
       .then((data) => {
         if (!cancelled) {
-          setSelectedSupplierIds(data?.supplier_ids || []);
+          const ids = data?.supplier_ids || [];
+          setSelectedSupplierIds(ids);
+          setAllMappings((prev) => ({ ...prev, [selectedRouteId]: ids }));
         }
       })
       .catch((err) => {
@@ -240,6 +260,7 @@ function RouteSupplierMappingPanel({ routes, suppliers, canManage }) {
     mutationFn: () => routeSuppliersApi.set(selectedRouteId, selectedSupplierIds),
     onSuccess: () => {
       Alert.alert('Saved', 'Route-Supplier mapping saved successfully!');
+      setAllMappings((prev) => ({ ...prev, [selectedRouteId]: selectedSupplierIds }));
       queryClient.invalidateQueries({ queryKey: ['routes'] });
     },
     onError: (err) => {
@@ -337,6 +358,11 @@ function RouteSupplierMappingPanel({ routes, suppliers, canManage }) {
         <View style={{ marginTop: 8, gap: 8 }}>
           {routes.map((r) => {
             const isSelected = r.id === selectedRouteId;
+            const mappedIds = allMappings[r.id] || (isSelected ? selectedSupplierIds : []);
+            const mappedNames = mappedIds
+              .map((id) => supplierMap.get(id))
+              .filter(Boolean);
+
             return (
               <TouchableOpacity
                 key={String(r.id)}
@@ -346,8 +372,20 @@ function RouteSupplierMappingPanel({ routes, suppliers, canManage }) {
                 <View style={styles.overviewHeader}>
                   <Text style={[styles.overviewTitle, isSelected && { color: colors.gold }]}>{r.name}</Text>
                   <Text style={styles.overviewBadge}>
-                    {isSelected ? 'Editing' : 'Select →'}
+                    {isSelected ? 'Editing' : 'Select & Edit →'}
                   </Text>
+                </View>
+                <View style={styles.mappedSuppliersContainer}>
+                  <Text style={styles.mappedCountText}>
+                    {mappedNames.length > 0
+                      ? `${mappedNames.length} Mapped Supplier${mappedNames.length > 1 ? 's' : ''}:`
+                      : 'No suppliers mapped yet'}
+                  </Text>
+                  {mappedNames.length > 0 && (
+                    <Text style={styles.mappedNamesList} numberOfLines={2}>
+                      {mappedNames.join(', ')}
+                    </Text>
+                  )}
                 </View>
               </TouchableOpacity>
             );
@@ -451,4 +489,7 @@ const styles = StyleSheet.create({
   overviewHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   overviewTitle: { fontSize: 13, fontWeight: '700', color: colors.ink },
   overviewBadge: { fontSize: 11, fontWeight: '600', color: colors.gold },
+  mappedSuppliersContainer: { marginTop: 6, paddingTop: 6, borderTopWidth: 1, borderTopColor: colors.borderSoft },
+  mappedCountText: { fontSize: 11, fontWeight: '700', color: colors.inkMuted },
+  mappedNamesList: { fontSize: 11, color: colors.ink, marginTop: 2, fontWeight: '500' },
 });

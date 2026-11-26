@@ -69,7 +69,7 @@ export function ExcelToolbar({
     if (onImportPress) onImportPress();
   };
 
-  const isBusy = !!activeAction || !!externalBusy;
+  const isAnyBusy = !!activeAction || !!externalBusy;
 
   return (
     <View style={styles.toolbar}>
@@ -77,25 +77,25 @@ export function ExcelToolbar({
         label="Get List"
         loading={activeAction === 'list'}
         onPress={handleGetList}
-        disabled={isBusy && activeAction !== 'list'}
+        disabled={isAnyBusy && activeAction !== 'list'}
       />
       <ToolbarBtn
         label="Sample Template"
         loading={activeAction === 'template'}
         onPress={handleTemplate}
-        disabled={isBusy && activeAction !== 'template'}
+        disabled={isAnyBusy && activeAction !== 'template'}
       />
       <ToolbarBtn
         label="Export Excel"
         loading={activeAction === 'export'}
         onPress={handleExport}
-        disabled={isBusy && activeAction !== 'export'}
+        disabled={isAnyBusy && activeAction !== 'export'}
       />
       <ToolbarBtn
         label="Import Excel"
         loading={false}
         onPress={handleImport}
-        disabled={isBusy}
+        disabled={isAnyBusy}
       />
     </View>
   );
@@ -110,8 +110,8 @@ function ToolbarBtn({ label, loading, onPress, disabled }) {
       activeOpacity={0.7}
     >
       <View style={styles.btnContent}>
-        {loading ? <ActivityIndicator size="small" color={colors.gold} style={{ marginRight: 4 }} /> : null}
-        <Text style={styles.toolbarBtnText}>{loading ? 'Working...' : label}</Text>
+        {loading ? <ActivityIndicator size="small" color={colors.gold} style={{ marginRight: 6 }} /> : null}
+        <Text style={styles.toolbarBtnText}>{loading ? 'Exporting...' : label}</Text>
       </View>
     </TouchableOpacity>
   );

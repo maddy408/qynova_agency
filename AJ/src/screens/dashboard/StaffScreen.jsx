@@ -86,6 +86,14 @@ export function StaffScreen() {
     if (!modal && !form.password) {
       return setError('Password is required for new staff.');
     }
+    if (form.phone) {
+      if (form.phone.length !== 10) {
+        return setError(`Phone number must be exactly 10 digits (${form.phone.length}/10).`);
+      }
+      if (!/^[6-9]/.test(form.phone)) {
+        return setError('Phone number must start with 6, 7, 8 or 9.');
+      }
+    }
 
     const payload = {
       name: form.name,
@@ -183,10 +191,14 @@ export function StaffScreen() {
         <Text style={formStyles.label}>Phone Number</Text>
         <TextInput
           value={form.phone}
-          onChangeText={(v) => setForm((p) => ({ ...p, phone: v }))}
-          keyboardType="phone-pad"
+          onChangeText={(v) => {
+            const cleaned = v.replace(/\D/g, '').slice(0, 10);
+            setForm((p) => ({ ...p, phone: cleaned }));
+          }}
+          keyboardType="numeric"
+          maxLength={10}
           style={formStyles.input}
-          placeholder="e.g. 9876543210"
+          placeholder="10-digit mobile (e.g. 9876543210)"
         />
 
         <SelectField

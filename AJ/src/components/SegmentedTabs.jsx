@@ -6,8 +6,8 @@ import { colors } from '../theme/colors';
  * Beyond 4 tabs (e.g. Catalog's 6 sub-tabs), it switches to a horizontally-scrolling row.
  * Uses strict maxHeight and flex-none controls to prevent horizontal ScrollView from stretching vertically.
  */
-export function SegmentedTabs({ tabs, active, onChange }) {
-  const scrollable = tabs.length > 4;
+export function SegmentedTabs({ tabs, active, onChange, style }) {
+  const scrollable = tabs.length > 3;
 
   const renderTab = (t) => {
     const isActive = active === t.key;
@@ -31,7 +31,7 @@ export function SegmentedTabs({ tabs, active, onChange }) {
 
   if (scrollable) {
     return (
-      <View style={styles.scrollOuter}>
+      <View style={[styles.scrollOuter, style]}>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -44,26 +44,26 @@ export function SegmentedTabs({ tabs, active, onChange }) {
     );
   }
 
-  return <View style={styles.wrap}>{tabs.map(renderTab)}</View>;
+  return <View style={[styles.wrap, style]}>{tabs.map(renderTab)}</View>;
 }
 
 const styles = StyleSheet.create({
   scrollOuter: {
-    height: 42,
+    height: 44,
     marginHorizontal: 12,
-    marginTop: 10,
-    marginBottom: 4,
+    marginTop: 8,
+    marginBottom: 6,
   },
   scrollWrap: {
     backgroundColor: '#e2e8f0',
     borderRadius: 10,
     padding: 3,
-    height: 42,
+    height: 44,
   },
   scrollContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
   },
   wrap: {
     flexDirection: 'row',
@@ -71,14 +71,14 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 3,
     marginHorizontal: 12,
-    marginTop: 10,
-    marginBottom: 4,
-    height: 42,
+    marginTop: 8,
+    marginBottom: 6,
+    height: 44,
     alignItems: 'center',
   },
   tab: {
     flex: 1,
-    height: 36,
+    height: 38,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
@@ -86,7 +86,7 @@ const styles = StyleSheet.create({
   tabScrollable: {
     flex: 0,
     paddingHorizontal: 16,
-    height: 36,
+    height: 38,
   },
   tabActive: {
     backgroundColor: colors.card,

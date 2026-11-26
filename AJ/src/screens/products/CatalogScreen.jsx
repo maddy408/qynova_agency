@@ -54,6 +54,8 @@ export function CatalogScreen() {
             renderSubtitle={(r) => `Decimals: ${Number(r.is_decimal) ? 'Allowed' : 'No'} · ${Number(r.is_active ?? 1) ? 'Active' : 'Inactive'}`}
             transformSubmit={(form) => ({
               ...form,
+              name: (form.name || '').trim(),
+              short_code: (form.short_code || '').trim(),
               is_decimal: Number(form.is_decimal ? 1 : 0),
               is_active: Number(form.is_active !== undefined ? (form.is_active ? 1 : 0) : 1),
             })}

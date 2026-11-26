@@ -1391,24 +1391,25 @@ export function PurchasingScreen() {
   return (
     <View style={styles.screen}>
       <View style={styles.topHeader}>
-        <View style={{ flex: 1 }}>
-          <SegmentedTabs
-            tabs={[
-              { key: 'orders', label: 'Purchase Orders' },
-              { key: 'grn', label: 'Goods Receipt (GRN)' },
-              { key: 'payments', label: 'Supplier Payments' },
-            ]}
-            active={tab}
-            onChange={(t) => { setTab(t); setModalVisible(false); }}
-          />
-        </View>
+        <SegmentedTabs
+          tabs={[
+            { key: 'orders', label: 'Purchase Orders' },
+            { key: 'grn', label: 'Goods Receipt (GRN)' },
+            { key: 'payments', label: 'Supplier Payments' },
+          ]}
+          active={tab}
+          onChange={(t) => { setTab(t); setModalVisible(false); }}
+          style={{ marginHorizontal: 12, marginTop: 8, marginBottom: 8 }}
+        />
         {canCreate && (
-          <TouchableOpacity style={styles.topRightBtn} onPress={() => setModalVisible(true)}>
-            <Icon name="plus" size={14} color={colors.gold} style={{ marginRight: 4 }} />
-            <Text style={styles.topRightBtnText}>
-              {tab === 'orders' ? '+ New Order' : tab === 'grn' ? '+ New GRN' : '+ Settle'}
-            </Text>
-          </TouchableOpacity>
+          <View style={styles.topActionRow}>
+            <TouchableOpacity style={styles.topRightBtn} onPress={() => setModalVisible(true)}>
+              <Icon name="plus" size={14} color={colors.gold} style={{ marginRight: 6 }} />
+              <Text style={styles.topRightBtnText}>
+                {tab === 'orders' ? '+ New Purchase Order' : tab === 'grn' ? '+ New GRN' : '+ Settle Payment'}
+              </Text>
+            </TouchableOpacity>
+          </View>
         )}
       </View>
 
@@ -1433,21 +1434,24 @@ function DetailRow({ label, value }) {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.page },
   topHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingRight: 10,
     backgroundColor: colors.card,
     borderBottomWidth: 1,
     borderBottomColor: colors.borderSoft,
+    paddingBottom: 6,
+  },
+  topActionRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    paddingHorizontal: 12,
+    marginBottom: 6,
   },
   topRightBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.navbar,
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 8,
-    marginLeft: 8,
   },
   topRightBtnText: { color: colors.gold, fontWeight: '700', fontSize: 12 },
   empty: { textAlign: 'center', color: colors.inkMuted, marginTop: 40 },

@@ -275,20 +275,37 @@ export function ItemFormModal({ item, onClose }) {
         </>
       }
     >
-      <View style={styles.imageRow}>
-        <View style={styles.imageBox}>
-          {imagePreview ? <Image source={{ uri: imagePreview }} style={{ width: '100%', height: '100%' }} /> : <Text style={styles.imagePlaceholder}>No image</Text>}
-        </View>
-        <View style={{ marginLeft: 12, gap: 8 }}>
-          <View style={{ flexDirection: 'row', gap: 8 }}>
-            <TouchableOpacity style={formStyles.secondaryBtn} onPress={() => pickImage(true)}><Text style={formStyles.secondaryBtnText}>📷 Camera</Text></TouchableOpacity>
-            <TouchableOpacity style={formStyles.secondaryBtn} onPress={() => pickImage(false)}><Text style={formStyles.secondaryBtnText}>🖼️ Gallery</Text></TouchableOpacity>
+      <View style={styles.imageSection}>
+        <Text style={formStyles.label}>Product Image</Text>
+        <View style={styles.imageCard}>
+          <View style={styles.imageBox}>
+            {imagePreview ? (
+              <Image source={{ uri: imagePreview }} style={styles.imageThumb} resizeMode="cover" />
+            ) : (
+              <View style={styles.noImagePlaceholder}>
+                <Text style={{ fontSize: 24, marginBottom: 2 }}>📦</Text>
+                <Text style={styles.imagePlaceholder}>No image</Text>
+              </View>
+            )}
           </View>
-          {imagePreview ? (
-            <TouchableOpacity style={[formStyles.secondaryBtn, { borderColor: colors.danger, backgroundColor: '#FFF5F5' }]} onPress={removeImage}>
-              <Text style={[formStyles.secondaryBtnText, { color: colors.danger }]}>✕ Remove Image</Text>
-            </TouchableOpacity>
-          ) : null}
+          <View style={styles.imageActionsCol}>
+            <Text style={styles.imageInstruction}>
+              {imagePreview ? 'Photo selected. You can change or remove it.' : 'Upload photo via camera or device gallery.'}
+            </Text>
+            <View style={styles.imageButtonsRow}>
+              <TouchableOpacity style={styles.chooseImgBtn} onPress={() => pickImage(false)}>
+                <Text style={styles.chooseImgBtnText}>🖼️ Choose Image</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.cameraImgBtn} onPress={() => pickImage(true)}>
+                <Text style={styles.cameraImgBtnText}>📷 Camera</Text>
+              </TouchableOpacity>
+            </View>
+            {imagePreview ? (
+              <TouchableOpacity style={styles.removeImgBtn} onPress={removeImage}>
+                <Text style={styles.removeImgBtnText}>✕ Remove Photo</Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
         </View>
       </View>
 
@@ -425,9 +442,65 @@ export function ItemFormModal({ item, onClose }) {
 }
 
 const styles = StyleSheet.create({
-  imageRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
-  imageBox: { width: 80, height: 80, borderRadius: 10, backgroundColor: colors.page, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', borderWidth: 1, borderColor: colors.borderSoft },
-  imagePlaceholder: { fontSize: 10, color: colors.inkMuted },
+  imageSection: { marginBottom: 12 },
+  imageCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.borderSoft,
+    padding: 10,
+    gap: 12,
+  },
+  imageBox: {
+    width: 84,
+    height: 84,
+    borderRadius: 10,
+    backgroundColor: colors.page,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+    borderWidth: 1.5,
+    borderColor: colors.borderSoft,
+  },
+  imageThumb: { width: '100%', height: '100%' },
+  noImagePlaceholder: { alignItems: 'center', justifyContent: 'center' },
+  imagePlaceholder: { fontSize: 11, fontWeight: '600', color: colors.inkMuted },
+  imageActionsCol: { flex: 1, gap: 6 },
+  imageInstruction: { fontSize: 11, color: colors.inkMuted, lineHeight: 15 },
+  imageButtonsRow: { flexDirection: 'row', gap: 6 },
+  chooseImgBtn: {
+    flex: 1,
+    backgroundColor: colors.navbar,
+    paddingVertical: 7,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  chooseImgBtnText: { color: colors.gold, fontWeight: '700', fontSize: 11 },
+  cameraImgBtn: {
+    backgroundColor: colors.page,
+    borderWidth: 1,
+    borderColor: colors.borderSoft,
+    paddingVertical: 7,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cameraImgBtnText: { color: colors.ink, fontWeight: '600', fontSize: 11 },
+  removeImgBtn: {
+    alignSelf: 'flex-start',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+    backgroundColor: '#FFF5F5',
+    borderWidth: 1,
+    borderColor: '#FED7D7',
+  },
+  removeImgBtnText: { color: colors.danger, fontWeight: '700', fontSize: 10 },
   sectionTitle: { fontSize: 12, fontWeight: '700', color: colors.gold, marginTop: 18, marginBottom: 4, textTransform: 'uppercase' },
   switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 },
   branchBox: { borderWidth: 1, borderColor: colors.borderSoft, borderRadius: 10, padding: 10, backgroundColor: colors.card },
