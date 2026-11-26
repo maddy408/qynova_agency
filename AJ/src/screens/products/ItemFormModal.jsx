@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, Switch, PermissionsAndroid, Platform, Alert } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
@@ -259,7 +259,10 @@ export function ItemFormModal({ item, onClose }) {
   const saving = createMutation.isPending || updateMutation.isPending || uploadMutation.isPending;
   const units = unitsQuery.data || [];
   const branches = branchesQuery.data || [];
-  const secondaryUnitOptions = units.filter((u) => u.id !== form.base_unit_id);
+  const secondaryUnitOptions = useMemo(() => [
+    { id: null, short_code: 'None (Base Unit Only)' },
+    ...units.filter((u) => u.id !== form.base_unit_id),
+  ], [units, form.base_unit_id]);
 
   return (
     <FormModal

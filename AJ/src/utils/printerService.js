@@ -107,9 +107,23 @@ function buildReceiptText(invoice) {
     body += line(`  ${it.qty} ${it.unit_code || ''} x ${it.rate}`, Number(it.line_total).toFixed(2));
   }
   body += '[C]--------------------------------\n';
+  if (invoice.subtotal) {
+    body += line('Subtotal:', Number(invoice.subtotal).toFixed(2));
+  }
+  if (Number(invoice.discount_amount || 0) > 0) {
+    body += line('Discount:', `-${Number(invoice.discount_amount).toFixed(2)}`);
+  }
+  if (invoice.taxable_value) {
+    body += line('Taxable:', Number(invoice.taxable_value).toFixed(2));
+  }
   if (invoice.bill_type !== 'non_gst') {
-    body += line('CGST:', Number(invoice.cgst_amount || 0).toFixed(2));
-    body += line('SGST:', Number(invoice.sgst_amount || 0).toFixed(2));
+    if (Number(invoice.cgst_amount || 0) > 0) body += line('CGST:', Number(invoice.cgst_amount).toFixed(2));
+    if (Number(invoice.sgst_amount || 0) > 0) body += line('SGST:', Number(invoice.sgst_amount).toFixed(2));
+    if (Number(invoice.igst_amount || 0) > 0) body += line('IGST:', Number(invoice.igst_amount).toFixed(2));
+    if (!invoice.cgst_amount && !invoice.sgst_amount && !invoice.igst_amount && invoice.tax_amount && Number(invoice.tax_amount) > 0) {
+      body += line('GST Tax:', Number(invoice.tax_amount).toFixed(2));
+    }
+    if (Number(invoice.cess_amount || 0) > 0) body += line('Cess:', Number(invoice.cess_amount).toFixed(2));
   }
   body += line('Round off:', Number(invoice.round_off || 0).toFixed(2));
   body += `[C]================================\n`;

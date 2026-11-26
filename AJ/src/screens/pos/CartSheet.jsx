@@ -17,11 +17,8 @@ export function CartSheet({
 }) {
   const [stage, setStage] = useState('cart'); // 'cart' | 'payment'
   const [splitMode, setSplitMode] = useState(false);
-  // Payment method defaults to Credit every time the payment screen opens
-  // (billing requirement section 7) — a completed credit invoice is still a
-  // completed sale; revenue/profit recognize immediately server-side, this
-  // default only changes what's pre-selected here.
-  const [payments, setPayments] = useState([{ payment_method: 'credit', amount: 0 }]);
+  const defaultMethod = !hasCustomer ? 'cash' : 'credit';
+  const [payments, setPayments] = useState([{ payment_method: defaultMethod, amount: 0 }]);
   const [discountError, setDiscountError] = useState('');
 
   const pricedLines = cart.map((line) => ({
@@ -38,11 +35,22 @@ export function CartSheet({
   const discountedTotals = billDiscountAmount > 0 ? computeCartTotals(discountedLines) : totals;
 
   const openPayment = () => {
-    setPayments([{ payment_method: 'credit', amount: discountedTotals.grandTotal }]);
+    const initialMethod = !hasCustomer ? 'cash' : 'credit';
+    setPayments([{ payment_method: initialMethod, amount: discountedTotals.grandTotal }]);
     setSplitMode(false);
     setDiscountError('');
     setStage('payment');
   };
+
+  // Keep single payment amount automatically synced with total payable when bill discount is added/changed
+  useEffect(() => {
+    if (!splitMode && stage === 'payment') {
+      setPayments((prev) => {
+        const curMethod = prev[0]?.payment_method || (!hasCustomer ? 'cash' : 'credit');
+        return [{ payment_method: curMethod, amount: discountedTotals.grandTotal }];
+      });
+    }
+  }, [discountedTotals.grandTotal, splitMode, stage, hasCustomer]);
 
   const handleDiscountValueChange = (raw) => {
     setDiscountError('');
@@ -101,9 +109,10 @@ export function CartSheet({
 
   const toggleSplit = (next) => {
     setSplitMode(next);
+    const activeMethod = !hasCustomer ? 'cash' : 'credit';
     setPayments(next
-      ? PAYMENT_METHODS.map((m) => ({ payment_method: m.key, amount: m.key === 'credit' ? discountedTotals.grandTotal : 0 }))
-      : [{ payment_method: 'credit', amount: discountedTotals.grandTotal }]);
+      ? PAYMENT_METHODS.map((m) => ({ payment_method: m.key, amount: m.key === activeMethod ? discountedTotals.grandTotal : 0 }))
+      : [{ payment_method: activeMethod, amount: discountedTotals.grandTotal }]);
   };
 
   const setSplitAmount = (key, raw) => {

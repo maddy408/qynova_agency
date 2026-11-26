@@ -1330,7 +1330,10 @@ function SettlePaymentModal({ visible, onClose }) {
     if (!supplierId) return setError('Select a supplier.');
     const num = Number(amount || 0);
     if (num <= 0) return setError('Enter a valid payment amount.');
-    if (totalDue > 0 && num > totalDue + 0.009) {
+    if (totalDue <= 0.009) {
+      return setError('This supplier has no outstanding balance to pay.');
+    }
+    if (num > totalDue + 0.009) {
       return setError(`Payment amount (${num.toFixed(2)}) exceeds this supplier's total pending balance of Rs. ${totalDue.toFixed(2)}.`);
     }
     createMutation.mutate({

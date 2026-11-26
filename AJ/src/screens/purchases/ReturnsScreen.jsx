@@ -296,8 +296,23 @@ function getReturnTotal(r) {
 function SalesReturnsTab({ modalVisible, setModalVisible }) {
   const canApprove = usePermission('returns.approve_untraceable_return');
   const [viewReturn, setViewReturn] = useState(null);
+  const [search, setSearch] = useState('');
   const listQuery = useQuery({ queryKey: ['sales-returns'], queryFn: salesReturnsApi.list });
   const queryClient = useQueryClient();
+
+  const filteredData = useMemo(() => {
+    const list = listQuery.data || [];
+    const q = search.trim().toLowerCase();
+    if (!q) return list;
+    return list.filter((r) =>
+      (r.return_no || '').toLowerCase().includes(q) ||
+      (r.customer_name || '').toLowerCase().includes(q) ||
+      (r.reason || '').toLowerCase().includes(q) ||
+      (r.status || '').toLowerCase().includes(q) ||
+      (r.refund_action || '').toLowerCase().includes(q) ||
+      String(r.refund_amount || '').toLowerCase().includes(q)
+    );
+  }, [listQuery.data, search]);
 
   const approveMutation = useMutation({
     mutationFn: salesReturnsApi.approve,
@@ -310,13 +325,28 @@ function SalesReturnsTab({ modalVisible, setModalVisible }) {
 
   return (
     <>
+      <View style={styles.searchWrap}>
+        <Icon name="search" size={16} color={colors.inkMuted} style={{ marginRight: 8 }} />
+        <TextInput
+          value={search}
+          onChangeText={setSearch}
+          placeholder="Search by return #, customer, reason..."
+          placeholderTextColor={colors.inkMuted}
+          style={styles.searchInput}
+        />
+        {search.length > 0 && (
+          <TouchableOpacity onPress={() => setSearch('')} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <Icon name="close" size={14} color={colors.inkMuted} />
+          </TouchableOpacity>
+        )}
+      </View>
       <FlatList
-        data={listQuery.data || []}
+        data={filteredData}
         keyExtractor={(r) => String(r.id)}
         refreshing={listQuery.isFetching}
         onRefresh={listQuery.refetch}
         contentContainerStyle={{ padding: 12, paddingBottom: 140 }}
-        ListEmptyComponent={<Text style={styles.empty}>No sales returns yet.</Text>}
+        ListEmptyComponent={<Text style={styles.empty}>{search ? 'No matching returns found.' : 'No sales returns yet.'}</Text>}
         renderItem={({ item: r }) => (
           <View style={styles.card}>
             <View style={{ flex: 1 }}>
@@ -368,16 +398,46 @@ function SalesReturnsTab({ modalVisible, setModalVisible }) {
 
 function PurchaseReturnsTab({ modalVisible, setModalVisible }) {
   const [viewReturn, setViewReturn] = useState(null);
+  const [search, setSearch] = useState('');
   const listQuery = useQuery({ queryKey: ['purchase-returns'], queryFn: purchaseReturnsApi.list });
+
+  const filteredData = useMemo(() => {
+    const list = listQuery.data || [];
+    const q = search.trim().toLowerCase();
+    if (!q) return list;
+    return list.filter((r) =>
+      (r.return_no || '').toLowerCase().includes(q) ||
+      (r.supplier_name || '').toLowerCase().includes(q) ||
+      (r.reason || '').toLowerCase().includes(q) ||
+      (r.status || '').toLowerCase().includes(q) ||
+      String(r.refund_amount || '').toLowerCase().includes(q)
+    );
+  }, [listQuery.data, search]);
+
   return (
     <>
+      <View style={styles.searchWrap}>
+        <Icon name="search" size={16} color={colors.inkMuted} style={{ marginRight: 8 }} />
+        <TextInput
+          value={search}
+          onChangeText={setSearch}
+          placeholder="Search by return #, supplier, reason..."
+          placeholderTextColor={colors.inkMuted}
+          style={styles.searchInput}
+        />
+        {search.length > 0 && (
+          <TouchableOpacity onPress={() => setSearch('')} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <Icon name="close" size={14} color={colors.inkMuted} />
+          </TouchableOpacity>
+        )}
+      </View>
       <FlatList
-        data={listQuery.data || []}
+        data={filteredData}
         keyExtractor={(r) => String(r.id)}
         refreshing={listQuery.isFetching}
         onRefresh={listQuery.refetch}
         contentContainerStyle={{ padding: 12, paddingBottom: 140 }}
-        ListEmptyComponent={<Text style={styles.empty}>No purchase returns yet.</Text>}
+        ListEmptyComponent={<Text style={styles.empty}>{search ? 'No matching returns found.' : 'No purchase returns yet.'}</Text>}
         renderItem={({ item: r }) => (
           <View style={styles.card}>
             <View style={{ flex: 1 }}>
@@ -398,6 +458,21 @@ function PurchaseReturnsTab({ modalVisible, setModalVisible }) {
         <FormModal
           visible title={`Purchase Return: ${viewReturn.return_no}`} onClose={() => setViewReturn(null)}
           footer={<TouchableOpacity style={formStyles.primaryBtn} onPress={() => setViewReturn(null)}><Text style={formStyles.primaryBtnText}>Close</Text></TouchableOpacity>}
+        >
+          <View style={styles.detailBox}>
+            <DetailRow label="Return No" value={viewReturn.return_no} />
+            <DetailRow label="Supplier" value={viewReturn.supplier_name} />
+            <DetailRow label="Reason" value={viewReturn.reason || '-'} />
+            <DetailRow label="Return Total" value={`Rs. ${Number(viewReturn.return_total ?? 0).toFixed(2)}`} />
+            <DetailRow label="Refunded" value={`Rs. ${getReturnTotal(viewReturn)}`} />
+            <DetailRow label="Balance" value={`Rs. ${Number(viewReturn.balance_amount ?? 0).toFixed(2)}`} />
+            <DetailRow label="Status" value={viewReturn.status} />
+          </View>
+        </FormModal>
+      )}
+    </>
+  );
+}
         >
           <View style={styles.detailBox}>
             <DetailRow label="Return No" value={viewReturn.return_no} />
@@ -454,6 +529,8 @@ function DetailRow({ label, value }) {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.page },
+  searchWrap: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, marginHorizontal: 12, marginTop: 10, marginBottom: 4, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: colors.borderSoft },
+  searchInput: { flex: 1, padding: 0, fontSize: 13, color: colors.ink },
   topHeader: { flexDirection: 'row', alignItems: 'center', paddingRight: 10, backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.borderSoft },
   topRightBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.navbar, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, marginLeft: 8 },
   topRightBtnText: { color: colors.gold, fontWeight: '700', fontSize: 12 },

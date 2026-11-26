@@ -188,10 +188,52 @@ export function ThermalReceiptModal({ visible, invoice, onClose }) {
                     <Text style={styles.totalVal}>Rs. {Number(invoice.subtotal).toFixed(2)}</Text>
                   </View>
                 )}
-                {invoice.tax_amount && Number(invoice.tax_amount) > 0 && (
+                {Number(invoice.discount_amount || 0) > 0 && (
+                  <View style={styles.totalRow}>
+                    <Text style={styles.totalLabel}>Discount</Text>
+                    <Text style={[styles.totalVal, { color: colors.danger }]}>- Rs. {Number(invoice.discount_amount).toFixed(2)}</Text>
+                  </View>
+                )}
+                {invoice.taxable_value && (
+                  <View style={styles.totalRow}>
+                    <Text style={styles.totalLabel}>Taxable Value</Text>
+                    <Text style={styles.totalVal}>Rs. {Number(invoice.taxable_value).toFixed(2)}</Text>
+                  </View>
+                )}
+                {Number(invoice.cgst_amount || 0) > 0 && (
+                  <View style={styles.totalRow}>
+                    <Text style={styles.totalLabel}>CGST</Text>
+                    <Text style={styles.totalVal}>Rs. {Number(invoice.cgst_amount).toFixed(2)}</Text>
+                  </View>
+                )}
+                {Number(invoice.sgst_amount || 0) > 0 && (
+                  <View style={styles.totalRow}>
+                    <Text style={styles.totalLabel}>SGST</Text>
+                    <Text style={styles.totalVal}>Rs. {Number(invoice.sgst_amount).toFixed(2)}</Text>
+                  </View>
+                )}
+                {Number(invoice.igst_amount || 0) > 0 && (
+                  <View style={styles.totalRow}>
+                    <Text style={styles.totalLabel}>IGST</Text>
+                    <Text style={styles.totalVal}>Rs. {Number(invoice.igst_amount).toFixed(2)}</Text>
+                  </View>
+                )}
+                {!invoice.cgst_amount && !invoice.sgst_amount && !invoice.igst_amount && invoice.tax_amount && Number(invoice.tax_amount) > 0 && (
                   <View style={styles.totalRow}>
                     <Text style={styles.totalLabel}>GST Tax</Text>
                     <Text style={styles.totalVal}>Rs. {Number(invoice.tax_amount).toFixed(2)}</Text>
+                  </View>
+                )}
+                {Number(invoice.cess_amount || 0) > 0 && (
+                  <View style={styles.totalRow}>
+                    <Text style={styles.totalLabel}>Cess</Text>
+                    <Text style={styles.totalVal}>Rs. {Number(invoice.cess_amount).toFixed(2)}</Text>
+                  </View>
+                )}
+                {invoice.round_off != null && Number(invoice.round_off) !== 0 && (
+                  <View style={styles.totalRow}>
+                    <Text style={styles.totalLabel}>Round Off</Text>
+                    <Text style={styles.totalVal}>Rs. {Number(invoice.round_off).toFixed(2)}</Text>
                   </View>
                 )}
                 <View style={[styles.totalRow, styles.grandTotalRow]}>
@@ -231,8 +273,8 @@ export function ThermalReceiptModal({ visible, invoice, onClose }) {
             <TouchableOpacity style={styles.printBtn} onPress={handlePrint} disabled={printing}>
               {printing ? <ActivityIndicator size="small" color="#fff" /> : (
                 <>
-                  <Icon name="print" size={18} color="#fff" style={{ marginRight: 6 }} />
-                  <Text style={styles.printBtnText}>Print</Text>
+                  <Icon name="print" size={16} color="#fff" style={{ marginRight: 4 }} />
+                  <Text style={styles.printBtnText}>Thermal Print</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -240,19 +282,19 @@ export function ThermalReceiptModal({ visible, invoice, onClose }) {
             <TouchableOpacity style={styles.shareBtn} onPress={handleDownloadPdf} disabled={downloading}>
               {downloading ? <ActivityIndicator size="small" color={colors.ink} /> : (
                 <>
-                  <Icon name="Invoices" size={18} color={colors.ink} style={{ marginRight: 6 }} />
-                  <Text style={styles.shareBtnText}>PDF</Text>
+                  <Icon name="Invoices" size={16} color={colors.ink} style={{ marginRight: 4 }} />
+                  <Text style={styles.shareBtnText}>A4 Print / PDF</Text>
                 </>
               )}
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.shareBtn} onPress={handleShare}>
-              <Icon name="share" size={18} color={colors.ink} style={{ marginRight: 6 }} />
+              <Icon name="share" size={16} color={colors.ink} style={{ marginRight: 4 }} />
               <Text style={styles.shareBtnText}>Share</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
-              <Icon name="close" size={18} color={colors.inkMuted} style={{ marginRight: 6 }} />
+              <Icon name="close" size={16} color={colors.inkMuted} style={{ marginRight: 4 }} />
               <Text style={styles.closeBtnText}>Close</Text>
             </TouchableOpacity>
           </View>

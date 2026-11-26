@@ -285,29 +285,41 @@ export function POSScreen() {
   };
 
   const resumeHeld = async (invoice) => {
-    const full = await invoicesApi.get(invoice.id);
-    setHeldId(full.id);
-    setBillType(full.bill_type);
-    setPriceType(full.price_type || 'normal');
-    setCustomerId(full.customer_id || null);
-    setCart(
-      full.items.map((it) => ({
-        key: `${it.item_id}-${it.id}`,
-        item: {
-          id: it.item_id, item_name: it.item_name_snapshot, retail_price: it.rate,
-          gst_percent: it.tax_percent, cess_percent: 0, base_unit_id: it.unit_id,
-        },
-        qty: Number(it.qty),
-        free_qty: Number(it.free_qty),
-        discount_mode: 'percent',
-        discount_percent: Number(it.discount_percent),
-        discount_amount: '',
-        unit_id: it.unit_id,
-        rate: Number(it.rate),
-      }))
-    );
-    setHeldVisible(false);
-    setCartVisible(true);
+    try {
+      const full = await invoicesApi.get(invoice.id);
+      setHeldId(full.id);
+      setBillType(full.bill_type || 'gst');
+      setPriceType(full.price_type || 'normal');
+      const cid = full.customer_id ? String(full.customer_id) : (invoice.customer_id ? String(invoice.customer_id) : null);
+      setCustomerId(cid);
+      const custName = full.customer_name || invoice.customer_name || '';
+      setCustomerSearch(custName);
+      setCart(
+        (full.items || []).map((it) => ({
+          key: `${it.item_id}-${it.id || Date.now()}`,
+          item: {
+            id: it.item_id,
+            item_name: it.item_name_snapshot,
+            retail_price: Number(it.rate),
+            gst_percent: Number(it.tax_percent || 0),
+            cess_percent: 0,
+            base_unit_id: it.unit_id,
+            secondary_unit_id: it.secondary_unit_id || null,
+          },
+          qty: Number(it.qty),
+          free_qty: Number(it.free_qty || 0),
+          discount_mode: 'percent',
+          discount_percent: Number(it.discount_percent || 0),
+          discount_amount: it.discount_amount ? Number(it.discount_amount) : '',
+          unit_id: it.unit_id,
+          rate: Number(it.rate),
+        }))
+      );
+      setHeldVisible(false);
+      setCartVisible(true);
+    } catch (err) {
+      Alert.alert('Error', friendlyErrorMessage(err));
+    }
   };
 
   const discardHeld = async (invoiceId) => {
@@ -342,7 +354,13 @@ export function POSScreen() {
       <View style={styles.searchRow}>
         <TextInput
           value={search}
-          onChangeText={setSearch}
+          onChangeText={(v) => {
+            setSearch(v);
+            if (customerDropdownOpen) setCustomerDropdownOpen(false);
+          }}
+          onFocus={() => {
+            if (customerDropdownOpen) setCustomerDropdownOpen(false);
+          }}
           placeholder="Search product by name, code or barcode…"
           placeholderTextColor={colors.inkMuted}
           style={styles.searchInput}

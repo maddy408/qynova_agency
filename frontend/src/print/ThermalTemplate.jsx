@@ -50,12 +50,42 @@ export function ThermalTemplate({ data }) {
         </div>
       ))}
       {isGst && <hr />}
-      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-        <span>Taxable</span><span>{invoice.taxable_value}</span>
-      </div>
-      {isGst && (
+      {invoice.subtotal && (
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <span>Tax</span><span>{(Number(invoice.cgst_amount) + Number(invoice.sgst_amount)).toFixed(2)}</span>
+          <span>Subtotal</span><span>Rs. {Number(invoice.subtotal).toFixed(2)}</span>
+        </div>
+      )}
+      {Number(invoice.discount_amount || 0) > 0 && (
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <span>Discount</span><span>- Rs. {Number(invoice.discount_amount).toFixed(2)}</span>
+        </div>
+      )}
+      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+        <span>Taxable</span><span>Rs. {Number(invoice.taxable_value || 0).toFixed(2)}</span>
+      </div>
+      {isGst && Number(invoice.cgst_amount || 0) > 0 && (
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <span>CGST</span><span>Rs. {Number(invoice.cgst_amount).toFixed(2)}</span>
+        </div>
+      )}
+      {isGst && Number(invoice.sgst_amount || 0) > 0 && (
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <span>SGST</span><span>Rs. {Number(invoice.sgst_amount).toFixed(2)}</span>
+        </div>
+      )}
+      {isGst && Number(invoice.igst_amount || 0) > 0 && (
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <span>IGST</span><span>Rs. {Number(invoice.igst_amount).toFixed(2)}</span>
+        </div>
+      )}
+      {isGst && !invoice.cgst_amount && !invoice.sgst_amount && !invoice.igst_amount && invoice.tax_amount && Number(invoice.tax_amount) > 0 && (
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <span>Tax</span><span>Rs. {Number(invoice.tax_amount).toFixed(2)}</span>
+        </div>
+      )}
+      {Number(invoice.cess_amount || 0) > 0 && (
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <span>Cess</span><span>Rs. {Number(invoice.cess_amount).toFixed(2)}</span>
         </div>
       )}
       <div style={{ display: 'flex', justifyContent: 'space-between' }}>

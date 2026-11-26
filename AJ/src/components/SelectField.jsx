@@ -44,12 +44,23 @@ export function SelectField({ label, value, options = [], labelKey = 'name', val
   return (
     <View style={styles.wrap}>
       {label ? <Text style={styles.label}>{label}{required ? ' *' : ''}</Text> : null}
-      <TouchableOpacity style={styles.field} onPress={() => setOpen(true)}>
-        <Text style={selected ? styles.fieldText : styles.placeholderText} numberOfLines={1}>
-          {selected ? getItemLabel(selected) : placeholder}
-        </Text>
-        <Text style={styles.chevron}>▾</Text>
-      </TouchableOpacity>
+      <View style={styles.fieldBox}>
+        <TouchableOpacity style={styles.field} onPress={() => setOpen(true)}>
+          <Text style={selected ? styles.fieldText : styles.placeholderText} numberOfLines={1}>
+            {selected ? getItemLabel(selected) : placeholder}
+          </Text>
+          <Text style={styles.chevron}>▾</Text>
+        </TouchableOpacity>
+        {selected && !required && (
+          <TouchableOpacity
+            style={styles.clearBtn}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            onPress={() => onChange(null)}
+          >
+            <Text style={styles.clearBtnText}>✕</Text>
+          </TouchableOpacity>
+        )}
+      </View>
 
       <Modal visible={open} animationType="slide" onRequestClose={() => setOpen(false)}>
         <View style={styles.modalScreen}>
@@ -61,6 +72,20 @@ export function SelectField({ label, value, options = [], labelKey = 'name', val
           <FlatList
             data={filtered}
             keyExtractor={(o, i) => String(getItemVal(o) || i)}
+            ListHeaderComponent={
+              !required && !query ? (
+                <TouchableOpacity
+                  style={[styles.option, (!value || value === '') && styles.optionActive]}
+                  onPress={() => { onChange(null); setOpen(false); setQuery(''); }}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={(!value || value === '') ? styles.optionTextActive : styles.optionText}>
+                      -- None --
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              ) : null
+            }
             ListEmptyComponent={<Text style={styles.empty}>No results.</Text>}
             renderItem={({ item }) => {
               const itemVal = getItemVal(item);
@@ -90,7 +115,9 @@ export function SelectField({ label, value, options = [], labelKey = 'name', val
 const styles = StyleSheet.create({
   wrap: { marginBottom: 12 },
   label: { fontSize: 12, fontWeight: '600', color: colors.inkMuted, marginBottom: 6 },
+  fieldBox: { flexDirection: 'row', alignItems: 'center' },
   field: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -101,6 +128,8 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     backgroundColor: colors.card,
   },
+  clearBtn: { padding: 8, marginLeft: 4 },
+  clearBtnText: { fontSize: 14, color: colors.inkMuted },
   fieldText: { fontSize: 14, color: colors.ink, flex: 1 },
   placeholderText: { fontSize: 14, color: colors.inkMuted, flex: 1 },
   chevron: { fontSize: 14, color: colors.inkMuted, marginLeft: 8 },

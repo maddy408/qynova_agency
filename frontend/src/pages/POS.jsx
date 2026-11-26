@@ -1216,7 +1216,7 @@ export function POS() {
               onClick={() => setShowHeldList((v) => !v)}
               className="rounded-full text-xs py-0.5 px-2.5 border-[#CBD5E1]"
             >
-              Hold Bills ({heldInvoices.length})
+              Held Bills ({heldInvoices.length})
             </Button>
             {message && <span className="text-xs font-bold text-success animate-fade-in">{message}</span>}
           </div>
