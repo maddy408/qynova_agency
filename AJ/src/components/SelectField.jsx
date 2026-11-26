@@ -7,23 +7,46 @@ import { colors } from '../theme/colors';
  * option — replaces horizontal chip rows, which don't scale past a
  * handful of items and don't fit reliably on narrow screens.
  */
-export function SelectField({ label, value, options, labelKey = 'name', valueKey = 'id', onChange, placeholder = '--', required }) {
+export function SelectField({ label, value, options = [], labelKey = 'name', valueKey = 'id', onChange, placeholder = '--', required }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
 
-  const selected = options.find((o) => o[valueKey] === value);
+  const safeOptions = Array.isArray(options) ? options : [];
+
+  const getItemVal = (o) => {
+    if (o == null) return '';
+    if (o[valueKey] !== undefined && o[valueKey] !== null) return o[valueKey];
+    if (o.id !== undefined && o.id !== null) return o.id;
+    if (o.item_id !== undefined && o.item_id !== null) return o.item_id;
+    if (o.value !== undefined && o.value !== null) return o.value;
+    return '';
+  };
+
+  const getItemLabel = (o) => {
+    if (o == null) return '';
+    return o[labelKey] || o.name || o.item_name || o.title || o.label || o.route_name || o.customer_name || o.supplier_name || String(getItemVal(o));
+  };
+
+  const selected = (value !== null && value !== undefined && value !== '')
+    ? safeOptions.find((o) => String(getItemVal(o)) === String(value))
+    : null;
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return options;
-    return options.filter((o) => String(o[labelKey] || '').toLowerCase().includes(q));
-  }, [options, query, labelKey]);
+    if (!q) return safeOptions;
+    return safeOptions.filter((o) => {
+      const labelVal = String(getItemLabel(o));
+      const codeVal = String(o.item_code || o.code || o.short_code || o.barcode || o.phone || '');
+      return labelVal.toLowerCase().includes(q) || codeVal.toLowerCase().includes(q);
+    });
+  }, [safeOptions, query, labelKey, valueKey]);
 
   return (
     <View style={styles.wrap}>
       {label ? <Text style={styles.label}>{label}{required ? ' *' : ''}</Text> : null}
       <TouchableOpacity style={styles.field} onPress={() => setOpen(true)}>
         <Text style={selected ? styles.fieldText : styles.placeholderText} numberOfLines={1}>
-          {selected ? selected[labelKey] : placeholder}
+          {selected ? getItemLabel(selected) : placeholder}
         </Text>
         <Text style={styles.chevron}>▾</Text>
       </TouchableOpacity>
@@ -37,16 +60,26 @@ export function SelectField({ label, value, options, labelKey = 'name', valueKey
           <TextInput autoFocus value={query} onChangeText={setQuery} placeholder="Search…" style={styles.search} />
           <FlatList
             data={filtered}
-            keyExtractor={(o) => String(o[valueKey])}
+            keyExtractor={(o, i) => String(getItemVal(o) || i)}
             ListEmptyComponent={<Text style={styles.empty}>No results.</Text>}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={[styles.option, item[valueKey] === value && styles.optionActive]}
-                onPress={() => { onChange(item[valueKey]); setOpen(false); setQuery(''); }}
-              >
-                <Text style={item[valueKey] === value ? styles.optionTextActive : styles.optionText}>{item[labelKey]}</Text>
-              </TouchableOpacity>
-            )}
+            renderItem={({ item }) => {
+              const itemVal = getItemVal(item);
+              const isSelected = String(itemVal) === String(value);
+              const subInfo = [item.item_code || item.code, item.barcode, item.phone].filter(Boolean).join(' · ');
+              return (
+                <TouchableOpacity
+                  style={[styles.option, isSelected && styles.optionActive]}
+                  onPress={() => { onChange(itemVal); setOpen(false); setQuery(''); }}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={isSelected ? styles.optionTextActive : styles.optionText}>
+                      {getItemLabel(item)}
+                    </Text>
+                    {subInfo ? <Text style={styles.optionSubText}>{subInfo}</Text> : null}
+                  </View>
+                </TouchableOpacity>
+              );
+            }}
           />
         </View>
       </Modal>
@@ -57,18 +90,54 @@ export function SelectField({ label, value, options, labelKey = 'name', valueKey
 const styles = StyleSheet.create({
   wrap: { marginBottom: 12 },
   label: { fontSize: 12, fontWeight: '600', color: colors.inkMuted, marginBottom: 6 },
-  field: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: colors.borderSoft, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 12, backgroundColor: colors.card },
-  fieldText: { color: colors.ink, fontSize: 14, flex: 1 },
-  placeholderText: { color: colors.inkMuted, fontSize: 14, flex: 1 },
-  chevron: { color: colors.inkMuted, marginLeft: 8 },
-  modalScreen: { flex: 1, backgroundColor: colors.page, paddingTop: 48, paddingHorizontal: 16 },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  modalTitle: { fontSize: 17, fontWeight: '700', color: colors.ink },
+  field: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: colors.borderSoft,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    backgroundColor: colors.card,
+  },
+  fieldText: { fontSize: 14, color: colors.ink, flex: 1 },
+  placeholderText: { fontSize: 14, color: colors.inkMuted, flex: 1 },
+  chevron: { fontSize: 14, color: colors.inkMuted, marginLeft: 8 },
+  modalScreen: { flex: 1, backgroundColor: colors.page, paddingTop: 40 },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderSoft,
+    backgroundColor: colors.card,
+  },
+  modalTitle: { fontSize: 16, fontWeight: '700', color: colors.ink },
   close: { fontSize: 18, color: colors.inkMuted, padding: 4 },
-  search: { borderWidth: 1, borderColor: colors.borderSoft, borderRadius: 10, padding: 12, backgroundColor: colors.card, marginBottom: 8 },
-  empty: { textAlign: 'center', color: colors.inkMuted, marginTop: 24 },
-  option: { paddingVertical: 14, paddingHorizontal: 8, borderBottomWidth: 1, borderBottomColor: colors.borderSoft },
-  optionActive: { backgroundColor: colors.highlight },
-  optionText: { color: colors.ink, fontSize: 14 },
-  optionTextActive: { color: colors.ink, fontSize: 14, fontWeight: '700' },
+  search: {
+    margin: 12,
+    borderWidth: 1,
+    borderColor: colors.borderSoft,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: colors.card,
+    fontSize: 14,
+    color: colors.ink,
+  },
+  empty: { textAlign: 'center', color: colors.inkMuted, marginTop: 40, fontSize: 13 },
+  option: {
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderSoft,
+    backgroundColor: colors.card,
+  },
+  optionActive: { backgroundColor: '#F0FDF4' },
+  optionText: { fontSize: 14, color: colors.ink },
+  optionTextActive: { fontSize: 14, color: colors.success, fontWeight: '700' },
+  optionSubText: { fontSize: 11, color: colors.inkMuted, marginTop: 2 },
 });

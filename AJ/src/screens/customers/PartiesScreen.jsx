@@ -124,15 +124,21 @@ export function PartiesScreen() {
               { name: 'opening_balance', label: 'Outstanding (Rs.)', keyboardType: 'numeric' },
               { name: 'is_active', label: 'Active Status', type: 'switch', default: 1 },
             ]}
+            transformSubmit={(form) => ({
+              ...form,
+              name: (form.name || '').trim(),
+              phone: (form.phone || '').trim(),
+              gstin: (form.gstin || '').trim() || null,
+              address: (form.address || '').trim() || null,
+              opening_balance: form.opening_balance ? Number(form.opening_balance) : 0,
+              is_active: (form.is_active === 0 || form.is_active === false) ? 0 : 1,
+              status: (form.is_active === 0 || form.is_active === false) ? 'inactive' : 'active',
+            })}
             renderTitle={(r) => r.name}
             renderSubtitle={(r) => {
               const statusStr = (r.status === 'inactive' || r.is_active === 0) ? 'Inactive' : 'Active';
               return `${r.phone || 'No phone'}${Number(r.opening_balance) ? ` · Outstanding Rs. ${r.opening_balance}` : ''} · ${statusStr}`;
             }}
-            transformSubmit={(form) => ({
-              ...form,
-              status: (form.is_active === 0 || form.is_active === false) ? 'inactive' : 'active',
-            })}
           />
         )}
 
@@ -171,6 +177,16 @@ export function PartiesScreen() {
                 options: routes.map((rt) => ({ value: rt.id, label: rt.name })),
               },
             ]}
+            transformSubmit={(form) => ({
+              ...form,
+              name: (form.name || '').trim(),
+              phone: (form.phone || '').trim(),
+              gstin: (form.gstin || '').trim() || null,
+              address: (form.address || '').trim() || null,
+              opening_balance: form.opening_balance ? Number(form.opening_balance) : 0,
+              is_active: (form.is_active === 0 || form.is_active === false) ? 0 : 1,
+              status: (form.is_active === 0 || form.is_active === false) ? 'inactive' : 'active',
+            })}
             renderTitle={(r) => r.name}
             renderSubtitle={(r) => {
               const rName = routeMap.get(String(r.route_id));

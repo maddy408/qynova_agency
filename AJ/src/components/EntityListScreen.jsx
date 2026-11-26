@@ -33,8 +33,32 @@ export function EntityListScreen({ queryKey, api, title, fields, renderTitle, re
   const listQuery = useQuery({ queryKey: [queryKey], queryFn: api.list });
   const invalidate = () => queryClient.invalidateQueries({ queryKey: [queryKey] });
 
-  const createMutation = useMutation({ mutationFn: api.create, onSuccess: () => { invalidate(); closeModal(); }, onError: (e) => setError(friendlyErrorMessage(e)) });
-  const updateMutation = useMutation({ mutationFn: ({ id, data }) => api.update(id, data), onSuccess: () => { invalidate(); closeModal(); }, onError: (e) => setError(friendlyErrorMessage(e)) });
+  const createMutation = useMutation({
+    mutationFn: api.create,
+    onSuccess: () => {
+      invalidate();
+      closeModal();
+      Alert.alert('Success', `${title} created successfully.`);
+    },
+    onError: (e) => {
+      const msg = friendlyErrorMessage(e);
+      setError(msg);
+      Alert.alert('Save Failed', msg);
+    },
+  });
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }) => api.update(id, data),
+    onSuccess: () => {
+      invalidate();
+      closeModal();
+      Alert.alert('Success', `${title} updated successfully.`);
+    },
+    onError: (e) => {
+      const msg = friendlyErrorMessage(e);
+      setError(msg);
+      Alert.alert('Save Failed', msg);
+    },
+  });
   const removeMutation = useMutation({
     mutationFn: api.remove,
     onSuccess: () => {

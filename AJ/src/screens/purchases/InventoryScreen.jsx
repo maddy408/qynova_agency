@@ -144,11 +144,11 @@ function StockHubPanel() {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return rows;
-    return rows.filter((r) =>
-      (r.item_name || '').toLowerCase().includes(q) ||
-      (r.item_code || '').toLowerCase().includes(q) ||
-      (r.owner_name || '').toLowerCase().includes(q)
-    );
+    const tokens = q.split(/\s+/).filter(Boolean);
+    return rows.filter((r) => {
+      const targetStr = `${r.item_name || ''} ${r.item_code || ''} ${r.barcode || ''} ${r.owner_name || ''} ${r.brand_name || ''} ${r.category_name || ''}`.toLowerCase();
+      return tokens.every((token) => targetStr.includes(token));
+    });
   }, [rows, search]);
 
   const rowKey = (r, idx) => `${r.item_id || idx}-${r.owner_id || ''}-${r.owner_type || ''}`;
@@ -423,9 +423,11 @@ function VanStockPanel({ canManage }) {
 
   // Handle Order Linking
   const handleOrderSourceTypeChange = (type) => {
-    setOrderSourceType(type);
+    // If user clicked the same type or plain, reset to empty
+    const normalized = type === 'plain' ? '' : type;
+    setOrderSourceType(normalized);
     setSelectedOrderId('');
-    if (type === '') {
+    if (normalized === '') {
       setLines([{ item_id: '', qty: '1' }]);
     }
   };
@@ -479,7 +481,7 @@ function VanStockPanel({ canManage }) {
     const validLines = lines.filter((l) => l.item_id && Number(l.qty) > 0);
     if (validLines.length === 0) return setFormError('Please add at least one valid item with positive quantity.');
 
-    if (mode === 'issue' && orderSourceType !== '' && !selectedOrderId) {
+    if (mode === 'issue' && orderSourceType !== '' && orderSourceType !== 'plain' && !selectedOrderId) {
       return setFormError('Please select an order to link this issue to, or select plain issue.');
     }
 
@@ -487,7 +489,7 @@ function VanStockPanel({ canManage }) {
       employee_id: Number(employeeId),
       items: validLines.map((l) => ({ item_id: Number(l.item_id), qty: Number(l.qty) })),
       notes: notes || null,
-      ...(mode === 'issue' && orderSourceType !== '' && selectedOrderId
+      ...(mode === 'issue' && orderSourceType !== '' && orderSourceType !== 'plain' && selectedOrderId
         ? { source_type: orderSourceType, source_id: Number(selectedOrderId) }
         : {}),
     };

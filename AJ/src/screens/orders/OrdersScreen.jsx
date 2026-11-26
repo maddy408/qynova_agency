@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
-import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, Alert, ScrollView } from 'react-native';
+import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, Alert, ScrollView, Modal } from 'react-native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { customerPrebookingsApi, purchaseRequestsApi, routeSuppliersApi } from '../../api/purchasing';
+import { customerPrebookingsApi, purchaseRequestsApi, purchasesApi, routeSuppliersApi } from '../../api/purchasing';
 import { customersApi, suppliersApi, routesApi } from '../../api/parties';
 import { itemsApi } from '../../api/catalog';
 import { usersApi } from '../../api/users';
@@ -11,7 +11,7 @@ import { SelectField } from '../../components/SelectField';
 import { ItemLineEditor } from '../../components/ItemLineEditor';
 import { SegmentedTabs } from '../../components/SegmentedTabs';
 import { Icon } from '../../components/Icon';
-import { downloadReportPdf } from '../../utils/pdfExport';
+import { downloadReportPdf } from '../../utils/pdfService';
 import { colors } from '../../theme/colors';
 import { usePermission } from '../../hooks/useAuth';
 
@@ -292,6 +292,7 @@ function PrebookingsTab({ modalVisible, setModalVisible }) {
   const [statusFilter, setStatusFilter] = useState('all');
   const [viewBooking, setViewBooking] = useState(null);
   const [detailedBooking, setDetailedBooking] = useState(null);
+  const [statusPickerBooking, setStatusPickerBooking] = useState(null);
 
   const listQuery = useQuery({ queryKey: ['customer-prebookings'], queryFn: customerPrebookingsApi.list });
 
@@ -322,7 +323,8 @@ function PrebookingsTab({ modalVisible, setModalVisible }) {
         const phone = (r.customer_phone || '').toLowerCase();
         const route = (r.route_name || '').toLowerCase();
         const status = (r.status || '').toLowerCase();
-        return no.includes(q) || cust.includes(q) || phone.includes(q) || route.includes(q) || status.includes(q);
+        const notes = (r.notes || '').toLowerCase();
+        return no.includes(q) || cust.includes(q) || phone.includes(q) || route.includes(q) || status.includes(q) || notes.includes(q);
       });
     }
     return out;
@@ -342,13 +344,13 @@ function PrebookingsTab({ modalVisible, setModalVisible }) {
     const items = booking.items || [];
     downloadReportPdf({
       title: `Customer Pre-Booking ${booking.prebooking_no || '#' + booking.id}`,
-      columns: [
-        { header: 'Item', key: 'item_name' },
-        { header: 'Qty', key: 'qty' },
-        { header: 'Rate (Rs.)', key: 'rate' },
-        { header: 'Total (Rs.)', key: 'line_total' },
-      ],
-      data: items.length > 0 ? items.map((i) => ({
+      columns: {
+        item_name: 'Item',
+        qty: 'Qty',
+        rate: 'Rate (Rs.)',
+        line_total: 'Total (Rs.)',
+      },
+      rows: items.length > 0 ? items.map((i) => ({
         item_name: i.item_name || i.name || 'Item',
         qty: String(i.qty || 1),
         rate: Number(i.rate || 0).toFixed(2),
@@ -356,7 +358,13 @@ function PrebookingsTab({ modalVisible, setModalVisible }) {
       })) : [
         { item_name: 'Total Items', qty: String(booking.item_count || 1), rate: '-', line_total: Number(booking.estimated_total || 0).toFixed(2) }
       ],
-    });
+      totalsRow: {
+        item_name: 'Grand Total',
+        qty: items.length > 0 ? String(items.reduce((s, i) => s + Number(i.qty || 0), 0)) : String(booking.item_count || 1),
+        rate: '',
+        line_total: Number(booking.estimated_total || 0).toFixed(2),
+      },
+    }, `prebooking_${booking.prebooking_no || booking.id}.pdf`);
   };
 
   const nextStatuses = (status) => PREBOOKING_NEXT_STATUS[status] || [];
@@ -444,6 +452,12 @@ function PrebookingsTab({ modalVisible, setModalVisible }) {
                 <Text style={styles.actionBtnText}>Print</Text>
               </TouchableOpacity>
 
+              {canManageStatus && (
+                <TouchableOpacity onPress={() => setStatusPickerBooking(r)} style={styles.actionBtn}>
+                  <Text style={styles.actionBtnText}>Status ▾</Text>
+                </TouchableOpacity>
+              )}
+
               {canManageStatus && nextStatuses(r.status).map((nst) => (
                 <TouchableOpacity
                   key={nst}
@@ -469,6 +483,27 @@ function PrebookingsTab({ modalVisible, setModalVisible }) {
         )}
       />
       <PrebookingFormModal visible={modalVisible} onClose={() => setModalVisible(false)} />
+
+      {/* Status Picker Modal */}
+      {statusPickerBooking && (
+        <StatusPickerModal
+          visible={!!statusPickerBooking}
+          title={`Update Status: ${statusPickerBooking.prebooking_no}`}
+          currentStatus={statusPickerBooking.status}
+          statuses={['pending', 'confirmed', 'processing', 'ready', 'completed', 'cancelled']}
+          onClose={() => setStatusPickerBooking(null)}
+          onSelect={(st) => {
+            if (st === 'cancelled') {
+              Alert.alert('Cancel pre-booking?', statusPickerBooking.prebooking_no, [
+                { text: 'No', style: 'cancel' },
+                { text: 'Yes, cancel', style: 'destructive', onPress: () => cancelMutation.mutate(statusPickerBooking.id) },
+              ]);
+            } else {
+              statusMutation.mutate({ id: statusPickerBooking.id, status: st });
+            }
+          }}
+        />
+      )}
 
       {/* View Modal */}
       {viewBooking && (
@@ -502,6 +537,43 @@ function PrebookingsTab({ modalVisible, setModalVisible }) {
             <DetailRow label="Status" value={viewBooking.status.toUpperCase()} />
             <DetailRow label="Estimated Total" value={`Rs. ${Number(viewBooking.estimated_total || 0).toFixed(2)}`} />
 
+            {/* Quick Status Changers inside View Modal */}
+            {canManageStatus && (
+              <View style={{ marginTop: 14 }}>
+                <Text style={[styles.detailLabel, { marginBottom: 6, fontWeight: '700' }]}>Update Status:</Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+                  {['pending', 'confirmed', 'processing', 'ready', 'completed', 'cancelled'].map((st) => (
+                    <TouchableOpacity
+                      key={st}
+                      style={[styles.statusSelectPill, viewBooking.status === st && styles.statusSelectPillActive]}
+                      onPress={() => {
+                        if (st === 'cancelled') {
+                          Alert.alert('Cancel pre-booking?', viewBooking.prebooking_no, [
+                            { text: 'No', style: 'cancel' },
+                            {
+                              text: 'Yes, cancel',
+                              style: 'destructive',
+                              onPress: () => {
+                                cancelMutation.mutate(viewBooking.id);
+                                setViewBooking((p) => ({ ...p, status: 'cancelled' }));
+                              },
+                            },
+                          ]);
+                        } else {
+                          statusMutation.mutate({ id: viewBooking.id, status: st });
+                          setViewBooking((p) => ({ ...p, status: st }));
+                        }
+                      }}
+                    >
+                      <Text style={[styles.statusSelectPillText, viewBooking.status === st && styles.statusSelectPillTextActive]}>
+                        {st.toUpperCase()}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            )}
+
             {detailedBooking?.items && detailedBooking.items.length > 0 && (
               <View style={{ marginTop: 12 }}>
                 <Text style={[styles.detailLabel, { marginBottom: 6, fontWeight: '700' }]}>Item Lines:</Text>
@@ -529,6 +601,7 @@ function RequestsTab({ modalVisible, setModalVisible }) {
   const [statusFilter, setStatusFilter] = useState('all');
   const [viewRequest, setViewRequest] = useState(null);
   const [detailedRequest, setDetailedRequest] = useState(null);
+  const [converting, setConverting] = useState(null);
 
   const listQuery = useQuery({ queryKey: ['purchase-requests'], queryFn: purchaseRequestsApi.list });
 
@@ -561,7 +634,8 @@ function RequestsTab({ modalVisible, setModalVisible }) {
         const supp = (r.supplier_name || '').toLowerCase();
         const route = (r.route_name || '').toLowerCase();
         const status = (r.status || '').toLowerCase();
-        return no.includes(q) || supp.includes(q) || route.includes(q) || status.includes(q);
+        const notes = (r.notes || '').toLowerCase();
+        return no.includes(q) || supp.includes(q) || route.includes(q) || status.includes(q) || notes.includes(q);
       });
     }
     return out;
@@ -581,13 +655,13 @@ function RequestsTab({ modalVisible, setModalVisible }) {
     const items = req.items || [];
     downloadReportPdf({
       title: `Purchase Request ${req.request_no || '#' + req.id}`,
-      columns: [
-        { header: 'Item', key: 'item_name' },
-        { header: 'Qty', key: 'qty' },
-        { header: 'Rate (Rs.)', key: 'rate' },
-        { header: 'Total (Rs.)', key: 'line_total' },
-      ],
-      data: items.length > 0 ? items.map((i) => ({
+      columns: {
+        item_name: 'Item',
+        qty: 'Qty',
+        rate: 'Rate (Rs.)',
+        line_total: 'Total (Rs.)',
+      },
+      rows: items.length > 0 ? items.map((i) => ({
         item_name: i.item_name || i.name || 'Item',
         qty: String(i.qty || 1),
         rate: Number(i.rate || 0).toFixed(2),
@@ -595,7 +669,13 @@ function RequestsTab({ modalVisible, setModalVisible }) {
       })) : [
         { item_name: 'Total Items', qty: String(req.item_count || 1), rate: '-', line_total: Number(req.estimated_total || 0).toFixed(2) }
       ],
-    });
+      totalsRow: {
+        item_name: 'Grand Total',
+        qty: items.length > 0 ? String(items.reduce((s, i) => s + Number(i.qty || 0), 0)) : String(req.item_count || 1),
+        rate: '',
+        line_total: Number(req.estimated_total || 0).toFixed(2),
+      },
+    }, `request_${req.request_no || req.id}.pdf`);
   };
 
   return (
@@ -692,7 +772,24 @@ function RequestsTab({ modalVisible, setModalVisible }) {
                 </TouchableOpacity>
               )}
 
-              {r.status === 'open' && (
+              {r.status === 'approved' && (
+                <TouchableOpacity
+                  style={styles.actionBtnGrn}
+                  onPress={async () => {
+                    try {
+                      const full = await purchaseRequestsApi.get(r.id);
+                      setConverting(full);
+                    } catch {
+                      setConverting(r);
+                    }
+                  }}
+                >
+                  <Icon name="plus" size={14} color="#B45309" style={{ marginRight: 4 }} />
+                  <Text style={styles.actionBtnGrnText}>Create GRN</Text>
+                </TouchableOpacity>
+              )}
+
+              {(r.status === 'open' || r.status === 'approved') && (
                 <TouchableOpacity
                   style={styles.actionBtnDanger}
                   onPress={() => Alert.alert('Cancel Request?', r.request_no, [
@@ -709,6 +806,11 @@ function RequestsTab({ modalVisible, setModalVisible }) {
       />
       <RequestFormModal visible={modalVisible} onClose={() => setModalVisible(false)} />
 
+      {/* Convert to GRN Modal */}
+      {converting && (
+        <ConvertToGrnModal request={converting} onClose={() => setConverting(null)} />
+      )}
+
       {/* View Modal */}
       {viewRequest && (
         <FormModal
@@ -723,11 +825,24 @@ function RequestsTab({ modalVisible, setModalVisible }) {
               >
                 <Text style={formStyles.secondaryBtnText}>Print / PDF</Text>
               </TouchableOpacity>
+              {viewRequest.status === 'approved' && (
+                <TouchableOpacity
+                  style={[formStyles.primaryBtn, { flex: 1, backgroundColor: '#D97706' }]}
+                  onPress={() => {
+                    const target = detailedRequest || viewRequest;
+                    setViewRequest(null);
+                    setDetailedRequest(null);
+                    setConverting(target);
+                  }}
+                >
+                  <Text style={formStyles.primaryBtnText}>Create GRN</Text>
+                </TouchableOpacity>
+              )}
               <TouchableOpacity
-                style={[formStyles.primaryBtn, { flex: 1 }]}
+                style={[formStyles.secondaryBtn, { flex: 1 }]}
                 onPress={() => { setViewRequest(null); setDetailedRequest(null); }}
               >
-                <Text style={formStyles.primaryBtnText}>Close</Text>
+                <Text style={formStyles.secondaryBtnText}>Close</Text>
               </TouchableOpacity>
             </View>
           }
@@ -740,8 +855,43 @@ function RequestsTab({ modalVisible, setModalVisible }) {
             <DetailRow label="Estimated Total" value={`Rs. ${Number(viewRequest.estimated_total || 0).toFixed(2)}`} />
             <DetailRow label="Status" value={viewRequest.status.replace(/_/g, ' ').toUpperCase()} />
 
+            {/* Quick Actions in View modal */}
+            {viewRequest.status === 'open' && (
+              <View style={{ flexDirection: 'row', gap: 10, marginTop: 14 }}>
+                {canApprove && (
+                  <TouchableOpacity
+                    style={[styles.actionBtnSuccess, { flex: 1, justifyContent: 'center', paddingVertical: 10 }]}
+                    onPress={() => {
+                      approveMutation.mutate(viewRequest.id);
+                      setViewRequest((p) => ({ ...p, status: 'approved' }));
+                    }}
+                  >
+                    <Text style={styles.actionBtnSuccessText}>Approve Request</Text>
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity
+                  style={[styles.actionBtnDanger, { flex: 1, justifyContent: 'center', paddingVertical: 10 }]}
+                  onPress={() => {
+                    Alert.alert('Cancel Request?', viewRequest.request_no, [
+                      { text: 'No', style: 'cancel' },
+                      {
+                        text: 'Yes, cancel',
+                        style: 'destructive',
+                        onPress: () => {
+                          cancelMutation.mutate(viewRequest.id);
+                          setViewRequest((p) => ({ ...p, status: 'cancelled' }));
+                        },
+                      },
+                    ]);
+                  }}
+                >
+                  <Text style={styles.actionBtnDangerText}>Cancel Request</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
             {detailedRequest?.items && detailedRequest.items.length > 0 && (
-              <View style={{ marginTop: 12 }}>
+              <View style={{ marginTop: 14 }}>
                 <Text style={[styles.detailLabel, { marginBottom: 6, fontWeight: '700' }]}>Item Lines:</Text>
                 {detailedRequest.items.map((line, idx) => (
                   <View key={idx} style={styles.itemLineRow}>
@@ -760,6 +910,170 @@ function RequestsTab({ modalVisible, setModalVisible }) {
   );
 }
 
+function ConvertToGrnModal({ request, onClose }) {
+  const queryClient = useQueryClient();
+  const [paymentMode, setPaymentMode] = useState('credit');
+  const [paidAmount, setPaidAmount] = useState('0');
+  const [supplierInvoiceNo, setSupplierInvoiceNo] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  const rawItems = request?.items || [];
+  const items = rawItems.map((l) => ({
+    item_id: l.item_id,
+    item_name: l.item_name || 'Item',
+    qty: Number(l.qty || 1),
+    rate: Number(l.rate || 0),
+    free_qty: 0,
+    mrp: Number(l.rate || 0),
+  }));
+
+  const total = items.reduce((s, l) => s + Number(l.qty || 0) * Number(l.rate || 0), 0);
+
+  const handleConvert = async () => {
+    setError('');
+    if (items.length === 0) {
+      setError('At least one item is required in the request.');
+      return;
+    }
+    setSaving(true);
+    try {
+      await purchasesApi.create({
+        supplier_id: request.supplier_id,
+        purchase_request_id: request.id,
+        supplier_invoice_no: supplierInvoiceNo.trim() || null,
+        payment_mode: paymentMode,
+        paid_amount: Number(paidAmount || 0),
+        items: items.map((l) => ({
+          item_id: l.item_id,
+          qty: l.qty,
+          rate: l.rate,
+          free_qty: 0,
+          mrp: l.mrp || l.rate,
+          discount_mode: 'percent',
+          discount_percent: 0,
+          discount_amount: 0,
+        })),
+      });
+      queryClient.invalidateQueries({ queryKey: ['purchase-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['purchases'] });
+      Alert.alert('Success', 'GRN created successfully from Purchase Request.');
+      onClose();
+    } catch (err) {
+      const msg = friendlyErrorMessage(err);
+      setError(msg);
+      Alert.alert('Conversion Failed', msg);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <FormModal
+      visible
+      title={`Create GRN: ${request.request_no || '#' + request.id}`}
+      onClose={onClose}
+      footer={
+        <View style={{ flexDirection: 'row', gap: 10, width: '100%' }}>
+          <TouchableOpacity style={[formStyles.secondaryBtn, { flex: 1 }]} onPress={onClose}>
+            <Text style={formStyles.secondaryBtnText}>Cancel</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[formStyles.primaryBtn, { flex: 1, backgroundColor: colors.success }, saving && formStyles.disabled]}
+            onPress={handleConvert}
+            disabled={saving}
+          >
+            <Text style={formStyles.primaryBtnText}>{saving ? 'Creating…' : 'Create GRN'}</Text>
+          </TouchableOpacity>
+        </View>
+      }
+    >
+      <View style={{ marginBottom: 12 }}>
+        <DetailRow label="Supplier" value={request.supplier_name} />
+        <DetailRow label="Route" value={request.route_name || '-'} />
+        <DetailRow label="Est. Total" value={`Rs. ${total.toFixed(2)}`} />
+      </View>
+
+      <Text style={formStyles.label}>Supplier Bill / Invoice # (Optional)</Text>
+      <TextInput
+        value={supplierInvoiceNo}
+        onChangeText={setSupplierInvoiceNo}
+        placeholder="Enter supplier invoice number"
+        placeholderTextColor={colors.inkMuted}
+        style={formStyles.input}
+      />
+
+      <SelectField
+        label="Payment Mode"
+        value={paymentMode}
+        options={[
+          { id: 'credit', name: 'Credit (Pay Later)' },
+          { id: 'cash', name: 'Cash' },
+          { id: 'bank', name: 'Bank / UPI' },
+          { id: 'cheque', name: 'Cheque' },
+        ]}
+        onChange={(val) => {
+          setPaymentMode(val);
+          if (val === 'credit') setPaidAmount('0');
+          else if (total > 0) setPaidAmount(total.toFixed(2));
+        }}
+      />
+
+      <Text style={formStyles.label}>Paid Amount (Rs.)</Text>
+      <TextInput
+        value={paidAmount}
+        onChangeText={setPaidAmount}
+        keyboardType="numeric"
+        placeholder="0.00"
+        placeholderTextColor={colors.inkMuted}
+        style={formStyles.input}
+      />
+
+      <View style={{ marginTop: 14 }}>
+        <Text style={[styles.detailLabel, { marginBottom: 8, fontWeight: '700' }]}>Items to Receive into GRN:</Text>
+        {items.map((line, idx) => (
+          <View key={idx} style={styles.itemLineRow}>
+            <Text style={styles.itemLineName}>{line.item_name}</Text>
+            <Text style={styles.itemLineQty}>{line.qty} pcs</Text>
+            <Text style={styles.itemLineRate}>@ Rs. {line.rate.toFixed(2)}</Text>
+            <Text style={styles.itemLineTotal}>Rs. {(line.qty * line.rate).toFixed(2)}</Text>
+          </View>
+        ))}
+      </View>
+
+      {error ? <Text style={formStyles.error}>{error}</Text> : null}
+    </FormModal>
+  );
+}
+
+function StatusPickerModal({ visible, title, currentStatus, statuses, onClose, onSelect }) {
+  if (!visible) return null;
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={onClose}>
+        <View style={styles.pickerBox} onStartShouldSetResponder={() => true}>
+          <Text style={styles.pickerTitle}>{title || 'Change Status'}</Text>
+          {statuses.map((st) => (
+            <TouchableOpacity
+              key={st}
+              style={[styles.pickerItem, currentStatus === st && styles.pickerItemActive]}
+              onPress={() => { onSelect(st); onClose(); }}
+            >
+              <Text style={[styles.pickerItemText, currentStatus === st && styles.pickerItemTextActive]}>
+                {st.replace(/_/g, ' ').toUpperCase()}
+              </Text>
+              {currentStatus === st && <Text style={{ color: colors.success, fontWeight: '800' }}>✓</Text>}
+            </TouchableOpacity>
+          ))}
+          <TouchableOpacity style={styles.pickerCancelBtn} onPress={onClose}>
+            <Text style={styles.pickerCancelText}>Cancel</Text>
+          </TouchableOpacity>
+        </View>
+      </TouchableOpacity>
+    </Modal>
+  );
+}
+
 export function OrdersScreen() {
   const [tab, setTab] = useState('prebookings');
   const [modalVisible, setModalVisible] = useState(false);
@@ -770,7 +1084,7 @@ export function OrdersScreen() {
         <View style={{ flex: 1 }}>
           <SegmentedTabs
             tabs={[
-              { key: 'prebookings', label: 'Customer Pre-Bookings' },
+              { key: 'prebookings', label: 'Pre-Bookings' },
               { key: 'requests', label: 'Supplier Requests' },
             ]}
             active={tab}
@@ -780,7 +1094,7 @@ export function OrdersScreen() {
         <TouchableOpacity style={styles.topRightBtn} onPress={() => setModalVisible(true)}>
           <Icon name="plus" size={14} color={colors.gold} style={{ marginRight: 4 }} />
           <Text style={styles.topRightBtnText}>
-            {tab === 'prebookings' ? '+ Pre-Booking' : '+ Request'}
+            {tab === 'prebookings' ? '+ Booking' : '+ Request'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -895,6 +1209,21 @@ const styles = StyleSheet.create({
   actionBtnDangerText: { color: colors.danger, fontWeight: '700', fontSize: 12 },
   actionBtnSuccess: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, backgroundColor: '#F0FDF4', borderWidth: 1, borderColor: colors.success },
   actionBtnSuccessText: { color: colors.success, fontWeight: '700', fontSize: 12 },
+  actionBtnGrn: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, backgroundColor: '#FEF3C7', borderWidth: 1, borderColor: '#F59E0B' },
+  actionBtnGrnText: { color: '#B45309', fontWeight: '700', fontSize: 12 },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center', padding: 20 },
+  pickerBox: { backgroundColor: colors.card, borderRadius: 14, width: '100%', maxWidth: 340, padding: 18, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 10, elevation: 6 },
+  pickerTitle: { fontSize: 16, fontWeight: '700', color: colors.ink, marginBottom: 14, textAlign: 'center' },
+  pickerItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 12, borderRadius: 8, marginBottom: 6, backgroundColor: colors.page },
+  pickerItemActive: { backgroundColor: '#F0FDF4', borderWidth: 1, borderColor: colors.success },
+  pickerItemText: { fontSize: 13, fontWeight: '600', color: colors.ink },
+  pickerItemTextActive: { color: colors.success, fontWeight: '700' },
+  pickerCancelBtn: { marginTop: 10, paddingVertical: 10, alignItems: 'center' },
+  pickerCancelText: { fontSize: 14, color: colors.inkMuted, fontWeight: '600' },
+  statusSelectPill: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 14, backgroundColor: colors.page, borderWidth: 1, borderColor: colors.borderSoft, marginRight: 6, marginBottom: 6 },
+  statusSelectPillActive: { backgroundColor: colors.gold, borderColor: colors.gold },
+  statusSelectPillText: { fontSize: 11, fontWeight: '600', color: colors.ink },
+  statusSelectPillTextActive: { color: '#fff', fontWeight: '700' },
   totalsBox: { backgroundColor: colors.page, borderRadius: 10, padding: 12, marginTop: 8 },
   totalRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 2 },
   totalLabel: { color: colors.inkMuted, fontSize: 12 },

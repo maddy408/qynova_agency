@@ -9,7 +9,7 @@ import { FormModal, formStyles } from '../../components/FormModal';
 import { SegmentedTabs } from '../../components/SegmentedTabs';
 import { Icon } from '../../components/Icon';
 import { usePermission } from '../../hooks/useAuth';
-import { downloadReportPdf } from '../../utils/pdfExport';
+import { downloadReportPdf } from '../../utils/pdfService';
 import { colors } from '../../theme/colors';
 
 export function ExpensesScreen() {
@@ -981,8 +981,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 12,
     marginTop: 10,
-    marginBottom: 4,
-    gap: 8,
+    marginBottom: 6,
   },
   searchBar: {
     flex: 1,
@@ -994,6 +993,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingHorizontal: 12,
     height: 42,
+    marginRight: 8,
   },
   searchInput: {
     flex: 1,

@@ -1289,14 +1289,26 @@ function SettlePaymentModal({ visible, onClose }) {
     enabled: visible && !!supplierId,
   });
 
-  const unpaidList = unpaidQuery.data?.unpaid_grns || [];
-  const totalDue = unpaidQuery.data?.total_pending || 0;
+  const balancesQuery = useQuery({
+    queryKey: ['supplier-balances'],
+    queryFn: suppliersApi.balances,
+    enabled: visible && !!supplierId,
+  });
+
+  const rawUnpaid = unpaidQuery.data;
+  const unpaidList = Array.isArray(rawUnpaid) ? rawUnpaid : (rawUnpaid?.unpaid_grns || []);
+  
+  // Total pending: prioritize unpaid GRNs sum; if 0 check current_outstanding from supplier ledger
+  const supplierBalance = (balancesQuery.data || []).find((b) => Number(b.id) === Number(supplierId));
+  const unpaidGrnTotal = unpaidList.reduce((s, g) => s + Number(g.pending_balance || 0), 0);
+  const totalDue = unpaidGrnTotal > 0 ? unpaidGrnTotal : Number(supplierBalance?.current_outstanding || 0);
 
   const createMutation = useMutation({
     mutationFn: supplierPaymentsApi.create,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['supplier-payments'] });
       queryClient.invalidateQueries({ queryKey: ['purchases'] });
+      queryClient.invalidateQueries({ queryKey: ['supplier-balances'] });
       reset();
       onClose();
       Alert.alert('Payment Recorded', 'Supplier payment settled successfully.');
@@ -1318,6 +1330,9 @@ function SettlePaymentModal({ visible, onClose }) {
     if (!supplierId) return setError('Select a supplier.');
     const num = Number(amount || 0);
     if (num <= 0) return setError('Enter a valid payment amount.');
+    if (totalDue > 0 && num > totalDue + 0.009) {
+      return setError(`Payment amount (${num.toFixed(2)}) exceeds this supplier's total pending balance of Rs. ${totalDue.toFixed(2)}.`);
+    }
     createMutation.mutate({
       supplier_id: supplierId,
       amount: num,

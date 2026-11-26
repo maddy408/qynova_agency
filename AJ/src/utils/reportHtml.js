@@ -10,12 +10,25 @@ export const NUMERIC_REPORT_KEYS = new Set([
  * timestamp, a data table, and a grand-total row — for any {columns, rows}
  * shape ReportsController::output() returns. Shared by every report's PDF
  * export (full-filtered or selected-only) so formatting stays consistent.
+ *
+ * Accepts columns as an object { [key]: header } OR as an array [{ key, header }].
+ * Accepts rows as an array (or fallback to data array).
  */
-export function buildReportHtml({ title, filtersText, columns, rows, totalsRow }) {
-  const keys = Object.keys(columns);
-  const headers = Object.values(columns);
+export function buildReportHtml({ title, filtersText, columns = {}, rows, data, totalsRow }) {
+  let keys = [];
+  let headers = [];
 
-  const rowHtml = rows
+  if (Array.isArray(columns)) {
+    keys = columns.map((c) => (typeof c === 'string' ? c : c.key || c.dataIndex || c.id || ''));
+    headers = columns.map((c) => (typeof c === 'string' ? c : c.header || c.title || c.label || c.name || c.key || ''));
+  } else if (columns && typeof columns === 'object') {
+    keys = Object.keys(columns);
+    headers = Object.values(columns);
+  }
+
+  const rowList = Array.isArray(rows) ? rows : (Array.isArray(data) ? data : []);
+
+  const rowHtml = rowList
     .map(
       (r) =>
         `<tr>${keys.map((k) => `<td class="${NUMERIC_REPORT_KEYS.has(k) ? 'num' : ''}">${r[k] ?? ''}</td>`).join('')}</tr>`
