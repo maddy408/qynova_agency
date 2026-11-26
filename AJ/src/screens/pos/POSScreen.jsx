@@ -442,35 +442,16 @@ export function POSScreen() {
         {customerDropdownOpen && (
           <View style={styles.customerDropdownList}>
             <FlatList
-              data={pagedCustomers}
+              data={filteredCustomers}
               keyExtractor={(c) => String(c.id)}
               keyboardShouldPersistTaps="handled"
               nestedScrollEnabled={true}
+              scrollEnabled={true}
               style={styles.customerListMaxHeight}
+              contentContainerStyle={{ flexGrow: 1 }}
               ListEmptyComponent={
                 <Text style={styles.noCustomerText}>No customer found</Text>
               }
-              ListFooterComponent={filteredCustomers.length > CUSTOMER_PAGE_SIZE ? (
-                <View style={styles.customerPagerRow}>
-                  <TouchableOpacity
-                    style={[styles.customerPagerBtn, customerCurrentPage === 1 && styles.customerPagerBtnDisabled]}
-                    onPress={() => setCustomerPage((p) => Math.max(1, p - 1))}
-                    disabled={customerCurrentPage === 1}
-                  >
-                    <Text style={styles.customerPagerBtnText}>Prev</Text>
-                  </TouchableOpacity>
-                  <Text style={styles.customerPagerLabel}>
-                    Page {customerCurrentPage} of {customerTotalPages} · {filteredCustomers.length}
-                  </Text>
-                  <TouchableOpacity
-                    style={[styles.customerPagerBtn, customerCurrentPage === customerTotalPages && styles.customerPagerBtnDisabled]}
-                    onPress={() => setCustomerPage((p) => Math.min(customerTotalPages, p + 1))}
-                    disabled={customerCurrentPage === customerTotalPages}
-                  >
-                    <Text style={styles.customerPagerBtnText}>Next</Text>
-                  </TouchableOpacity>
-                </View>
-              ) : null}
               renderItem={({ item: c }) => (
                 <TouchableOpacity
                   style={[styles.customerOption, customerId === c.id && styles.customerOptionActive]}
@@ -647,13 +628,17 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#334155',
-    elevation: 12,
+    elevation: 25,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 6,
-    zIndex: 999,
+    zIndex: 99999,
+    maxHeight: 280,
     overflow: 'hidden',
+  },
+  customerListMaxHeight: {
+    maxHeight: 230,
   },
   customerOption: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#1e293b' },
   customerOptionActive: { backgroundColor: '#1e293b' },

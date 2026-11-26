@@ -211,7 +211,15 @@ function RouteSupplierMappingPanel({ routes, suppliers, canManage }) {
   const [loadingMapping, setLoadingMapping] = useState(false);
   const [allMappings, setAllMappings] = useState({}); // { [routeId]: supplier_ids[] }
 
-  const supplierMap = useMemo(() => new Map(suppliers.map((s) => [s.id, s.name])), [suppliers]);
+  const supplierMap = useMemo(() => {
+    const map = new Map();
+    suppliers.forEach((s) => {
+      map.set(s.id, s.name);
+      map.set(String(s.id), s.name);
+      map.set(Number(s.id), s.name);
+    });
+    return map;
+  }, [suppliers]);
 
   // Load all route mappings to display the overview list of mapped suppliers
   const refreshAllMappings = () => {
@@ -277,6 +285,7 @@ function RouteSupplierMappingPanel({ routes, suppliers, canManage }) {
     onSuccess: () => {
       Alert.alert('Saved', 'Route-Supplier mapping saved successfully!');
       setAllMappings((prev) => ({ ...prev, [selectedRouteId]: selectedSupplierIds }));
+      refreshAllMappings();
       queryClient.invalidateQueries({ queryKey: ['routes'] });
     },
     onError: (err) => {

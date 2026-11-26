@@ -96,12 +96,15 @@ function ProfilePanel() {
           onChangeText={(v) => setForm({ ...branch, address_line1: v })}
           style={[formStyles.input, { color: colors.ink }]}
         />
-        <Text style={formStyles.label}>Phone</Text>
+        <Text style={formStyles.label}>Phone (10 digits)</Text>
         <TextInput
           value={branch.phone || ''}
-          onChangeText={(v) => setForm({ ...branch, phone: v })}
+          onChangeText={(v) => setForm({ ...branch, phone: v.replace(/\D/g, '').slice(0, 10) })}
           style={[formStyles.input, { color: colors.ink }]}
-          keyboardType="phone-pad"
+          keyboardType="numeric"
+          maxLength={10}
+          placeholder="10-digit phone"
+          placeholderTextColor={colors.inkMuted}
         />
         <Text style={formStyles.label}>Support Email</Text>
         <TextInput

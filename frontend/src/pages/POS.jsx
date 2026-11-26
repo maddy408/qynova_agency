@@ -1347,7 +1347,7 @@ export function POS() {
           {showCustomerDropdown && (
             <div
               ref={customerDropdownRef}
-              className="absolute left-3 right-3 top-[calc(100%-4px)] z-40 rounded-xl border border-[#CBD5E1] bg-white shadow-soft-lg overflow-x-auto max-h-52 overflow-y-auto overscroll-contain touch-pan-y scrollbar-thin select-auto"
+              className="absolute left-3 right-3 top-[calc(100%-4px)] z-50 rounded-xl border border-[#CBD5E1] bg-white shadow-soft-lg max-h-64 overflow-y-auto overflow-x-hidden touch-auto scrollbar-thin select-auto pointer-events-auto"
               style={{ WebkitOverflowScrolling: 'touch' }}
             >
               <table className="w-full text-xs text-left">

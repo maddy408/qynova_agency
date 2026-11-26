@@ -47,31 +47,62 @@ class StockHubController
             $where[] = 'sl.item_id = :item_id';
             $params['item_id'] = (int) $_GET['item_id'];
         }
-        $whereSql = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
-
-        $stmt = $this->pdo->prepare(
-            "SELECT sl.*, i.item_name, i.item_code, i.barcode, i.min_stock_threshold,
-                    i.cost_price, i.purchase_price,
-                    COALESCE(i.net_srate, i.retail_price) AS selling_price,
-                    ROUND(sl.quantity_on_hand * i.cost_price, 2) AS stock_value,
-                    su.short_code AS unit_code,
-                    CASE sl.owner_type
-                        WHEN 'branch' THEN (SELECT branch_name FROM branches WHERE id = sl.owner_id)
-                        WHEN 'employee' THEN (SELECT name FROM users WHERE id = sl.owner_id)
-                        ELSE 'Warehouse'
-                    END AS owner_name,
-                    CASE sl.owner_type
-                        WHEN 'branch' THEN (SELECT branch_name FROM branches WHERE id = sl.owner_id)
-                        WHEN 'employee' THEN (SELECT b.branch_name FROM users u JOIN branches b ON b.id = u.branch_id WHERE u.id = sl.owner_id)
-                        ELSE NULL
-                    END AS branch_name
-             FROM stock_ledger sl
-             JOIN items i ON i.id = sl.item_id
-             LEFT JOIN stock_units su ON su.id = i.base_unit_id
-             {$whereSql}
-             ORDER BY i.item_name"
-        );
-        $stmt->execute($params);
+        if (empty($where)) {
+            $stmt = $this->pdo->prepare(
+                "SELECT COALESCE(sl.id, 0) AS id, i.id AS item_id,
+                        COALESCE(sl.owner_type, 'branch') AS owner_type,
+                        COALESCE(sl.owner_id, 1) AS owner_id,
+                        COALESCE(sl.quantity_on_hand, 0) AS quantity_on_hand,
+                        COALESCE(sl.reserved_quantity, 0) AS reserved_quantity,
+                        COALESCE(sl.reorder_level, i.min_stock_threshold, 0) AS reorder_level,
+                        i.item_name, i.item_code, i.barcode, i.min_stock_threshold,
+                        i.cost_price, i.purchase_price,
+                        COALESCE(i.net_srate, i.retail_price) AS selling_price,
+                        ROUND(COALESCE(sl.quantity_on_hand, 0) * i.cost_price, 2) AS stock_value,
+                        su.short_code AS unit_code,
+                        CASE COALESCE(sl.owner_type, 'branch')
+                            WHEN 'branch' THEN COALESCE((SELECT branch_name FROM branches WHERE id = COALESCE(sl.owner_id, 1)), 'Main Branch')
+                            WHEN 'employee' THEN (SELECT name FROM users WHERE id = sl.owner_id)
+                            ELSE 'Warehouse'
+                        END AS owner_name,
+                        CASE COALESCE(sl.owner_type, 'branch')
+                            WHEN 'branch' THEN COALESCE((SELECT branch_name FROM branches WHERE id = COALESCE(sl.owner_id, 1)), 'Main Branch')
+                            WHEN 'employee' THEN (SELECT b.branch_name FROM users u JOIN branches b ON b.id = u.branch_id WHERE u.id = sl.owner_id)
+                            ELSE NULL
+                        END AS branch_name
+                 FROM items i
+                 LEFT JOIN stock_ledger sl ON sl.item_id = i.id
+                 LEFT JOIN stock_units su ON su.id = i.base_unit_id
+                 WHERE i.is_active = 1
+                 ORDER BY i.item_name"
+            );
+            $stmt->execute();
+        } else {
+            $whereSql = 'WHERE ' . implode(' AND ', $where);
+            $stmt = $this->pdo->prepare(
+                "SELECT sl.*, i.item_name, i.item_code, i.barcode, i.min_stock_threshold,
+                        i.cost_price, i.purchase_price,
+                        COALESCE(i.net_srate, i.retail_price) AS selling_price,
+                        ROUND(sl.quantity_on_hand * i.cost_price, 2) AS stock_value,
+                        su.short_code AS unit_code,
+                        CASE sl.owner_type
+                            WHEN 'branch' THEN (SELECT branch_name FROM branches WHERE id = sl.owner_id)
+                            WHEN 'employee' THEN (SELECT name FROM users WHERE id = sl.owner_id)
+                            ELSE 'Warehouse'
+                        END AS owner_name,
+                        CASE sl.owner_type
+                            WHEN 'branch' THEN (SELECT branch_name FROM branches WHERE id = sl.owner_id)
+                            WHEN 'employee' THEN (SELECT b.branch_name FROM users u JOIN branches b ON b.id = u.branch_id WHERE u.id = sl.owner_id)
+                            ELSE NULL
+                        END AS branch_name
+                 FROM stock_ledger sl
+                 JOIN items i ON i.id = sl.item_id
+                 LEFT JOIN stock_units su ON su.id = i.base_unit_id
+                 {$whereSql}
+                 ORDER BY i.item_name"
+            );
+            $stmt->execute($params);
+        }
         $rows = $stmt->fetchAll();
 
         // Export honors the exact same owner_type/owner_id/item_id filters

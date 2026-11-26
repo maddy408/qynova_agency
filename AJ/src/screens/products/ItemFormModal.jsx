@@ -278,19 +278,19 @@ export function ItemFormModal({ item, onClose }) {
       <View style={styles.imageSection}>
         <Text style={formStyles.label}>Product Image</Text>
         <View style={styles.imageCard}>
-          <View style={styles.imageBox}>
+          <TouchableOpacity style={styles.imageBox} onPress={() => pickImage(false)} activeOpacity={0.7}>
             {imagePreview ? (
               <Image source={{ uri: imagePreview }} style={styles.imageThumb} resizeMode="cover" />
             ) : (
               <View style={styles.noImagePlaceholder}>
                 <Text style={{ fontSize: 24, marginBottom: 2 }}>📦</Text>
-                <Text style={styles.imagePlaceholder}>No image</Text>
+                <Text style={styles.imagePlaceholder}>Tap to add</Text>
               </View>
             )}
-          </View>
+          </TouchableOpacity>
           <View style={styles.imageActionsCol}>
             <Text style={styles.imageInstruction}>
-              {imagePreview ? 'Photo selected. You can change or remove it.' : 'Upload photo via camera or device gallery.'}
+              {imagePreview ? 'Photo selected. Tap image or use buttons to change/remove.' : 'Upload product photo via gallery or camera.'}
             </Text>
             <View style={styles.imageButtonsRow}>
               <TouchableOpacity style={styles.chooseImgBtn} onPress={() => pickImage(false)}>
@@ -451,7 +451,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.borderSoft,
     padding: 10,
-    gap: 12,
+    marginBottom: 12,
   },
   imageBox: {
     width: 84,
@@ -467,25 +467,34 @@ const styles = StyleSheet.create({
   imageThumb: { width: '100%', height: '100%' },
   noImagePlaceholder: { alignItems: 'center', justifyContent: 'center' },
   imagePlaceholder: { fontSize: 11, fontWeight: '600', color: colors.inkMuted },
-  imageActionsCol: { flex: 1, gap: 6 },
-  imageInstruction: { fontSize: 11, color: colors.inkMuted, lineHeight: 15 },
-  imageButtonsRow: { flexDirection: 'row', gap: 6 },
+  imageActionsCol: {
+    flex: 1,
+    marginLeft: 12,
+    justifyContent: 'center',
+  },
+  imageInstruction: { fontSize: 11, color: colors.inkMuted, lineHeight: 15, marginBottom: 6 },
+  imageButtonsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
   chooseImgBtn: {
     flex: 1,
     backgroundColor: colors.navbar,
-    paddingVertical: 7,
+    paddingVertical: 8,
     paddingHorizontal: 8,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
+    marginRight: 6,
   },
   chooseImgBtnText: { color: colors.gold, fontWeight: '700', fontSize: 11 },
   cameraImgBtn: {
     backgroundColor: colors.page,
     borderWidth: 1,
     borderColor: colors.borderSoft,
-    paddingVertical: 7,
-    paddingHorizontal: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',

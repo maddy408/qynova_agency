@@ -247,12 +247,13 @@ export function StaffPermissions({ hideHeader = false }) {
               </div>
 
               <div>
-                <label className="text-xs font-bold uppercase tracking-wider text-slate-600 block mb-1">Phone Number</label>
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-600 block mb-1">Phone Number (10 digits)</label>
                 <input
-                  type="text"
-                  placeholder="+91 9876543210"
+                  type="tel"
+                  placeholder="10-digit mobile (e.g. 9876543210)"
                   value={form.phone}
-                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                  maxLength={10}
+                  onChange={(e) => setForm({ ...form, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
                   className="w-full rounded-xl border border-[#D5E3F7] bg-white px-3.5 py-2 text-sm font-medium text-[#0B1B45] shadow-xs outline-none transition focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15"
                 />
               </div>

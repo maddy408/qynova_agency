@@ -18,8 +18,8 @@ export function LoginScreen() {
   const validateEmail = (val) => {
     const trimmed = String(val ?? '').trim();
     if (!trimmed) return 'Email is required.';
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
-      return 'Please enter a valid email address.';
+    if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(trimmed)) {
+      return 'Please enter a valid email address (e.g. name@domain.com).';
     }
     return '';
   };

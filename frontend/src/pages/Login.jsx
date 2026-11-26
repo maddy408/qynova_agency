@@ -4,6 +4,8 @@ import { Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth.jsx';
 import { Button } from '../components/Button.jsx';
 
+const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
 export function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -11,14 +13,55 @@ export function Login() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  const handleEmailChange = (val) => {
+    setEmail(val);
+    setError('');
+    const trimmed = val.trim();
+    if (trimmed && !EMAIL_REGEX.test(trimmed)) {
+      setEmailError('Please enter a valid email address (e.g. name@domain.com)');
+    } else {
+      setEmailError('');
+    }
+  };
+
+  const handlePasswordChange = (val) => {
+    setPassword(val);
+    setError('');
+    if (val && val.length < 4) {
+      setPasswordError('Password must be at least 4 characters long');
+    } else {
+      setPasswordError('');
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
+      setError('Please enter your email address.');
+      return;
+    }
+    if (!EMAIL_REGEX.test(trimmedEmail)) {
+      setError('Invalid email format. Please check the address.');
+      return;
+    }
+    if (!password) {
+      setError('Please enter your password.');
+      return;
+    }
+    if (password.length < 4) {
+      setError('Password must be at least 4 characters long.');
+      return;
+    }
+
     setSubmitting(true);
     try {
-      await login(email, password);
+      await login(trimmedEmail, password);
       navigate('/');
     } catch (err) {
       setError(err?.response?.data?.error || 'Login failed');
@@ -48,13 +91,16 @@ export function Login() {
           <div>
             <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-600">Email Address</label>
             <input
-              type="email"
+              type="text"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-xl border border-[#D5E3F7] bg-[#F8FAFD] px-4 py-2.5 text-sm font-semibold text-[#0B1B45] outline-none transition focus:border-[#2449C6] focus:bg-white focus:ring-2 focus:ring-[#2449C6]/20"
+              onChange={(e) => handleEmailChange(e.target.value)}
+              className={`w-full rounded-xl border px-4 py-2.5 text-sm font-semibold text-[#0B1B45] outline-none transition focus:bg-white focus:ring-2 ${
+                emailError ? 'border-rose-400 bg-rose-50/50 focus:border-rose-500 focus:ring-rose-200' : 'border-[#D5E3F7] bg-[#F8FAFD] focus:border-[#2449C6] focus:ring-[#2449C6]/20'
+              }`}
               placeholder="name@company.com"
               required
             />
+            {emailError && <p className="mt-1 text-[11px] font-semibold text-rose-500">{emailError}</p>}
           </div>
 
           <div>
@@ -63,8 +109,10 @@ export function Login() {
               <input
                 type={showPassword ? 'text' : 'password'}
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-xl border border-[#D5E3F7] bg-[#F8FAFD] px-4 py-2.5 pr-11 text-sm font-semibold text-[#0B1B45] outline-none transition focus:border-[#2449C6] focus:bg-white focus:ring-2 focus:ring-[#2449C6]/20"
+                onChange={(e) => handlePasswordChange(e.target.value)}
+                className={`w-full rounded-xl border px-4 py-2.5 pr-11 text-sm font-semibold text-[#0B1B45] outline-none transition focus:bg-white focus:ring-2 ${
+                  passwordError ? 'border-rose-400 bg-rose-50/50 focus:border-rose-500 focus:ring-rose-200' : 'border-[#D5E3F7] bg-[#F8FAFD] focus:border-[#2449C6] focus:ring-[#2449C6]/20'
+                }`}
                 placeholder="••••••••"
                 required
               />
@@ -78,6 +126,7 @@ export function Login() {
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
+            {passwordError && <p className="mt-1 text-[11px] font-semibold text-rose-500">{passwordError}</p>}
           </div>
         </div>
 

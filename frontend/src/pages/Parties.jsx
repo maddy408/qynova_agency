@@ -232,12 +232,13 @@ function CustomersPanel({ canManage }) {
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-[#0B1B45] mb-1">Phone Number</label>
+              <label className="block text-xs font-bold uppercase tracking-wider text-[#0B1B45] mb-1">Phone Number (10 digits)</label>
               <input
-                type="text"
+                type="tel"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="e.g., 9876543210"
+                maxLength={10}
+                onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                placeholder="10-digit mobile (e.g. 9876543210)"
                 disabled={!canManage}
                 className="w-full rounded-xl border border-[#D5E3F7] bg-white px-3.5 py-2 text-sm font-medium text-[#0B1B45] shadow-xs outline-none transition focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15"
               />
@@ -738,12 +739,13 @@ function SuppliersPanel({ canManage }) {
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-[#0B1B45] mb-1">Phone Number</label>
+              <label className="block text-xs font-bold uppercase tracking-wider text-[#0B1B45] mb-1">Phone Number (10 digits)</label>
               <input
-                type="text"
+                type="tel"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="e.g., 9443322110"
+                maxLength={10}
+                onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                placeholder="10-digit mobile (e.g. 9443322110)"
                 disabled={!canManage}
                 className="w-full rounded-xl border border-[#D5E3F7] bg-[#F8FAFD] px-3 py-2 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15 outline-none transition-all disabled:opacity-60"
               />
