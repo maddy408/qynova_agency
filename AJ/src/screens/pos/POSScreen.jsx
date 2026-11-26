@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Alert, Platform } from 'react-native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import { itemsApi, categoriesApi, stockUnitsApi } from '../../api/catalog';
 import { customersApi } from '../../api/parties';
 import { invoicesApi } from '../../api/invoices';
@@ -49,7 +48,6 @@ export function POSScreen() {
   const [completing, setCompleting] = useState(false);
   const [holding, setHolding] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const [scanMatches, setScanMatches] = useState(null);
   const [barcodeVisible, setBarcodeVisible] = useState(false);
   const [completedInvoice, setCompletedInvoice] = useState(null);
 
@@ -179,26 +177,6 @@ export function POSScreen() {
       addToCart(match);
     } else {
       Alert.alert('No match', `No product found for barcode "${code}".`);
-    }
-  };
-
-  const handleScan = async (fromCamera) => {
-    const result = await (fromCamera ? launchCamera({ mediaType: 'photo', quality: 0.7 }) : launchImageLibrary({ mediaType: 'photo', quality: 0.7 }));
-    const asset = result.assets?.[0];
-    if (!asset) return;
-    try {
-      const res = await itemsApi.imageSearch({ uri: asset.uri, type: asset.type || 'image/jpeg', name: asset.fileName || 'photo.jpg' });
-      if (!res.engine_available) {
-        Alert.alert('Photo search unavailable', res.message);
-        return;
-      }
-      if (res.matches.length === 0) {
-        Alert.alert('No match found', 'No catalog items matched this photo. Try a clearer shot, or search manually.');
-        return;
-      }
-      setScanMatches(res.matches);
-    } catch (err) {
-      Alert.alert('Error', friendlyErrorMessage(err));
     }
   };
 
@@ -367,9 +345,6 @@ export function POSScreen() {
         />
         <TouchableOpacity style={styles.cameraBtn} onPress={() => setBarcodeVisible(true)}>
           <Icon name="barcode" size={20} color={colors.ink} />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.cameraBtn} onPress={() => handleScan(true)}>
-          <Icon name="camera" size={20} color={colors.ink} />
         </TouchableOpacity>
         <TouchableOpacity style={styles.cameraBtn} onPress={() => setHeldVisible(true)}>
           <Icon name="clipboard" size={20} color={colors.ink} />
@@ -581,28 +556,6 @@ export function POSScreen() {
         invoice={completedInvoice}
         onClose={() => setCompletedInvoice(null)}
       />
-
-      {scanMatches && (
-        <View style={styles.scanOverlay}>
-          <View style={styles.scanCard}>
-            <Text style={styles.scanTitle}>Matching products</Text>
-            <FlatList
-              data={scanMatches}
-              keyExtractor={(i) => String(i.id)}
-              renderItem={({ item }) => (
-                <TouchableOpacity style={styles.scanRow} onPress={() => { addToCart(item); setScanMatches(null); }}>
-                  <ProductImage path={item.image} size={40} />
-                  <Text style={{ marginLeft: 10, flex: 1 }}>{item.item_name}</Text>
-                  <Text style={{ color: colors.gold, fontWeight: '700' }}>Add</Text>
-                </TouchableOpacity>
-              )}
-            />
-            <TouchableOpacity style={styles.scanClose} onPress={() => setScanMatches(null)}>
-              <Text>Close</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      )}
     </View>
   );
 }

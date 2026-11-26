@@ -817,7 +817,11 @@ class InvoiceModel
             ? (float) $input['discount_amount']
             : round($gross * $discountPercent / 100, 2);
 
-        $taxable = round($gross - $discountAmount, 2);
+        if ($discountAmount > $gross + 0.009) {
+            throw new \RuntimeException(sprintf('Discount amount (%.2f) cannot exceed item amount (%.2f) for %s', $discountAmount, $gross, $item['item_name'] ?? 'item'));
+        }
+
+        $taxable = max(0.0, round($gross - $discountAmount, 2));
         if ($billType === 'non_gst') {
             $taxPercent = 0.0;
             $taxAmount = 0.0;

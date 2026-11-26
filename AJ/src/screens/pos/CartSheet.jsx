@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Modal, View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Platform } from 'react-native';
 import { ProductImage } from '../../components/ProductImage';
 import { Icon } from '../../components/Icon';
@@ -17,6 +17,7 @@ export function CartSheet({
 }) {
   const [stage, setStage] = useState('cart'); // 'cart' | 'payment'
   const [splitMode, setSplitMode] = useState(false);
+  const [selectingUnitLineKey, setSelectingUnitLineKey] = useState(null);
   const defaultMethod = !hasCustomer ? 'cash' : 'credit';
   const [payments, setPayments] = useState([{ payment_method: defaultMethod, amount: 0 }]);
   const [discountError, setDiscountError] = useState('');
@@ -34,7 +35,10 @@ export function CartSheet({
   const discountedLines = billDiscountAmount > 0 ? applyBillDiscountToLines(pricedLines.map((l) => l.priced), billDiscountAmount) : pricedLines.map((l) => l.priced);
   const discountedTotals = billDiscountAmount > 0 ? computeCartTotals(discountedLines) : totals;
 
+  const hasLineDiscountError = pricedLines.some((l) => !!l.priced.discount_error);
+
   const openPayment = () => {
+    if (hasLineDiscountError) return;
     const initialMethod = !hasCustomer ? 'cash' : 'credit';
     setPayments([{ payment_method: initialMethod, amount: discountedTotals.grandTotal }]);
     setSplitMode(false);
@@ -71,9 +75,6 @@ export function CartSheet({
   const handleDiscountTypeChange = (type) => {
     setDiscountError('');
     setBillDiscountType(type);
-    // Convert the entered value across modes so the resulting discount
-    // amount stays the same instead of silently reinterpreting the number
-    // (e.g. 10 meaning 10% becomes 10 meaning Rs.10 otherwise).
     const v = Number(billDiscountValue);
     if (!billDiscountValue || Number.isNaN(v)) return;
     if (type === 'percent' && totals.subtotal > 0) {
@@ -83,18 +84,12 @@ export function CartSheet({
     }
   };
 
-
   const updateLine = (key, patch) => setCart((prev) => prev.map((l) => (l.key === key ? { ...l, ...patch } : l)));
   const updateQty = (key, delta) => {
     setCart((prev) => prev.map((l) => (l.key === key ? { ...l, qty: Math.max(1, Number(l.qty) + delta) } : l)));
   };
   const removeLine = (key) => setCart((prev) => prev.filter((l) => l.key !== key));
 
-  // Switches a cart line between an item's Primary (base) and Secondary
-  // unit — mirrors web POS exactly: re-resolves the selling price for the
-  // newly-selected unit (never keeps the old unit's rate), so qty/price/
-  // stock all use the unit actually chosen, same backend pricing/stock
-  // logic web already uses (resolveSellingPrice), not a mobile-only rule.
   const changeLineUnit = (key, unitId) => {
     setCart((prev) => prev.map((l) => {
       if (l.key !== key) return l;
@@ -106,22 +101,22 @@ export function CartSheet({
   const paymentsTotal = payments.reduce((s, p) => s + (Number(p.amount) || 0), 0);
   const remaining = Math.round((discountedTotals.grandTotal - paymentsTotal) * 100) / 100;
   const blockedNoCustomer = remaining > 0.009 && !hasCustomer;
+  const isSplitOverpaid = splitMode && (paymentsTotal > discountedTotals.grandTotal + 0.009);
 
   const toggleSplit = (next) => {
     setSplitMode(next);
     const activeMethod = !hasCustomer ? 'cash' : 'credit';
     setPayments(next
-      ? PAYMENT_METHODS.map((m) => ({ payment_method: m.key, amount: m.key === activeMethod ? discountedTotals.grandTotal : 0 }))
+      ? PAYMENT_METHODS.map((m) => ({ payment_method: m.key, amount: m.key === activeMethod ? String(discountedTotals.grandTotal) : '' }))
       : [{ payment_method: activeMethod, amount: discountedTotals.grandTotal }]);
   };
 
   const setSplitAmount = (key, raw) => {
-    let value = Number(raw) || 0;
-    if (value < 0) value = 0;
     setPayments((prev) => {
-      const othersTotal = prev.filter((p) => p.payment_method !== key).reduce((s, p) => s + Number(p.amount || 0), 0);
-      const capped = Math.min(value, Math.max(0, discountedTotals.grandTotal - othersTotal));
-      return prev.map((p) => (p.payment_method === key ? { ...p, amount: capped } : p));
+      const exists = prev.some((p) => p.payment_method === key);
+      return exists
+        ? prev.map((p) => (p.payment_method === key ? { ...p, amount: raw } : p))
+        : [...prev, { payment_method: key, amount: raw }];
     });
   };
 
@@ -195,7 +190,7 @@ export function CartSheet({
                         placeholder="Disc"
                         value={line.discount_mode === 'amount' ? String(line.discount_amount ?? '') : String(line.discount_percent ?? '')}
                         onChangeText={(v) => updateLine(line.key, line.discount_mode === 'amount' ? { discount_amount: v } : { discount_percent: v })}
-                        style={styles.extraInput}
+                        style={[styles.extraInput, line.priced?.discount_error && styles.extraInputError]}
                       />
                     </View>
                     {isFreeQtyAllowed && (
@@ -209,24 +204,35 @@ export function CartSheet({
                         />
                       </View>
                     )}
-                    {line.item.secondary_unit_id ? (
-                      <View style={styles.discountGroup}>
-                        {[line.item.base_unit_id, line.item.secondary_unit_id].map((unitId) => (
-                          <TouchableOpacity
-                            key={unitId}
-                            style={[styles.unitToggleBtn, line.unit_id === unitId && styles.unitToggleBtnActive]}
-                            onPress={() => changeLineUnit(line.key, unitId)}
-                          >
-                            <Text style={line.unit_id === unitId ? styles.unitToggleTextActive : styles.unitToggleText}>
-                              {units.find((u) => u.id === unitId)?.short_code || '—'}
-                            </Text>
-                          </TouchableOpacity>
-                        ))}
-                      </View>
-                    ) : (
-                      <Text style={styles.extraLabel}>{units.find((u) => u.id === line.unit_id)?.short_code || ''}</Text>
-                    )}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                      {line.item.secondary_unit_id ? (
+                        <View style={styles.discountGroup}>
+                          {[line.item.base_unit_id, line.item.secondary_unit_id].map((unitId) => (
+                            <TouchableOpacity
+                              key={unitId}
+                              style={[styles.unitToggleBtn, line.unit_id === unitId && styles.unitToggleBtnActive]}
+                              onPress={() => changeLineUnit(line.key, unitId)}
+                            >
+                              <Text style={line.unit_id === unitId ? styles.unitToggleTextActive : styles.unitToggleText}>
+                                {units.find((u) => u.id === unitId)?.short_code || '—'}
+                              </Text>
+                            </TouchableOpacity>
+                          ))}
+                        </View>
+                      ) : null}
+                      <TouchableOpacity
+                        style={styles.unitPickerBtn}
+                        onPress={() => setSelectingUnitLineKey(line.key)}
+                      >
+                        <Text style={styles.unitPickerBtnText}>
+                          {units.find((u) => u.id === line.unit_id)?.short_code || 'Unit'} ▾
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
                   </View>
+                  {line.priced?.discount_error ? (
+                    <Text style={styles.lineErrorText}>{line.priced.discount_error}</Text>
+                  ) : null}
                 </View>
               )}
             />
@@ -239,17 +245,24 @@ export function CartSheet({
                 <Text style={styles.totalValue}>Rs. {totals.grandTotal.toFixed(2)}</Text>
               </View>
             </View>
+            {hasLineDiscountError && (
+              <Text style={styles.error}>⚠️ Please fix discount errors before continuing — discount cannot exceed item total.</Text>
+            )}
             {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
             <View style={styles.footerRow}>
               <TouchableOpacity style={styles.secondaryBtn} onPress={onClose}><Text style={styles.secondaryBtnText}>Close</Text></TouchableOpacity>
               <TouchableOpacity
-                style={[styles.secondaryBtn, (cart.length === 0 || holding) && styles.disabled]}
-                disabled={cart.length === 0 || holding}
+                style={[styles.secondaryBtn, (cart.length === 0 || holding || hasLineDiscountError) && styles.disabled]}
+                disabled={cart.length === 0 || holding || hasLineDiscountError}
                 onPress={onHold}
               >
                 <Text style={styles.secondaryBtnText}>{holding ? 'Holding…' : 'Hold Bill'}</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.primaryBtn, cart.length === 0 && styles.disabled]} disabled={cart.length === 0} onPress={openPayment}>
+              <TouchableOpacity
+                style={[styles.primaryBtn, (cart.length === 0 || hasLineDiscountError) && styles.disabled]}
+                disabled={cart.length === 0 || hasLineDiscountError}
+                onPress={openPayment}
+              >
                 <Text style={styles.primaryBtnText}>Pay</Text>
               </TouchableOpacity>
             </View>
@@ -332,17 +345,23 @@ export function CartSheet({
                 />
               </>
             ) : (
-              PAYMENT_METHODS.map((m) => (
-                <View key={m.key} style={styles.splitRow}>
-                  <Text style={styles.splitLabel}>{m.label}</Text>
-                  <TextInput
-                    keyboardType="numeric"
-                    value={String(payments.find((p) => p.payment_method === m.key)?.amount ?? 0)}
-                    onChangeText={(v) => setSplitAmount(m.key, v)}
-                    style={styles.splitInput}
-                  />
-                </View>
-              ))
+              PAYMENT_METHODS.map((m) => {
+                const cur = payments.find((p) => p.payment_method === m.key);
+                const rawVal = cur?.amount !== undefined && cur?.amount !== null ? String(cur.amount) : '';
+                return (
+                  <View key={m.key} style={styles.splitRow}>
+                    <Text style={styles.splitLabel}>{m.label}</Text>
+                    <TextInput
+                      keyboardType="numeric"
+                      value={rawVal}
+                      placeholder="0.00"
+                      placeholderTextColor={colors.inkMuted}
+                      onChangeText={(v) => setSplitAmount(m.key, v)}
+                      style={styles.splitInput}
+                    />
+                  </View>
+                );
+              })
             )}
 
             <View style={styles.summaryBox}>
@@ -354,21 +373,72 @@ export function CartSheet({
               </View>
             </View>
 
+            {isSplitOverpaid && (
+              <Text style={styles.error}>⚠️ Total split payments (Rs. {paymentsTotal.toFixed(2)}) cannot exceed total bill (Rs. {discountedTotals.grandTotal.toFixed(2)}).</Text>
+            )}
             {blockedNoCustomer && <Text style={styles.error}>Select a customer to allow a partial/credit payment.</Text>}
             {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
 
             <View style={styles.footerRow}>
               <TouchableOpacity style={styles.secondaryBtn} onPress={() => setStage('cart')}><Text style={styles.secondaryBtnText}>Back</Text></TouchableOpacity>
               <TouchableOpacity
-                style={[styles.primaryBtn, (completing || blockedNoCustomer || !!discountError) && styles.disabled]}
-                disabled={completing || blockedNoCustomer || !!discountError}
-                onPress={() => onComplete(payments.filter((p) => Number(p.amount) > 0))}
+                style={[styles.primaryBtn, (completing || blockedNoCustomer || !!discountError || isSplitOverpaid || paymentsTotal <= 0) && styles.disabled]}
+                disabled={completing || blockedNoCustomer || !!discountError || isSplitOverpaid || paymentsTotal <= 0}
+                onPress={() => onComplete(payments.map((p) => ({ ...p, amount: Number(p.amount) || 0 })).filter((p) => p.amount > 0))}
               >
                 <Text style={styles.primaryBtnText}>{completing ? 'Processing…' : 'Pay Now'}</Text>
               </TouchableOpacity>
             </View>
           </>
         )}
+
+        {/* Modal for changing line unit type */}
+        <Modal
+          visible={!!selectingUnitLineKey}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setSelectingUnitLineKey(null)}
+        >
+          <TouchableOpacity
+            style={styles.unitModalOverlay}
+            activeOpacity={1}
+            onPress={() => setSelectingUnitLineKey(null)}
+          >
+            <View style={styles.unitModalContent}>
+              <View style={styles.unitModalHeader}>
+                <Text style={styles.unitModalTitle}>Select Unit</Text>
+                <TouchableOpacity onPress={() => setSelectingUnitLineKey(null)} style={{ padding: 4 }}>
+                  <Icon name="close" size={18} color={colors.inkMuted} />
+                </TouchableOpacity>
+              </View>
+              <FlatList
+                data={units}
+                keyExtractor={(u) => String(u.id)}
+                ListEmptyComponent={<Text style={{ textAlign: 'center', padding: 16, color: colors.inkMuted }}>No units available</Text>}
+                renderItem={({ item: u }) => {
+                  const currentLine = cart.find((l) => l.key === selectingUnitLineKey);
+                  const isSelected = currentLine?.unit_id === u.id;
+                  return (
+                    <TouchableOpacity
+                      style={[styles.unitOption, isSelected && styles.unitOptionActive]}
+                      onPress={() => {
+                        if (selectingUnitLineKey) {
+                          changeLineUnit(selectingUnitLineKey, u.id);
+                        }
+                        setSelectingUnitLineKey(null);
+                      }}
+                    >
+                      <Text style={[styles.unitOptionText, isSelected && styles.unitOptionTextActive]}>
+                        {u.name || u.unit_name} ({u.short_code})
+                      </Text>
+                      {isSelected && <Icon name="check" size={16} color={colors.gold} />}
+                    </TouchableOpacity>
+                  );
+                }}
+              />
+            </View>
+          </TouchableOpacity>
+        </Modal>
       </View>
     </Modal>
   );
@@ -466,4 +536,83 @@ const styles = StyleSheet.create({
   splitLabel: { fontWeight: '600', color: colors.ink, width: 70 },
   splitInput: { flex: 1, borderWidth: 1, borderColor: colors.borderSoft, borderRadius: 8, padding: 10, textAlign: 'right', backgroundColor: colors.card },
   error: { color: colors.danger, fontSize: 12, marginTop: 8 },
+  unitPickerBtn: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: colors.gold,
+    backgroundColor: '#F5EBD3',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  unitPickerBtnText: {
+    fontSize: 11,
+    color: colors.gold,
+    fontWeight: '700',
+  },
+  lineErrorText: {
+    color: colors.danger,
+    fontSize: 11,
+    fontWeight: '600',
+    marginTop: 4,
+  },
+  extraInputError: {
+    borderColor: colors.danger,
+    backgroundColor: '#FEF2F2',
+  },
+  unitModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  unitModalContent: {
+    backgroundColor: colors.card,
+    borderRadius: 16,
+    padding: 16,
+    width: '100%',
+    maxHeight: '60%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  unitModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderSoft,
+  },
+  unitModalTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.ink,
+  },
+  unitOption: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    marginBottom: 4,
+  },
+  unitOptionActive: {
+    backgroundColor: '#F5EBD3',
+  },
+  unitOptionText: {
+    fontSize: 14,
+    color: colors.ink,
+    fontWeight: '500',
+  },
+  unitOptionTextActive: {
+    fontWeight: '700',
+    color: colors.gold,
+  },
 });

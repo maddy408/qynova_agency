@@ -960,6 +960,14 @@ export function POS() {
     setCart((prev) => prev.map((line) => (line.item ? { ...line, rate: resolveSellingPrice(line.item, line.unit_id, nextType).rate } : line)));
   };
 
+  const changeLineUnit = (key, unitId) => {
+    setCart((prev) => prev.map((l) => {
+      if (l.key !== key) return l;
+      const pricing = resolveSellingPrice(l.item, unitId, priceType);
+      return { ...l, unit_id: unitId, rate: pricing.rate };
+    }));
+  };
+
   const removeLine = (key) => setCart((prev) => prev.filter((l) => l.key !== key));
 
   const bumpQty = (line, delta) => {
@@ -1009,6 +1017,12 @@ export function POS() {
     if (cart.length === 0) {
       setMessage('Bill is empty. Scan or search products to begin.');
       setTimeout(() => setMessage(''), 3000);
+      return;
+    }
+    const hasDiscountError = pricedLines.some((l) => !!l.priced?.discount_error);
+    if (hasDiscountError) {
+      setMessage('Cannot proceed: one or more items have discount exceeding item amount.');
+      setTimeout(() => setMessage(''), 4000);
       return;
     }
     if (!cartValidation.isValid) {
@@ -1071,6 +1085,12 @@ export function POS() {
       setTimeout(() => setMessage(''), 3000);
       return;
     }
+    const hasDiscountError = pricedLines.some((l) => !!l.priced?.discount_error);
+    if (hasDiscountError) {
+      setMessage('Cannot hold: one or more items have discount exceeding item amount.');
+      setTimeout(() => setMessage(''), 4000);
+      return;
+    }
     saveMutation.mutate();
   };
 
@@ -1081,7 +1101,10 @@ export function POS() {
       }
       const saved = heldId ? await invoicesApi.update(heldId, buildPayload()) : await invoicesApi.create(buildPayload());
       const id = saved.id;
-      return invoicesApi.complete(id, payments.filter((p) => Number(p.amount) > 0));
+      const validPayments = payments
+        .map((p) => ({ ...p, amount: Number(p.amount) || 0 }))
+        .filter((p) => p.amount > 0);
+      return invoicesApi.complete(id, validPayments);
     },
     onSuccess: async (result) => {
       queryClient.invalidateQueries({ queryKey: ['invoices', 'held'] });
@@ -1719,40 +1742,51 @@ export function POS() {
                       />
                     </td>
 
-                    {/* Quantity with stepper & 4-way arrow nav */}
+                    {/* Quantity with stepper & 4-way arrow nav + Unit Selector */}
                     <td className="py-2 px-3 text-center">
-                      <div className="inline-flex items-center rounded-lg border border-[#CBD5E1] bg-white">
-                        <button
-                          type="button"
-                          tabIndex={-1}
-                          onClick={() => bumpQty(line, -1)}
-                          disabled={Number(line.qty) <= 1}
-                          className="px-1.5 py-0.5 text-[#64748B] hover:text-[#0B1B45] disabled:opacity-30"
+                      <div className="inline-flex items-center gap-1">
+                        <div className="inline-flex items-center rounded-lg border border-[#CBD5E1] bg-white">
+                          <button
+                            type="button"
+                            tabIndex={-1}
+                            onClick={() => bumpQty(line, -1)}
+                            disabled={Number(line.qty) <= 1}
+                            className="px-1.5 py-0.5 text-[#64748B] hover:text-[#0B1B45] disabled:opacity-30"
+                          >
+                            <Minus size={10} />
+                          </button>
+                          <input
+                            id={`bill-cell-${idx}-qty`}
+                            type="text"
+                            inputMode="decimal"
+                            value={line.qty ?? ''}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (val === '' || /^[0-9]*\.?[0-9]*$/.test(val)) {
+                                updateLine(line.key, { qty: val });
+                              }
+                            }}
+                            onKeyDown={(e) => handleCellKeyDown(e, idx, 'qty')}
+                            className="w-12 text-center py-0.5 text-xs font-bold text-[#0B1B45] bg-transparent focus:outline-none"
+                          />
+                          <button
+                            type="button"
+                            tabIndex={-1}
+                            onClick={() => bumpQty(line, 1)}
+                            className="px-1.5 py-0.5 text-[#64748B] hover:text-[#0B1B45]"
+                          >
+                            <Plus size={10} />
+                          </button>
+                        </div>
+                        <select
+                          value={line.unit_id}
+                          onChange={(e) => changeLineUnit(line.key, Number(e.target.value))}
+                          className="rounded-lg border border-[#CBD5E1] bg-[#F8FAFC] px-1 py-0.5 text-[11px] font-bold text-[#0B1B45] outline-none hover:border-[#2449C6] focus:border-[#2449C6]"
                         >
-                          <Minus size={10} />
-                        </button>
-                        <input
-                          id={`bill-cell-${idx}-qty`}
-                          type="text"
-                          inputMode="decimal"
-                          value={line.qty ?? ''}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            if (val === '' || /^[0-9]*\.?[0-9]*$/.test(val)) {
-                              updateLine(line.key, { qty: val });
-                            }
-                          }}
-                          onKeyDown={(e) => handleCellKeyDown(e, idx, 'qty')}
-                          className="w-12 text-center py-0.5 text-xs font-bold text-[#0B1B45] bg-transparent focus:outline-none"
-                        />
-                        <button
-                          type="button"
-                          tabIndex={-1}
-                          onClick={() => bumpQty(line, 1)}
-                          className="px-1.5 py-0.5 text-[#64748B] hover:text-[#0B1B45]"
-                        >
-                          <Plus size={10} />
-                        </button>
+                          {units.map((u) => (
+                            <option key={u.id} value={u.id}>{u.short_code}</option>
+                          ))}
+                        </select>
                       </div>
                     </td>
 
@@ -1771,8 +1805,17 @@ export function POS() {
                           }
                         }}
                         onKeyDown={(e) => handleCellKeyDown(e, idx, 'discount_amount')}
-                        className="w-20 rounded-lg border border-[#CBD5E1] px-1.5 py-0.5 text-right text-xs font-semibold text-[#0B1B45] focus:border-[#2449C6] focus:ring-1 focus:ring-[#2449C6]/20 outline-none"
+                        className={`w-20 rounded-lg border px-1.5 py-0.5 text-right text-xs font-semibold outline-none ${
+                          line.priced?.discount_error
+                            ? 'border-red-500 bg-red-50 text-red-700'
+                            : 'border-[#CBD5E1] text-[#0B1B45] focus:border-[#2449C6] focus:ring-1 focus:ring-[#2449C6]/20'
+                        }`}
                       />
+                      {line.priced?.discount_error && (
+                        <div className="text-[10px] text-red-600 font-bold mt-0.5 whitespace-nowrap">
+                          {line.priced.discount_error}
+                        </div>
+                      )}
                     </td>
 
                     {/* Discount % with 4-way arrow nav */}
@@ -2107,25 +2150,22 @@ function PaymentModal({
 
   const toggleSplit = (next) => {
     setSplitMode(next);
+    const activeMethod = !hasCustomer ? 'cash' : 'credit';
     if (next) {
-      setPayments(PAYMENT_METHODS.map((m) => ({ payment_method: m.key, amount: m.key === (!hasCustomer ? 'cash' : 'credit') ? grandTotal : 0, reference_no: '' })));
+      setPayments(PAYMENT_METHODS.map((m) => ({ payment_method: m.key, amount: m.key === activeMethod ? grandTotal : '', reference_no: '' })));
     } else {
-      setPayments([{ payment_method: !hasCustomer ? 'cash' : 'credit', amount: grandTotal, reference_no: '' }]);
+      setPayments([{ payment_method: activeMethod, amount: grandTotal, reference_no: '' }]);
     }
   };
 
-  const getAmount = (key) => Number(payments.find((p) => p.payment_method === key)?.amount || 0);
+  const getAmount = (key) => payments.find((p) => p.payment_method === key)?.amount ?? '';
 
   const setSplitAmount = (key, raw) => {
-    let value = Number(raw);
-    if (Number.isNaN(value) || value < 0) value = 0;
     setPayments((prev) => {
-      const othersTotal = prev.filter((p) => p.payment_method !== key).reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
-      const capped = Math.min(value, Math.max(0, grandTotal - othersTotal));
       const exists = prev.some((p) => p.payment_method === key);
       return exists
-        ? prev.map((p) => (p.payment_method === key ? { ...p, amount: capped } : p))
-        : [...prev, { payment_method: key, amount: capped, reference_no: '' }];
+        ? prev.map((p) => (p.payment_method === key ? { ...p, amount: raw } : p))
+        : [...prev, { payment_method: key, amount: raw, reference_no: '' }];
     });
   };
 
@@ -2274,12 +2314,17 @@ function PaymentModal({
               <div key={m.key} className="flex items-center justify-between gap-2">
                 <span className="w-14 text-xs font-bold text-ink">{m.label}</span>
                 <input
-                  type="number"
-                  min="0"
-                  step="any"
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="0.00"
                   value={getAmount(m.key)}
-                  onChange={(e) => setSplitAmount(m.key, e.target.value)}
-                  className="input flex-1 text-right text-xs py-1"
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === '' || /^[0-9]*\.?[0-9]*$/.test(val)) {
+                      setSplitAmount(m.key, val);
+                    }
+                  }}
+                  className="input flex-1 text-right text-xs py-1 font-semibold"
                 />
               </div>
             ))}
@@ -2307,6 +2352,9 @@ function PaymentModal({
           <span>₹ {Math.max(remaining, 0).toFixed(2)}</span>
         </div>
 
+        {splitMode && paymentsTotal > grandTotal + 0.009 && (
+          <p className="mb-1.5 text-xs text-danger font-medium">⚠️ Total split payments (₹ {paymentsTotal.toFixed(2)}) cannot exceed total bill (₹ {grandTotal.toFixed(2)}).</p>
+        )}
         {blockedNoCustomer && (
           <p className="mb-1.5 text-xs text-danger font-medium">Select a customer above to allow a partial/credit payment — a walk-in sale must be paid in full.</p>
         )}
@@ -2317,7 +2365,11 @@ function PaymentModal({
 
         <div className="flex justify-end gap-2 pt-2 border-t border-border-soft">
           <Button variant="secondary" size="sm" onClick={onBack} disabled={isPending}>Back</Button>
-          <Button size="sm" onClick={onPay} disabled={isPending || blockedNoCustomer || !isValid}>
+          <Button
+            size="sm"
+            onClick={onPay}
+            disabled={isPending || blockedNoCustomer || !isValid || (splitMode && (paymentsTotal > grandTotal + 0.009 || paymentsTotal <= 0))}
+          >
             {isPending ? 'Processing…' : 'Pay Now (F6)'}
           </Button>
         </div>

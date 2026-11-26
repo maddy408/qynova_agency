@@ -53,11 +53,18 @@ export function priceLine(item, input, billType = 'gst', priceType = 'normal') {
   const gross = round2(qty * rate);
 
   const discountPercent = Number(input.discount_percent || 0);
-  const discountAmount = input.discount_amount !== undefined && input.discount_amount !== ''
+  const rawDiscountAmount = input.discount_amount !== undefined && input.discount_amount !== ''
     ? Number(input.discount_amount)
     : round2((gross * discountPercent) / 100);
 
-  const taxable = round2(gross - discountAmount);
+  const isAmountMode = input.discount_mode === 'amount' || (input.discount_amount !== undefined && input.discount_amount !== '');
+  const hasDiscountError = isAmountMode ? (rawDiscountAmount > gross + 0.009) : (discountPercent > 100);
+  const discountErrorMsg = hasDiscountError
+    ? (isAmountMode ? `Discount cannot exceed item amount (Rs. ${gross.toFixed(2)})` : 'Discount percentage cannot exceed 100%')
+    : null;
+
+  const discountAmount = Math.min(gross, Math.max(0, rawDiscountAmount));
+  const taxable = Math.max(0, round2(gross - discountAmount));
   const isNonGst = billType === 'non_gst';
   const taxPercent = isNonGst ? 0 : Number(item.gst_percent || 0);
   const taxAmount = isNonGst ? 0 : round2((taxable * taxPercent) / 100);
@@ -67,7 +74,8 @@ export function priceLine(item, input, billType = 'gst', priceType = 'normal') {
   return {
     qty, free_qty: Number(input.free_qty || 0), rate, mrp,
     price_configured: unitPricing.configured,
-    discount_percent: discountPercent, discount_amount: discountAmount,
+    discount_percent: discountPercent, discount_amount: rawDiscountAmount,
+    discount_error: discountErrorMsg,
     tax_percent: taxPercent, tax_amount: taxAmount, cess_amount: cessAmount,
     line_total: taxable, gross,
   };
