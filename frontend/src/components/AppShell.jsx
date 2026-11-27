@@ -60,7 +60,7 @@ export function AppShell({ children }) {
       />
 
       {/* Main Content Area */}
-      <div className={`flex-1 flex flex-col min-w-0 ${isDashboard ? 'h-screen overflow-hidden bg-white' : ''} transition-all duration-300 ease-in-out`}>
+      <div className={`flex-1 flex flex-col min-w-0 min-h-screen ${isDashboard ? 'h-screen overflow-hidden bg-white' : ''} transition-all duration-300 ease-in-out`}>
         <TopHeader
           onToggleSidebar={toggleSidebar}
           sidebarOpen={sidebarOpen}

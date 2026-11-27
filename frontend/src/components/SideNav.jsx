@@ -137,9 +137,9 @@ export function SideNav({ isOpen, onToggle, onClose }) {
         />
       )}
 
-      {/* Main Sidebar Container - Sticky Full Height with Unified Smooth Scrolling */}
+      {/* Main Sidebar Container - Full page height without scrollbar, flows naturally with page */}
       <aside
-        className={`fixed top-0 bottom-0 left-0 z-50 h-screen bg-gradient-to-b from-[#071333] via-[#0B1B45] to-[#0d2257] flex flex-col transition-all duration-300 ease-in-out lg:sticky lg:top-0 lg:h-screen lg:shrink-0 overflow-y-auto custom-scrollbar ${
+        className={`fixed top-0 bottom-0 left-0 z-50 min-h-screen lg:min-h-full bg-gradient-to-b from-[#071333] via-[#0B1B45] to-[#0d2257] flex flex-col transition-all duration-300 ease-in-out lg:static lg:shrink-0 ${
           isOpen
             ? 'w-64 translate-x-0 opacity-100 border-r border-[#1C3675]/70 shadow-2xl lg:shadow-none'
             : 'w-0 -translate-x-full lg:translate-x-0 opacity-0 border-none pointer-events-none shadow-none'
