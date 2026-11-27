@@ -344,10 +344,19 @@ class CustomerController
         if (str_contains($normalized, 'pricing') || str_contains($normalized, 'price_type')) {
             return 'pricing_type';
         }
-        if (str_contains($normalized, 'customer') || str_contains($normalized, 'ledger')) {
+        if (
+            str_contains($normalized, 'customer') ||
+            str_contains($normalized, 'ledger') ||
+            $normalized === 'name' ||
+            $normalized === 'customer name' ||
+            $normalized === 'party' ||
+            $normalized === 'party name' ||
+            $normalized === 'party_name' ||
+            str_contains($normalized, 'client')
+        ) {
             return 'ledger_name';
         }
-        if (str_contains($normalized, 'mobile') || str_contains($normalized, 'phone')) {
+        if (str_contains($normalized, 'mobile') || str_contains($normalized, 'phone') || str_contains($normalized, 'contact')) {
             return 'phone';
         }
         if (str_contains($normalized, 'credit')) {
@@ -394,16 +403,23 @@ class CustomerController
     ): array {
         $errors = [];
 
-        $ledgerName = trim((string) ($record['ledger_name'] ?? ''));
+        $ledgerName = trim((string) ($record['ledger_name'] ?? $record['name'] ?? $record['customer_name'] ?? ''));
         if ($ledgerName === '') {
-            $errors[] = 'CUSTOMER (name) is required';
+            $errors[] = 'Customer Name is required';
         }
 
-        // MOBILE: read as text so a leading zero survives
-        $phoneRaw = $record['phone'] ?? '';
+        // MOBILE: optional. If present, read as text so a leading zero survives
+        $phoneRaw = $record['phone'] ?? $record['mobile'] ?? '';
         $phone = is_float($phoneRaw) ? number_format($phoneRaw, 0, '', '') : trim((string) $phoneRaw);
+        // Clean non-digit characters if formatted e.g. +91 98765-43210
         if ($phone !== '' && !preg_match('/^[0-9+\-\s()]{6,20}$/', $phone)) {
-            $errors[] = "invalid mobile number '{$phone}'";
+            // If it contains text or bad characters, don't fail import if name is present; just log or store digits only
+            $cleanDigits = preg_replace('/\D+/', '', $phone) ?? '';
+            if (strlen($cleanDigits) >= 6) {
+                $phone = $cleanDigits;
+            } else {
+                $phone = null;
+            }
         }
 
         $existingId = null;
@@ -414,8 +430,14 @@ class CustomerController
         }
 
         foreach (['credit_limit', 'opening_balance'] as $numField) {
-            if (isset($record[$numField]) && $record[$numField] !== '' && !is_numeric($record[$numField])) {
-                $errors[] = "{$numField} must be numeric";
+            if (isset($record[$numField]) && $record[$numField] !== '') {
+                $val = trim((string) $record[$numField]);
+                $valClean = preg_replace('/[^0-9.\-]/', '', $val);
+                if ($valClean === '' || !is_numeric($valClean)) {
+                    $record[$numField] = '0';
+                } else {
+                    $record[$numField] = $valClean;
+                }
             }
         }
         $creditLimit = isset($record['credit_limit']) && $record['credit_limit'] !== '' ? (float) $record['credit_limit'] : 0.0;
@@ -423,8 +445,9 @@ class CustomerController
 
         $gstinRaw = trim((string) ($record['gstin'] ?? ''));
         $gstin = in_array(strtoupper($gstinRaw), ['', '0', 'NA', 'N/A', '-', 'NIL'], true) ? null : $gstinRaw;
+        // Don't block import on invalid GSTIN either - if bad format, ignore or set null so customer is imported safely
         if ($gstin !== null && !preg_match('/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/', strtoupper($gstin))) {
-            $errors[] = "invalid GSTIN format '{$gstin}'";
+            $gstin = null;
         }
 
         $cityName = trim((string) ($record['city'] ?? ''));
