@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { DollarSign, Search, Plus, Trash2, CheckCircle2, TrendingUp, TrendingDown, CreditCard, Banknote, Receipt } from 'lucide-react';
+import { DollarSign, Search, Plus, Trash2, Edit2, CheckCircle2, TrendingUp, TrendingDown, CreditCard, Banknote, Receipt } from 'lucide-react';
 import { expenseCategoriesApi, expensesApi, otherIncomeApi } from '../api/postsale';
 import { Tabs } from '../components/Tabs';
 import { usePermission } from '../hooks/usePermission';
@@ -28,6 +28,7 @@ function ExpensesPanel({ canManage }) {
   const [amount, setAmount] = useState('');
   const [paymentMode, setPaymentMode] = useState('cash');
   const [description, setDescription] = useState('');
+  const [editingId, setEditingId] = useState(null);
   const [formError, setFormError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
@@ -40,6 +41,17 @@ function ExpensesPanel({ canManage }) {
       resetForm();
       showSuccess('Expense logged successfully!');
     },
+    onError: (err) => setFormError(err?.response?.data?.error || 'Failed to save expense'),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }) => expensesApi.update(id, data),
+    onSuccess: () => {
+      invalidate();
+      resetForm();
+      showSuccess('Expense updated successfully!');
+    },
+    onError: (err) => setFormError(err?.response?.data?.error || 'Failed to update expense'),
   });
 
   const removeMutation = useMutation({
@@ -48,13 +60,24 @@ function ExpensesPanel({ canManage }) {
       invalidate();
       showSuccess('Expense deleted.');
     },
+    onError: (err) => setFormError(err?.response?.data?.error || 'Failed to delete expense'),
   });
 
   const resetForm = () => {
+    setEditingId(null);
     setCategoryId('');
     setAmount('');
     setPaymentMode('cash');
     setDescription('');
+    setFormError('');
+  };
+
+  const handleEdit = (item) => {
+    setEditingId(item.id);
+    setCategoryId(item.category_id ? String(item.category_id) : '');
+    setAmount(item.amount ? String(item.amount) : '');
+    setPaymentMode(item.payment_mode || 'cash');
+    setDescription(item.description || '');
     setFormError('');
   };
 
@@ -74,12 +97,17 @@ function ExpensesPanel({ canManage }) {
       return;
     }
     setFormError('');
-    createMutation.mutate({
+    const payload = {
       category_id: Number(categoryId),
       amount: Number(amount),
       payment_mode: paymentMode,
       description,
-    });
+    };
+    if (editingId) {
+      updateMutation.mutate({ id: editingId, data: payload });
+    } else {
+      createMutation.mutate(payload);
+    }
   };
 
   const filteredExpenses = expenses;
@@ -97,14 +125,21 @@ function ExpensesPanel({ canManage }) {
         {/* Left Column Form */}
         <div className="lg:col-span-4">
           <div className="rounded-2xl border border-[#D5E3F7] bg-white shadow-xs p-6 space-y-5 sticky top-6">
-            <div className="border-b border-[#EAF1FA] pb-4 flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-rose-50 text-rose-600 ring-1 ring-rose-200">
-                <TrendingDown className="w-4 h-4" />
+            <div className="border-b border-[#EAF1FA] pb-4 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-rose-50 text-rose-600 ring-1 ring-rose-200">
+                  <TrendingDown className="w-4 h-4" />
+                </div>
+                <div>
+                  <h2 className="font-bold text-[#0B1B45] text-sm">{editingId ? 'Edit Expense' : 'Add Operating Expense'}</h2>
+                  <p className="text-[11px] text-slate-500">{editingId ? `Editing expense #${editingId}` : 'Record cash outflow or bill'}</p>
+                </div>
               </div>
-              <div>
-                <h2 className="font-bold text-[#0B1B45] text-sm">Add Operating Expense</h2>
-                <p className="text-[11px] text-slate-500">Record cash outflow or bill</p>
-              </div>
+              {editingId && (
+                <button type="button" onClick={resetForm} className="text-xs font-bold text-[#2449C6] hover:underline">
+                  Cancel
+                </button>
+              )}
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -180,8 +215,8 @@ function ExpensesPanel({ canManage }) {
 
               {canManage && (
                 <div className="pt-2">
-                  <Button type="submit" variant="primary" loading={createMutation.isPending} className="w-full shadow-md shadow-[#2449C6]/20">
-                    Record Expense
+                  <Button type="submit" variant="primary" loading={createMutation.isPending || updateMutation.isPending} className="w-full shadow-md shadow-[#2449C6]/20">
+                    {editingId ? 'Update Expense' : 'Record Expense'}
                   </Button>
                 </div>
               )}
@@ -242,15 +277,24 @@ function ExpensesPanel({ canManage }) {
                         </td>
                         <td className="px-3.5 py-2.5 text-slate-600">{item.description || '-'}</td>
                         <td className="px-3.5 py-2.5 text-slate-500 text-xs">{item.expense_date || item.created_at || '-'}</td>
-                        <td className="px-3.5 py-2.5 text-right">
+                        <td className="px-3.5 py-2.5 text-right whitespace-nowrap">
                           {canManage && (
-                            <button
-                              onClick={() => removeMutation.mutate(item.id)}
-                              className="p-1.5 rounded-lg border border-transparent hover:border-rose-200 hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition"
-                              title="Delete Expense"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                            <div className="inline-flex items-center gap-1">
+                              <button
+                                onClick={() => handleEdit(item)}
+                                className="p-1.5 rounded-lg border border-transparent hover:border-[#D5E3F7] hover:bg-[#F0F4FA] text-slate-500 hover:text-[#2449C6] transition"
+                                title="Edit Expense"
+                              >
+                                <Edit2 className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={() => removeMutation.mutate(item.id)}
+                                className="p-1.5 rounded-lg border border-transparent hover:border-rose-200 hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition"
+                                title="Delete Expense"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           )}
                         </td>
                       </tr>
@@ -295,6 +339,7 @@ function OtherIncomePanel({ canManage }) {
   const [amount, setAmount] = useState('');
   const [paymentMode, setPaymentMode] = useState('cash');
   const [description, setDescription] = useState('');
+  const [editingId, setEditingId] = useState(null);
   const [formError, setFormError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
@@ -307,6 +352,17 @@ function OtherIncomePanel({ canManage }) {
       resetForm();
       showSuccess('Extra income logged successfully!');
     },
+    onError: (err) => setFormError(err?.response?.data?.error || 'Failed to save income'),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }) => otherIncomeApi.update(id, data),
+    onSuccess: () => {
+      invalidate();
+      resetForm();
+      showSuccess('Income record updated successfully!');
+    },
+    onError: (err) => setFormError(err?.response?.data?.error || 'Failed to update income'),
   });
 
   const removeMutation = useMutation({
@@ -315,12 +371,22 @@ function OtherIncomePanel({ canManage }) {
       invalidate();
       showSuccess('Income record deleted.');
     },
+    onError: (err) => setFormError(err?.response?.data?.error || 'Failed to delete income'),
   });
 
   const resetForm = () => {
+    setEditingId(null);
     setAmount('');
     setPaymentMode('cash');
     setDescription('');
+    setFormError('');
+  };
+
+  const handleEdit = (item) => {
+    setEditingId(item.id);
+    setAmount(item.amount ? String(item.amount) : '');
+    setPaymentMode(item.payment_mode || 'cash');
+    setDescription(item.description || '');
     setFormError('');
   };
 
@@ -340,11 +406,16 @@ function OtherIncomePanel({ canManage }) {
       return;
     }
     setFormError('');
-    createMutation.mutate({
+    const payload = {
       amount: Number(amount),
       payment_mode: paymentMode,
       description: description.trim(),
-    });
+    };
+    if (editingId) {
+      updateMutation.mutate({ id: editingId, data: payload });
+    } else {
+      createMutation.mutate(payload);
+    }
   };
 
   const filteredIncomes = incomes;
@@ -362,14 +433,21 @@ function OtherIncomePanel({ canManage }) {
         {/* Left Column Form */}
         <div className="lg:col-span-4">
           <div className="rounded-2xl border border-[#D5E3F7] bg-white shadow-xs p-6 space-y-5 sticky top-6">
-            <div className="border-b border-[#EAF1FA] pb-4 flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200">
-                <TrendingUp className="w-4 h-4" />
+            <div className="border-b border-[#EAF1FA] pb-4 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200">
+                  <TrendingUp className="w-4 h-4" />
+                </div>
+                <div>
+                  <h2 className="font-bold text-[#0B1B45] text-sm">{editingId ? 'Edit Extra Income' : 'Add Extra Income'}</h2>
+                  <p className="text-[11px] text-slate-500">{editingId ? `Editing receipt #${editingId}` : 'Record scrap, commission, etc.'}</p>
+                </div>
               </div>
-              <div>
-                <h2 className="font-bold text-[#0B1B45] text-sm">Add Extra Income</h2>
-                <p className="text-[11px] text-slate-500">Record scrap, commission, etc.</p>
-              </div>
+              {editingId && (
+                <button type="button" onClick={resetForm} className="text-xs font-bold text-[#2449C6] hover:underline">
+                  Cancel
+                </button>
+              )}
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -427,8 +505,8 @@ function OtherIncomePanel({ canManage }) {
 
               {canManage && (
                 <div className="pt-2">
-                  <Button type="submit" variant="primary" loading={createMutation.isPending} className="w-full shadow-md shadow-[#2449C6]/20">
-                    Record Income
+                  <Button type="submit" variant="primary" loading={createMutation.isPending || updateMutation.isPending} className="w-full shadow-md shadow-[#2449C6]/20">
+                    {editingId ? 'Update Income' : 'Record Income'}
                   </Button>
                 </div>
               )}
@@ -485,15 +563,24 @@ function OtherIncomePanel({ canManage }) {
                       </td>
                       <td className="px-3.5 py-2.5 text-slate-600">{item.description || '-'}</td>
                       <td className="px-3.5 py-2.5 text-slate-500 text-xs">{item.income_date || item.created_at || '-'}</td>
-                      <td className="px-3.5 py-2.5 text-right">
+                      <td className="px-3.5 py-2.5 text-right whitespace-nowrap">
                         {canManage && (
-                          <button
-                            onClick={() => removeMutation.mutate(item.id)}
-                            className="p-1.5 rounded-lg border border-transparent hover:border-rose-200 hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition"
-                            title="Delete Receipt"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                          <div className="inline-flex items-center gap-1">
+                            <button
+                              onClick={() => handleEdit(item)}
+                              className="p-1.5 rounded-lg border border-transparent hover:border-[#D5E3F7] hover:bg-[#F0F4FA] text-slate-500 hover:text-[#2449C6] transition"
+                              title="Edit Receipt"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => removeMutation.mutate(item.id)}
+                              className="p-1.5 rounded-lg border border-transparent hover:border-rose-200 hover:bg-rose-50 text-slate-400 hover:text-rose-600 transition"
+                              title="Delete Receipt"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         )}
                       </td>
                     </tr>

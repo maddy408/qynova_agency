@@ -34,11 +34,13 @@ export const expenseCategoriesApi = {
 export const expensesApi = {
   list: async (params) => (await apiClient.get('/expenses', { params })).data,
   create: async (data) => (await apiClient.post('/expenses', data)).data,
+  update: async (id, data) => (await apiClient.put(`/expenses/${id}`, data)).data,
   remove: async (id) => (await apiClient.delete(`/expenses/${id}`)).data,
 };
 
 export const otherIncomeApi = {
   list: async (params) => (await apiClient.get('/other-income', { params })).data,
   create: async (data) => (await apiClient.post('/other-income', data)).data,
+  update: async (id, data) => (await apiClient.put(`/other-income/${id}`, data)).data,
   remove: async (id) => (await apiClient.delete(`/other-income/${id}`)).data,
 };

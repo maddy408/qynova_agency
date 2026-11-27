@@ -89,6 +89,15 @@ export function StaffPermissions({ hideHeader = false }) {
       return;
     }
 
+    if (!editingId && (!form.password || form.password.length < 6)) {
+      setError('Password is required for new accounts (minimum 6 characters).');
+      return;
+    }
+    if (editingId && form.password && form.password.length < 6) {
+      setError('New password must be at least 6 characters.');
+      return;
+    }
+
     try {
       if (editingId) {
         const payload = {
@@ -102,10 +111,6 @@ export function StaffPermissions({ hideHeader = false }) {
         if (form.password) payload.password = form.password;
         await updateMutation.mutateAsync({ id: editingId, data: payload });
       } else {
-        if (!form.password) {
-          setError('Password is required for new accounts.');
-          return;
-        }
         await createMutation.mutateAsync({
           name: form.name.trim(),
           email: form.email.trim(),

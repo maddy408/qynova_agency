@@ -219,12 +219,13 @@ export function Branches({ hideHeader = false }) {
 
               <div className="grid grid-cols-2 gap-2.5">
                 <div>
-                  <label className="text-xs font-bold uppercase tracking-wider text-slate-600 block mb-1">Phone</label>
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-600 block mb-1">Phone (10 digits)</label>
                   <input
-                    type="text"
-                    placeholder="+91 9876543210"
+                    type="tel"
+                    placeholder="10-digit mobile (e.g. 9876543210)"
+                    maxLength={10}
                     value={form.phone}
-                    onChange={updateField('phone')}
+                    onChange={(e) => setForm((prev) => ({ ...prev, phone: e.target.value.replace(/\D/g, '').slice(0, 10) }))}
                     className="w-full rounded-xl border border-[#D5E3F7] bg-white px-3 py-2 text-sm font-medium text-[#0B1B45] shadow-xs outline-none transition focus:border-[#2449C6] focus:ring-2 focus:ring-[#2449C6]/15"
                   />
                 </div>
