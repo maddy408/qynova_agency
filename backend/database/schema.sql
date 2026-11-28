@@ -1362,5 +1362,6 @@ ALTER TABLE stock_issue_notes
 
 -- Customer opening balance is synchronized with credit_transactions (sale_credit)
 -- to ensure consistent outstanding credit across Collections and Ledger.
--- Managed via migration 20261128_104500_sync_customer_opening_balance_ledger.sql.
+-- Managed via migration 20261128_104500_sync_customer_opening_balance_ledger.sql
+-- and 20261128_144500_sync_customer_credit_balance.sql.
 

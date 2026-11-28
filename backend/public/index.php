@@ -195,6 +195,11 @@ $customers = new BranchScopedCrudController(
         // shows up as real outstanding credit anywhere (section: opening
         // balance must behave like a real balance, not a decorative field).
         $amount = (float) ($saved['opening_balance'] ?? 0);
+        if ($amount <= 0.009 && (float) ($saved['credit_limit'] ?? 0) > 0.009) {
+            $amount = (float) $saved['credit_limit'];
+            $pdo->prepare('UPDATE customers SET opening_balance = :ob WHERE id = :id')
+                ->execute(['ob' => $amount, 'id' => $id]);
+        }
         if ($amount > 0.009) {
             (new \App\Services\CreditLedgerService($pdo))->record(
                 $id, 'sale_credit', $amount, null, 'Opening balance', (int) $claims['sub']
@@ -203,7 +208,15 @@ $customers = new BranchScopedCrudController(
     },
     onUpdated: function ($id, $old, $new, $claims) use ($pdo) {
         $oldBal = (float) ($old['opening_balance'] ?? 0);
+        if ($oldBal <= 0.009 && (float) ($old['credit_limit'] ?? 0) > 0.009) {
+            $oldBal = (float) $old['credit_limit'];
+        }
         $newBal = (float) ($new['opening_balance'] ?? 0);
+        if ($newBal <= 0.009 && (float) ($new['credit_limit'] ?? 0) > 0.009) {
+            $newBal = (float) $new['credit_limit'];
+            $pdo->prepare('UPDATE customers SET opening_balance = :ob WHERE id = :id')
+                ->execute(['ob' => $newBal, 'id' => $id]);
+        }
         $diff = round($newBal - $oldBal, 2);
         if (abs($diff) > 0.009) {
             $type = $diff > 0 ? 'sale_credit' : 'credit_reversal';

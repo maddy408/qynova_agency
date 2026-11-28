@@ -49,8 +49,9 @@ class CollectionModel
     /** Every branch customer with a positive outstanding balance — "Route Pending Credit Balances". Includes customers with opening balances. */
     public function pendingBalancesForBranch(int $branchId, ?int $routeId = null): array
     {
-        $sql = "SELECT c.id AS customer_id, c.ledger_name, c.phone, c.route_id, c.city_id, c.credit_limit, c.opening_balance,
-                       COALESCE(latest_tx.balance_after, c.opening_balance, 0) AS total_due,
+        $sql = "SELECT c.id AS customer_id, c.ledger_name, c.phone, c.route_id, c.city_id, c.credit_limit,
+                       IF(c.opening_balance > 0.009, c.opening_balance, c.credit_limit) AS opening_balance,
+                       COALESCE(latest_tx.balance_after, IF(c.opening_balance > 0.009, c.opening_balance, c.credit_limit), 0) AS total_due,
                        COALESCE(inv.unpaid_invoice_count, 0) AS unpaid_invoice_count,
                        COALESCE(inv.unpaid_invoice_total, 0) AS unpaid_invoice_total,
                        COALESCE(paid_col.total_collected, 0) AS total_collected

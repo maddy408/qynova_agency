@@ -27,7 +27,28 @@ class CreditLedgerService
         );
         $stmt->execute(['customer_id' => $customerId]);
         $row = $stmt->fetch();
-        return $row ? (float) $row['balance_after'] : 0.0;
+        if ($row) {
+            return (float) $row['balance_after'];
+        }
+
+        // Fallback to customer's opening balance or credit limit if no ledger entries yet
+        $custStmt = $this->pdo->prepare(
+            'SELECT opening_balance, credit_limit FROM customers WHERE id = :customer_id'
+        );
+        $custStmt->execute(['customer_id' => $customerId]);
+        $cust = $custStmt->fetch();
+        if ($cust) {
+            $ob = (float) ($cust['opening_balance'] ?? 0);
+            if ($ob > 0.009) {
+                return $ob;
+            }
+            $cl = (float) ($cust['credit_limit'] ?? 0);
+            if ($cl > 0.009) {
+                return $cl;
+            }
+        }
+
+        return 0.0;
     }
 
     public function record(

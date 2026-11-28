@@ -151,13 +151,18 @@ function CustomersPanel({ canManage }) {
       setFormError('Invalid GSTIN format. Expected 15 characters, e.g. 27AAPFU0939F1ZV.');
       return;
     }
+    const parsedCreditLimit = Number(creditLimit || 0);
+    let parsedOpeningBalance = Number(openingBalance || 0);
+    if (parsedOpeningBalance <= 0.009 && parsedCreditLimit > 0.009) {
+      parsedOpeningBalance = parsedCreditLimit;
+    }
     const payload = {
       ledger_name: ledgerName.trim(),
       phone: trimmedPhone,
       route_id: routeId ? Number(routeId) : null,
       city_id: cityId ? Number(cityId) : null,
-      credit_limit: Number(creditLimit || 0),
-      opening_balance: Number(openingBalance || 0),
+      credit_limit: parsedCreditLimit,
+      opening_balance: parsedOpeningBalance,
       is_local_customer: Number(isLocalCustomer ?? 1),
       is_active: isActive ? 1 : 0,
       status: isActive ? 'active' : 'inactive',
@@ -521,6 +526,7 @@ function CustomersPanel({ canManage }) {
                   <th className="px-3.5 py-2.5">GSTIN</th>
                   <th className="px-3.5 py-2.5 text-center">Pricing Type</th>
                   <th className="px-3.5 py-2.5 text-right">Credit Limit</th>
+                  <th className="px-3.5 py-2.5 text-right">Opening Bal</th>
                   <th className="px-3.5 py-2.5 text-center">Status</th>
                   {canManage && <th className="px-3.5 py-2.5 text-right">Actions</th>}
                 </tr>
@@ -542,7 +548,8 @@ function CustomersPanel({ canManage }) {
                           {r.pricing_type || 'normal'}
                         </span>
                       </td>
-                      <td className="px-3.5 py-2.5 text-right whitespace-nowrap font-bold text-[#2449C6]">Rs. {Number(r.credit_limit || 0).toLocaleString()}</td>
+                      <td className="px-3.5 py-2.5 text-right whitespace-nowrap font-bold text-slate-700">Rs. {Number(r.credit_limit || 0).toLocaleString()}</td>
+                      <td className="px-3.5 py-2.5 text-right whitespace-nowrap font-bold text-[#2449C6]">Rs. {Number(r.opening_balance || 0).toLocaleString()}</td>
                       <td className="px-3.5 py-2.5 text-center">
                         {cActive ? (
                           <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-bold text-emerald-700 border border-emerald-200">
@@ -578,7 +585,7 @@ function CustomersPanel({ canManage }) {
                   );
                 })}
                 {filtered.length === 0 && (
-                  <tr><td colSpan={canManage ? 9 : 8} className="px-3.5 py-8 text-center text-slate-400 font-medium">No customers found.</td></tr>
+                  <tr><td colSpan={canManage ? 10 : 9} className="px-3.5 py-8 text-center text-slate-400 font-medium">No customers found.</td></tr>
                 )}
               </tbody>
             </table>

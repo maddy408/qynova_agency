@@ -160,9 +160,9 @@ function CollectModal({ customer, onClose, onCollected }) {
                 </tbody>
               </table>
             </div>
-            {remaining > 0 && Number(amount) > 0 && (
+            {Number(amount) > Number(customer.total_due || 0) && (
               <div className="mb-4 rounded-xl bg-indigo-50 border border-indigo-200 p-3 text-xs text-indigo-700 font-medium">
-                Note: ₹{remaining.toFixed(2)} extra amount will be credited to customer's advance balance and recorded in revenue/collections.
+                Note: ₹{(Number(amount) - Number(customer.total_due || 0)).toFixed(2)} extra amount will be credited to customer's advance balance and recorded in revenue/collections.
               </div>
             )}
           </>
@@ -306,7 +306,7 @@ export function Collections({ hideHeader = false }) {
                   </tr>
                 ))}
                 {pending.length === 0 && (
-                  <tr><td colSpan={5} className="px-3.5 py-10 text-center text-slate-400 text-sm font-semibold">No customers with an outstanding balance.</td></tr>
+                  <tr><td colSpan={6} className="px-3.5 py-10 text-center text-slate-400 text-sm font-semibold">No customers with an outstanding balance.</td></tr>
                 )}
               </tbody>
             </table>
