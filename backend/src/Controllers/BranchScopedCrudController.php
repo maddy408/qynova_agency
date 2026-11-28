@@ -37,7 +37,9 @@ class BranchScopedCrudController
         private string $codeColumn = 'code',
         private array $autoDefaults = [],
         /** fn(int $id, array $savedRow, array $claims): void — fired once, right after create commits. */
-        private $onCreated = null
+        private $onCreated = null,
+        /** fn(int $id, array $oldRow, array $newRow, array $claims): void — fired once, right after update commits. */
+        private $onUpdated = null
     ) {
     }
 
@@ -270,7 +272,11 @@ class BranchScopedCrudController
 
         try {
             $this->model()->update((int) $row['id'], $data);
-            Response::json($this->model()->find((int) $row['id']));
+            $saved = $this->model()->find((int) $row['id']);
+            if ($this->onUpdated !== null) {
+                ($this->onUpdated)((int) $row['id'], $row, $saved, $claims);
+            }
+            Response::json($saved);
         } catch (\PDOException $e) {
             $code = $e->errorInfo[1] ?? 0;
             if ($code === 1062) {

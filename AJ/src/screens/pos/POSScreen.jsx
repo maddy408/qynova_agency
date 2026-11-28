@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Alert, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Alert, Platform, Modal } from 'react-native';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { itemsApi, categoriesApi, stockUnitsApi } from '../../api/catalog';
 import { customersApi } from '../../api/parties';
@@ -162,6 +162,7 @@ export function POSScreen() {
   }, [activeItems, search, activeCategory]);
 
   const addToCart = (item) => {
+    setCustomerDropdownOpen(false);
     setCart((prev) => {
       const existing = prev.find((l) => l.item.id === item.id && l.unit_id === item.base_unit_id);
       if (existing) return prev.map((l) => (l.key === existing.key ? { ...l, qty: l.qty + 1 } : l));
@@ -437,42 +438,57 @@ export function POSScreen() {
         </View>
 
         {customerDropdownOpen && (
-          <View style={styles.customerDropdownList}>
-            <FlatList
-              data={filteredCustomers}
-              keyExtractor={(c) => String(c.id)}
-              keyboardShouldPersistTaps="handled"
-              nestedScrollEnabled={true}
-              scrollEnabled={true}
-              style={styles.customerListMaxHeight}
-              contentContainerStyle={{ flexGrow: 1 }}
-              ListEmptyComponent={
-                <Text style={styles.noCustomerText}>No customer found</Text>
-              }
-              renderItem={({ item: c }) => (
-                <TouchableOpacity
-                  style={[styles.customerOption, customerId === c.id && styles.customerOptionActive]}
-                  onPress={() => {
-                    setCustomerId(c.id);
-                    setCustomerSearch('');
-                    setCustomerDropdownOpen(false);
-                    setCartVisible(false);
-                  }}
-                >
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.customerOptionName, customerId === c.id && styles.customerOptionNameActive]}>
-                      {c.ledger_name}
-                    </Text>
-                    {c.phone ? <Text style={styles.customerOptionPhone}>{c.phone}</Text> : null}
-                  </View>
-                  {customerId === c.id && <Icon name="check" size={16} color={colors.gold} />}
-                </TouchableOpacity>
-              )}
-            />
-            <TouchableOpacity style={styles.closeDropdownBtn} onPress={() => setCustomerDropdownOpen(false)}>
-              <Text style={styles.closeDropdownText}>Close</Text>
+          <Modal
+            transparent
+            animationType="fade"
+            visible={customerDropdownOpen}
+            onRequestClose={() => setCustomerDropdownOpen(false)}
+          >
+            <TouchableOpacity
+              style={styles.modalBackdrop}
+              activeOpacity={1}
+              onPress={() => setCustomerDropdownOpen(false)}
+            >
+              <View style={styles.customerDropdownModalCard} onStartShouldSetResponder={() => true}>
+                <View style={styles.customerDropdownHeader}>
+                  <Text style={styles.customerDropdownTitle}>Select Customer</Text>
+                  <TouchableOpacity onPress={() => setCustomerDropdownOpen(false)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                    <Text style={styles.closeDropdownText}>✕</Text>
+                  </TouchableOpacity>
+                </View>
+                <FlatList
+                  data={filteredCustomers}
+                  keyExtractor={(c) => String(c.id)}
+                  keyboardShouldPersistTaps="handled"
+                  nestedScrollEnabled={true}
+                  style={styles.customerListMaxHeight}
+                  contentContainerStyle={{ flexGrow: 1 }}
+                  ListEmptyComponent={
+                    <Text style={styles.noCustomerText}>No customer found</Text>
+                  }
+                  renderItem={({ item: c }) => (
+                    <TouchableOpacity
+                      style={[styles.customerOption, customerId === c.id && styles.customerOptionActive]}
+                      onPress={() => {
+                        setCustomerId(c.id);
+                        setCustomerSearch('');
+                        setCustomerDropdownOpen(false);
+                        setCartVisible(false);
+                      }}
+                    >
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.customerOptionName, customerId === c.id && styles.customerOptionNameActive]}>
+                          {c.ledger_name}
+                        </Text>
+                        {c.phone ? <Text style={styles.customerOptionPhone}>{c.phone}</Text> : null}
+                      </View>
+                      {customerId === c.id && <Icon name="check" size={16} color={colors.gold} />}
+                    </TouchableOpacity>
+                  )}
+                />
+              </View>
             </TouchableOpacity>
-          </View>
+          </Modal>
         )}
       </View>
 
@@ -486,7 +502,10 @@ export function POSScreen() {
         renderItem={({ item: c }) => (
           <TouchableOpacity
             style={[styles.categoryChip, activeCategory === c.id && styles.categoryChipActive]}
-            onPress={() => setActiveCategory(c.id)}
+            onPress={() => {
+              if (customerDropdownOpen) setCustomerDropdownOpen(false);
+              setActiveCategory(c.id);
+            }}
           >
             <Text style={activeCategory === c.id ? styles.categoryChipTextActive : styles.categoryChipText}>{c.name}</Text>
           </TouchableOpacity>
@@ -595,23 +614,39 @@ const styles = StyleSheet.create({
   customerInputBoxActive: { borderColor: colors.gold },
   customerTextInput: { flex: 1, fontSize: 12, color: colors.ink, padding: 0 },
   customerClearBtn: { padding: 4 },
-  customerDropdownList: {
-    position: 'absolute',
-    top: 44,
-    left: 12,
-    right: 12,
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    justifyContent: 'flex-start',
+    paddingTop: 145,
+    paddingHorizontal: 16,
+  },
+  customerDropdownModalCard: {
     backgroundColor: '#0f172a',
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: '#334155',
     elevation: 25,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    zIndex: 99999,
-    maxHeight: 280,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    maxHeight: 320,
     overflow: 'hidden',
+  },
+  customerDropdownHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#1e293b',
+  },
+  customerDropdownTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#e2e8f0',
   },
   customerListMaxHeight: {
     maxHeight: 230,

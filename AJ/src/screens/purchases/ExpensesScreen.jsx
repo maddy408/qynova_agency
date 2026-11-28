@@ -103,8 +103,15 @@ function OperatingExpensesPanel({ canManage }) {
   };
 
   const openEdit = (expense) => {
-    setEditingExpense(expense);
-    setCategoryId(expense.category_id ? Number(expense.category_id) : null);
+    const expId = expense?.id ?? expense?.expense_id;
+    let catId = expense.category_id ? Number(expense.category_id) : null;
+    if (!catId && (expense.category_name || expense.category)) {
+      const targetName = (expense.category_name || expense.category || '').toLowerCase();
+      const match = categories.find((c) => c.name?.toLowerCase() === targetName);
+      if (match) catId = Number(match.id);
+    }
+    setEditingExpense({ ...expense, id: expId });
+    setCategoryId(catId);
     setAmount(String(expense.amount || ''));
     setPaymentMode(expense.payment_mode || 'cash');
     setDescription(expense.description || '');
@@ -137,7 +144,11 @@ function OperatingExpensesPanel({ canManage }) {
     };
 
     if (editingExpense) {
-      updateMutation.mutate({ id: editingExpense.id, data: payload });
+      const expId = Number(editingExpense.id);
+      if (!expId || isNaN(expId)) {
+        return setError('Invalid expense record.');
+      }
+      updateMutation.mutate({ id: expId, data: payload });
     } else {
       createMutation.mutate(payload);
     }

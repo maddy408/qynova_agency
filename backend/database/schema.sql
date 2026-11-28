@@ -1360,3 +1360,7 @@ ALTER TABLE stock_issue_notes
   ADD COLUMN source_id INT UNSIGNED NULL AFTER source_type,
   ADD INDEX idx_issue_source (source_type, source_id);
 
+-- Customer opening balance is synchronized with credit_transactions (sale_credit)
+-- to ensure consistent outstanding credit across Collections and Ledger.
+-- Managed via migration 20261128_104500_sync_customer_opening_balance_ledger.sql.
+

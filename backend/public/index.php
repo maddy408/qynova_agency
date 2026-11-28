@@ -200,6 +200,17 @@ $customers = new BranchScopedCrudController(
                 $id, 'sale_credit', $amount, null, 'Opening balance', (int) $claims['sub']
             );
         }
+    },
+    onUpdated: function ($id, $old, $new, $claims) use ($pdo) {
+        $oldBal = (float) ($old['opening_balance'] ?? 0);
+        $newBal = (float) ($new['opening_balance'] ?? 0);
+        $diff = round($newBal - $oldBal, 2);
+        if (abs($diff) > 0.009) {
+            $type = $diff > 0 ? 'sale_credit' : 'credit_reversal';
+            (new \App\Services\CreditLedgerService($pdo))->record(
+                $id, $type, abs($diff), null, 'Opening balance adjustment', (int) $claims['sub']
+            );
+        }
     }
 );
 $router->get('/api/customers', fn () => $customers->index());

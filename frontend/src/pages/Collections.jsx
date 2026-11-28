@@ -80,8 +80,16 @@ function CollectModal({ customer, onClose, onCollected }) {
           </button>
         </div>
         <div className="mb-4 rounded-xl border border-[#D5E3F7] bg-[#F8FAFD] p-3 text-xs font-medium text-slate-600 space-y-1">
-          <div><span className="font-bold text-slate-500">Route:</span> {customer.route_id || '-'}</div>
-          <div><span className="font-bold text-slate-500">Credit Limit:</span> ₹{customer.credit_limit} · <span className="font-bold text-rose-600">Outstanding:</span> ₹{customer.total_due}</div>
+          <div className="flex justify-between items-center">
+            <div><span className="font-bold text-slate-500">Route:</span> {customer.route_id || '-'}</div>
+            <div><span className="font-bold text-slate-500">Credit Limit:</span> ₹{customer.credit_limit}</div>
+          </div>
+          <div className="grid grid-cols-2 gap-2 pt-2 border-t border-[#EAF1FA]">
+            <div><span className="font-bold text-slate-500">Opening Balance:</span> ₹{Number(customer.opening_balance || 0).toFixed(2)}</div>
+            <div><span className="font-bold text-slate-500">Unpaid Invoices:</span> ₹{Number(customer.unpaid_invoice_total || 0).toFixed(2)} ({customer.unpaid_invoice_count || 0} bills)</div>
+            <div><span className="font-bold text-slate-500">Total Collected:</span> ₹{Number(customer.total_collected || 0).toFixed(2)}</div>
+            <div><span className="font-bold text-rose-600">Total Outstanding:</span> <span className="font-black text-rose-600">₹{customer.total_due}</span></div>
+          </div>
         </div>
 
         <div className="mb-4 flex gap-1 rounded-xl border border-[#D5E3F7] bg-[#EDF5FF] p-1 text-xs">
@@ -271,6 +279,7 @@ export function Collections({ hideHeader = false }) {
                 <tr className="border-b border-[#D5E3F7] bg-[#F5F8FF] text-xs font-bold uppercase tracking-wider text-slate-600">
                   <th className="px-3.5 py-2.5">Customer</th>
                   <th className="px-3.5 py-2.5">Phone</th>
+                  <th className="px-3.5 py-2.5 text-right">Opening Balance</th>
                   <th className="px-3.5 py-2.5 text-center">Unpaid Bills</th>
                   <th className="px-3.5 py-2.5 text-right">Total Due</th>
                   <th className="px-3.5 py-2.5 text-right">Action</th>
@@ -281,6 +290,7 @@ export function Collections({ hideHeader = false }) {
                   <tr key={c.customer_id} className="hover:bg-[#F8FAFD] transition">
                     <td className="px-3.5 py-2.5 font-bold text-[#0B1B45]">{c.ledger_name}</td>
                     <td className="px-3.5 py-2.5 font-medium text-slate-600">{c.phone || '-'}</td>
+                    <td className="px-3.5 py-2.5 text-right font-semibold text-slate-600 whitespace-nowrap">₹{Number(c.opening_balance || 0).toFixed(2)}</td>
                     <td className="px-3.5 py-2.5 text-center font-bold text-slate-700">{c.unpaid_invoice_count}</td>
                     <td className="px-3.5 py-2.5 text-right font-black text-rose-600 whitespace-nowrap">₹{c.total_due}</td>
                     <td className="px-3.5 py-2.5 text-right">

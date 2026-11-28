@@ -300,6 +300,13 @@ class CustomerController
                         $placeholders = array_map(fn ($c) => ":$c", $cols);
                         $this->pdo->prepare('INSERT INTO customers (' . implode(',', $cols) . ') VALUES (' . implode(',', $placeholders) . ')')
                             ->execute($data);
+                        $newCustomerId = (int) $this->pdo->lastInsertId();
+                        $opBal = (float) ($data['opening_balance'] ?? 0);
+                        if ($opBal > 0.009) {
+                            (new \App\Services\CreditLedgerService($this->pdo))->record(
+                                $newCustomerId, 'sale_credit', $opBal, null, 'Opening balance', (int) $claims['sub']
+                            );
+                        }
                         $inserted++;
                     }
                 }

@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, Switch, PermissionsAndroid, Platform, Alert } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
+import { launchImageLibrary } from 'react-native-image-picker';
 import { itemsApi, categoriesApi, brandsApi, productLinesApi, stockUnitsApi, taxCodesApi, categoryBrandsApi } from '../../api/catalog';
 import { suppliersApi } from '../../api/parties';
 import { branchesApi } from '../../api/branches';
@@ -116,40 +116,14 @@ export function ItemFormModal({ item, onClose }) {
   const updateMutation = useMutation({ mutationFn: ({ id, data }) => itemsApi.update(id, data) });
   const uploadMutation = useMutation({ mutationFn: ({ id, asset }) => itemsApi.uploadImage(id, asset) });
 
-  const requestCameraPermission = async () => {
-    if (Platform.OS !== 'android') return true;
+  const pickImage = async () => {
     try {
-      const granted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.CAMERA,
-        {
-          title: 'Camera Permission',
-          message: 'AJ Agency requires camera access to take product photos.',
-          buttonPositive: 'Allow',
-          buttonNegative: 'Deny',
-        }
-      );
-      return granted === PermissionsAndroid.RESULTS.GRANTED;
-    } catch (err) {
-      console.warn('Camera permission error:', err);
-      return false;
-    }
-  };
-
-  const pickImage = async (fromCamera) => {
-    try {
-      if (fromCamera) {
-        const hasPermission = await requestCameraPermission();
-        if (!hasPermission) {
-          Alert.alert('Permission Denied', 'Camera access is required to take photos. Please allow camera permissions in device settings.');
-          return;
-        }
-      }
       const options = {
         mediaType: 'photo',
         quality: 0.8,
         saveToPhotos: false,
       };
-      const result = await (fromCamera ? launchCamera(options) : launchImageLibrary(options));
+      const result = await launchImageLibrary(options);
       if (result.didCancel) return;
       if (result.errorCode) {
         Alert.alert('Image Error', result.errorMessage || result.errorCode);
@@ -161,7 +135,7 @@ export function ItemFormModal({ item, onClose }) {
       setImagePreview(asset.uri);
       setImageRemoved(false);
     } catch (err) {
-      Alert.alert('Error', 'Failed to access camera/gallery: ' + (err?.message || 'Unknown error'));
+      Alert.alert('Error', 'Failed to access image gallery: ' + (err?.message || 'Unknown error'));
     }
   };
 
@@ -293,14 +267,11 @@ export function ItemFormModal({ item, onClose }) {
           </TouchableOpacity>
           <View style={styles.imageActionsCol}>
             <Text style={styles.imageInstruction}>
-              {imagePreview ? 'Photo selected. Tap image or use buttons to change/remove.' : 'Upload product photo via gallery or camera.'}
+              {imagePreview ? 'Photo selected. Tap image or use button to change/remove.' : 'Upload product photo from device storage.'}
             </Text>
             <View style={styles.imageButtonsRow}>
               <TouchableOpacity style={styles.chooseImgBtn} onPress={() => pickImage(false)}>
-                <Text style={styles.chooseImgBtnText}>🖼️ Choose Image</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.cameraImgBtn} onPress={() => pickImage(true)}>
-                <Text style={styles.cameraImgBtnText}>📷 Camera</Text>
+                <Text style={styles.chooseImgBtnText}>🖼️ Choose Image / File</Text>
               </TouchableOpacity>
             </View>
             {imagePreview ? (
@@ -482,27 +453,14 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   chooseImgBtn: {
-    flex: 1,
     backgroundColor: colors.navbar,
-    paddingVertical: 8,
-    paddingHorizontal: 8,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 6,
-  },
-  chooseImgBtnText: { color: colors.gold, fontWeight: '700', fontSize: 11 },
-  cameraImgBtn: {
-    backgroundColor: colors.page,
-    borderWidth: 1,
-    borderColor: colors.borderSoft,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
+    paddingVertical: 9,
+    paddingHorizontal: 12,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  cameraImgBtnText: { color: colors.ink, fontWeight: '600', fontSize: 11 },
+  chooseImgBtnText: { color: colors.gold, fontWeight: '700', fontSize: 12 },
   removeImgBtn: {
     alignSelf: 'flex-start',
     paddingVertical: 4,

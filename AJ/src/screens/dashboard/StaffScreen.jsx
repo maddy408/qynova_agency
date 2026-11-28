@@ -10,10 +10,11 @@ import { usePermission } from '../../hooks/useAuth';
 import { colors } from '../../theme/colors';
 
 const DEFAULT_ROLES = [
-  { id: 1, name: 'Admin / Manager' },
-  { id: 2, name: 'Biller / Cashier' },
-  { id: 3, name: 'Salesman' },
-  { id: 4, name: 'Staff' },
+  { id: 1, name: 'Super Admin' },
+  { id: 2, name: 'Admin' },
+  { id: 3, name: 'Manager' },
+  { id: 4, name: 'Field Sales Executive' },
+  { id: 5, name: 'Billing Executive' },
 ];
 
 export function StaffScreen() {
@@ -71,8 +72,11 @@ export function StaffScreen() {
   };
 
   const openEdit = (user) => {
-    const matchedRole = roles.find((r) => String(r.id) === String(user.role_id) || r.name === user.role_name);
-    const resolvedRoleId = matchedRole ? String(matchedRole.id) : (user.role_id ? String(user.role_id) : '');
+    const roleIdStr = user.role_id ? String(user.role_id) : '';
+    const matchedRole = roles.find(
+      (r) => String(r.id) === roleIdStr || r.name?.toLowerCase() === (user.role_name || user.role || '').toLowerCase()
+    );
+    const resolvedRoleId = matchedRole ? String(matchedRole.id) : roleIdStr;
     const cleanPhone = (user.phone || '').replace(/\D/g, '').slice(0, 10);
     setForm({
       name: user.name || '',
@@ -230,13 +234,23 @@ export function StaffScreen() {
           placeholder="10-digit mobile (e.g. 9876543210)"
         />
 
-        <SelectField
-          label="Role *"
-          value={form.role_id}
-          options={roles}
-          required
-          onChange={(v) => setForm((p) => ({ ...p, role_id: String(v) }))}
-        />
+        <Text style={formStyles.label}>Role *</Text>
+        <View style={styles.rolePickerBox}>
+          {roles.map((r) => {
+            const isSelected = String(form.role_id) === String(r.id);
+            return (
+              <TouchableOpacity
+                key={r.id}
+                style={[styles.roleOptionChip, isSelected && styles.roleOptionChipActive]}
+                onPress={() => setForm((p) => ({ ...p, role_id: String(r.id) }))}
+              >
+                <Text style={isSelected ? styles.roleOptionTextActive : styles.roleOptionText}>
+                  {isSelected ? '✓ ' : ''}{r.name}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
 
         <Text style={formStyles.label}>{modal?.id ? 'Password (leave blank to keep current)' : 'Password *'}</Text>
         <TextInput
@@ -337,4 +351,9 @@ const styles = StyleSheet.create({
   },
   detailLabel: { fontWeight: '600', color: colors.inkMuted, fontSize: 13 },
   detailVal: { fontWeight: '700', color: colors.ink, fontSize: 13 },
+  rolePickerBox: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
+  roleOptionChip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, borderWidth: 1, borderColor: colors.borderSoft, backgroundColor: colors.page },
+  roleOptionChipActive: { backgroundColor: colors.navbar, borderColor: colors.gold },
+  roleOptionText: { fontSize: 13, color: colors.ink, fontWeight: '600' },
+  roleOptionTextActive: { fontSize: 13, color: colors.gold, fontWeight: '700' },
 });

@@ -46,21 +46,45 @@ class CollectionModel
         return $stmt->fetchAll();
     }
 
-    /** Every branch customer with a positive outstanding balance — "Route Pending Credit Balances". */
+    /** Every branch customer with a positive outstanding balance — "Route Pending Credit Balances". Includes customers with opening balances. */
     public function pendingBalancesForBranch(int $branchId, ?int $routeId = null): array
     {
-        $sql = "SELECT c.id AS customer_id, c.ledger_name, c.phone, c.route_id, c.city_id, c.credit_limit,
-                       COALESCE(SUM(i.balance_due), 0) AS total_due,
-                       COUNT(i.id) AS unpaid_invoice_count
+        $sql = "SELECT c.id AS customer_id, c.ledger_name, c.phone, c.route_id, c.city_id, c.credit_limit, c.opening_balance,
+                       COALESCE(latest_tx.balance_after, c.opening_balance, 0) AS total_due,
+                       COALESCE(inv.unpaid_invoice_count, 0) AS unpaid_invoice_count,
+                       COALESCE(inv.unpaid_invoice_total, 0) AS unpaid_invoice_total,
+                       COALESCE(paid_col.total_collected, 0) AS total_collected
                 FROM customers c
-                JOIN invoices i ON i.customer_id = c.id AND i.status = 'completed' AND i.balance_due > 0.009
-                WHERE c.branch_id = :branch_id";
+                LEFT JOIN (
+                    SELECT ct.customer_id, ct.balance_after
+                    FROM credit_transactions ct
+                    JOIN (
+                        SELECT customer_id, MAX(id) AS max_id
+                        FROM credit_transactions
+                        GROUP BY customer_id
+                    ) m ON ct.customer_id = m.customer_id AND ct.id = m.max_id
+                ) latest_tx ON latest_tx.customer_id = c.id
+                LEFT JOIN (
+                    SELECT customer_id,
+                           COUNT(id) AS unpaid_invoice_count,
+                           SUM(balance_due) AS unpaid_invoice_total
+                    FROM invoices
+                    WHERE status = 'completed' AND balance_due > 0.009
+                    GROUP BY customer_id
+                ) inv ON inv.customer_id = c.id
+                LEFT JOIN (
+                    SELECT customer_id,
+                           SUM(amount) AS total_collected
+                    FROM customer_collections
+                    GROUP BY customer_id
+                ) paid_col ON paid_col.customer_id = c.id
+                WHERE c.branch_id = :branch_id AND c.status = 'active'";
         $params = ['branch_id' => $branchId];
         if ($routeId !== null) {
             $sql .= ' AND c.route_id = :route_id';
             $params['route_id'] = $routeId;
         }
-        $sql .= ' GROUP BY c.id, c.ledger_name, c.phone, c.route_id, c.city_id, c.credit_limit ORDER BY total_due DESC';
+        $sql .= ' HAVING total_due > 0.009 ORDER BY total_due DESC';
 
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute($params);
@@ -79,7 +103,10 @@ class CollectionModel
         int $collectedBy,
         ?array $manualAllocations = null
     ): array {
-        $this->pdo->beginTransaction();
+        $ownsTransaction = !$this->pdo->inTransaction();
+        if ($ownsTransaction) {
+            $this->pdo->beginTransaction();
+        }
         try {
             $unpaid = $this->unpaidInvoicesForCustomer($customerId);
             $byId = array_column($unpaid, null, 'id');
@@ -159,10 +186,14 @@ class CollectionModel
                 $collectedBy
             );
 
-            $this->pdo->commit();
+            if ($ownsTransaction) {
+                $this->pdo->commit();
+            }
             return ['collection_id' => $collectionId, 'allocated_total' => $amount, 'allocations' => $allocations];
         } catch (\Throwable $e) {
-            $this->pdo->rollBack();
+            if ($ownsTransaction && $this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
             throw $e;
         }
     }

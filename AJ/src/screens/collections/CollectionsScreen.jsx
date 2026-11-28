@@ -68,7 +68,24 @@ function CollectModal({ customer, onClose }) {
         </>
       }
     >
-      <Text style={styles.meta}>Outstanding: Rs. {customer.total_due}</Text>
+      <View style={styles.breakdownBox}>
+        <View style={styles.breakdownRow}>
+          <Text style={styles.breakdownLabel}>Opening Balance:</Text>
+          <Text style={styles.breakdownVal}>Rs. {Number(customer.opening_balance || 0).toFixed(2)}</Text>
+        </View>
+        <View style={styles.breakdownRow}>
+          <Text style={styles.breakdownLabel}>Unpaid Invoices ({customer.unpaid_invoice_count || 0}):</Text>
+          <Text style={styles.breakdownVal}>Rs. {Number(customer.unpaid_invoice_total || 0).toFixed(2)}</Text>
+        </View>
+        <View style={styles.breakdownRow}>
+          <Text style={styles.breakdownLabel}>Total Collected:</Text>
+          <Text style={styles.breakdownVal}>Rs. {Number(customer.total_collected || 0).toFixed(2)}</Text>
+        </View>
+        <View style={[styles.breakdownRow, { borderTopWidth: 1, borderTopColor: colors.borderSoft, paddingTop: 4, marginTop: 4 }]}>
+          <Text style={[styles.breakdownLabel, { fontWeight: '700', color: colors.danger }]}>Total Outstanding:</Text>
+          <Text style={[styles.breakdownVal, { fontWeight: '700', color: colors.danger }]}>Rs. {customer.total_due}</Text>
+        </View>
+      </View>
 
       <View style={styles.modeToggle}>
         <TouchableOpacity style={[styles.modeBtn, mode === 'fifo' && styles.modeBtnActive]} onPress={() => setMode('fifo')}>
@@ -142,8 +159,13 @@ export function CollectionsScreen() {
               <View style={styles.card}>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.cardTitle}>{item.ledger_name}</Text>
-                  <Text style={styles.cardMeta}>{item.unpaid_invoice_count} unpaid bill(s)</Text>
-                  <Text style={styles.cardTotalDanger}>Due Rs. {item.total_due}</Text>
+                  <Text style={styles.cardMeta}>{item.phone || 'No phone'} · {item.unpaid_invoice_count} unpaid bill(s)</Text>
+                  {Number(item.opening_balance || 0) > 0.009 && (
+                    <Text style={[styles.cardMeta, { color: colors.gold, fontWeight: '700' }]}>
+                      Opening Bal: Rs. {Number(item.opening_balance).toFixed(2)}
+                    </Text>
+                  )}
+                  <Text style={styles.cardTotalDanger}>Total Due: Rs. {item.total_due}</Text>
                 </View>
                 {canCollect && (
                   <TouchableOpacity style={styles.collectBtn} onPress={() => setSelected(item)}>
@@ -194,6 +216,10 @@ const styles = StyleSheet.create({
   invoiceLabel: { flex: 1, color: colors.ink, fontSize: 13, fontWeight: '600' },
   invoiceAmount: { color: colors.ink, fontSize: 13, fontWeight: '700' },
   emptySmall: { padding: 12, color: colors.inkMuted, fontSize: 12, textAlign: 'center' },
+  breakdownBox: { backgroundColor: colors.page, borderRadius: 10, borderWidth: 1, borderColor: colors.borderSoft, padding: 10, marginBottom: 12 },
+  breakdownRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 2 },
+  breakdownLabel: { fontSize: 12, color: colors.inkMuted, fontWeight: '600' },
+  breakdownVal: { fontSize: 12, color: colors.ink, fontWeight: '700' },
   selectedTotalBox: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.borderSoft },
   selectedTotalLabel: { color: colors.inkMuted, fontSize: 12, fontWeight: '600' },
   selectedTotalValue: { color: colors.ink, fontSize: 14, fontWeight: '700' },
